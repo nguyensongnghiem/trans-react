@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -18,10 +18,10 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-md ">
-      <div className="container mx-auto flex flex-row justify-between items-center py-2">
-        <div className="logo basis-1/12">      
-            <img src="./src/assets/mobifone.png" alt="" />      
+    <header className="bg-white shadow-md">
+      <div className=" h-14 flex justify-between items-center py-2 px-2 bg-white w-full">
+        <div className="logo px-0">
+          <img src="./src/assets/mobifone.png" alt="" />
         </div>
         <div className="search-bar">
           <input
@@ -29,10 +29,9 @@ const Header = () => {
             placeholder="Search..."
             value={searchTerm}
             onChange={handleSearchChange}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
+            className="px-4 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
           />
         </div>
-        <Link to='/'>Home</Link>
         <div className="login-logout">
           {isLoggedIn ? (
             <button
