@@ -11,18 +11,18 @@ function App() {
   return (
     <>
       <BrowserRouter>
-        <div className="h-screen flex flex-col">
+        <div className="relative h-screen flex flex-col">
           {/*header*/}
-          <div className="">
+          <div className="fixed top-0 left-0 right-0">
             <Header></Header>
           </div>
 
           {/*sidebar + Main */}
-          <div className="flex-1 flex flex-col sm:flex-row">
-            <div className=" basis-full sm:basis-3/12 ">
+          <div className="flex-1 flex flex-col sm:flex-row pt-14">
+            <div className=" basis-full sm:basis-2/12 ">
               <SideBar></SideBar>
             </div>
-            <div className=" basis-full sm:basis-9/12">
+            <div className=" basis-full sm:basis-10/12">
               <Routes>
                 <Route path="/" element={<h1>Dashboard</h1>} />
                 <Route path="/site" element={<SiteList />} />
