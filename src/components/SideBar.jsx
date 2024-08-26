@@ -38,7 +38,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-sky-950  text-slate-100">
+    <div className="flex flex-col w-full bg-sky-950 text-slate-100">
       <nav className="flex-1 py-4">
         <ul className="space-y-2">
           {menuItems.map((item) => (
