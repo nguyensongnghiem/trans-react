@@ -56,22 +56,20 @@ function SiteCreate() {
     setSiteOwnerList(siteOwnerList)
   };
 
-  const handleSubmit = async (site) => {
+  const handleSubmit = async (site, { setErrors }) => {
     site.latitude = + site.latitude
     site.longitude = + site.longitude
-    await siteService.saveSite(site)
-
-    navigate("/site");
+    await siteService.saveSite(site,setErrors)
   };
 
   const validate = {
-    siteId: Yup.string().required("(Site Id không để trống)"),
+    siteId: Yup.string().required("Site Id không để trống"),
     latitude: Yup.number()
-      .required("(Không để trống)")
+      .required("Không để trống")
       .typeError("(Yêu cầu nhập số)"),
     longitude: Yup.number()
-      .required("(Không để trống)")
-      .typeError("(Yêu cầu nhập số)"),
+      .required("Không để trống")
+      .typeError("Yêu cầu nhập số"),
   };
 
   return (
@@ -98,8 +96,9 @@ function SiteCreate() {
           <div className="grid grid-cols-12 gap-3 p-2">
             <p className="col-span-full mt-5 text-2xl text-sky-600">Thông tin cơ bản</p>
             <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-              <label className="font-semibold text-slate-600">Site ID  <ErrorMessage
-                className="font-light text-red-500"
+              <label className="font-semibold text-slate-600">Site ID
+                <ErrorMessage
+                className="font-light  text-sm text-red-500 italic"
                 name="siteId"
                 component="span"
               ></ErrorMessage> </label>
@@ -158,8 +157,9 @@ function SiteCreate() {
               </Field>
             </div>
             <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-              <label className="font-semibold text-slate-600">Vĩ độ <ErrorMessage
-                className="font-light text-red-500"
+              <label className="font-semibold text-slate-600">Vĩ độ
+                <ErrorMessage
+                className="font-light text-sm text-red-500 italic"
                 name="latitude"
                 component="span"
               ></ErrorMessage></label>
@@ -172,8 +172,9 @@ function SiteCreate() {
               </Field>
             </div>
             <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-              <label className="font-semibold text-slate-600">Kinh độ <ErrorMessage
-                className="font-light text-red-500"
+              <label className="font-semibold text-slate-600">Kinh độ
+                <ErrorMessage
+                className="font-light text-red-500 italic text-sm"
                 name="longitude"
                 component="span"
               ></ErrorMessage></label>
@@ -200,7 +201,6 @@ function SiteCreate() {
             <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">
               <label className="font-semibold text-slate-600">Loại truyền dẫn</label>
               <Field className="h-8 flex-1 rounded border border-gray-300 px-2 py-1 text-gray-600" as="select" name="siteTransmissionType.id">
-                <option value="">- Chưa có thông tin -</option>
                 {siteTransmissionTypeList.map(siteTransType => {
                   return (
                     <option key={siteTransType.id} value={siteTransType.id}>

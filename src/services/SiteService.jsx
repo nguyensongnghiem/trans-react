@@ -1,5 +1,7 @@
 import axios from "axios";
 import { toast } from "react-toastify";
+import * as logger from "react-dom/test-utils";
+
 export const searchSites = async (page, siteId, transOwner, transType) => {
     const query = `http://localhost:8080/api/sites?page=${page}&siteId=${siteId}&transOwner=${transOwner}&transType=${transType}`
     console.log(query);
@@ -15,7 +17,8 @@ export const searchSites = async (page, siteId, transOwner, transType) => {
 
 }
 
-export const saveSite = async (site) => {
+export const saveSite = async (site,setErrors) => {
+
     try {
         let response = await axios.post("http://localhost:8080/api/sites/rest", site);
         toast.success("Thêm mới thành công");
@@ -24,9 +27,10 @@ export const saveSite = async (site) => {
         console.log(error);
         if (error.response && error.response.status === 400) {
             toast.error(error.response.data.message);
-            error.response.data.details.
+            console.log(error.response.data.details);
+            setErrors(error.response.data.details);
         } else {
-            toast.error('An unexpected error occurred');
+            toast.error('Có lỗi bất thường xảy ra');
         }
     }
 
