@@ -18,28 +18,28 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-md flex items-center py-2 px-4 gap-x-8 w-full">
-      <img src="./src/assets/mobifone.png" alt="logo" className="h-full mr-auto" />
+    <header className="flex w-full items-center gap-x-8 bg-gray-200 px-4 py-2">
+      <img src="./src/assets/mobifone.png" alt="logo" className="mr-auto h-full" />
       <div className="">
         <input
           type="text"
           placeholder="Search..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="px-2 border border-gray-300 rounded-xl py-1 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent"
+          className="rounded-xl border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
         />
       </div>
       <div className="">
         {isLoggedIn ? (
           <a
-            className="inline-block bg-red-500 hover:bg-red-600 text-white rounded-sm shadow-md font-semibold px-2 py-1  hover:cursor-pointer"
+            className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"
             onClick={handleLogout}
           >
             Logout
           </a>
         ) : (
           <a
-            className="inline-block bg-sky-500 hover:bg-sky-600 text-white rounded-sm shadow-md font-semibold px-2 py-1  hover:cursor-pointer"
+            className="inline-block rounded-sm bg-sky-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-sky-600"
             onClick={handleLogin}
           >
             Login

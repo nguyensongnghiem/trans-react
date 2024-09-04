@@ -23,8 +23,7 @@ function App() {
             <nav className="flex overflow-y-auto sm:min-w-64">
               <SideBar></SideBar>
             </nav>
-
-            <main className="flex-1 overflow-y-auto sm:px-2 sm:py-2">
+            <main className="flex-1 overflow-y-auto bg-[#f9f9fb] px-3 py-2">
               <Routes>
                 <Route path="/" element={<h1>Dashboard</h1>} />
                 <Route path="/site" element={<SiteList />} />
