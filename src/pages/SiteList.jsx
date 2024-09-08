@@ -5,8 +5,10 @@ import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeSe
 import * as provinceService from "../services/ProvinceService"
 import { Field, Form, Formik } from "formik";
 import { NavLink, useNavigate } from "react-router-dom";
+import { Button, Option, Select, Typography } from "@material-tailwind/react";
 import clsx from "clsx";
 import Modal from 'react-modal';
+import { Input } from "@material-tailwind/react";
 function SiteList() {
   const navigate = useNavigate();
   const [siteList, setSiteList] = useState({});
@@ -112,53 +114,72 @@ function SiteList() {
   if (isLoading) return <p>Loading... </p>
   return (
     <div className="container px-3">
-      <h2 className="my-4 text-2xl font-semibold uppercase text-sky-700">Danh sách trạm</h2>
-      <button className="mb-3 w-full rounded-sm bg-sky-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-sky-600 md:w-fit">
+      <Typography variant="h4" color="blue-gray" className="mb-3">Danh sách trạm</Typography>
 
-        <NavLink to="/site/create" className="flex gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-house-add" viewBox="0 0 16 16">
-            <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h4a.5.5 0 1 0 0-1h-4a.5.5 0 0 1-.5-.5V7.207l5-5 6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293z" />
-            <path d="M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0m-3.5-2a.5.5 0 0 0-.5.5v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 1 0 1 0v-1h1a.5.5 0 1 0 0-1h-1v-1a.5.5 0 0 0-.5-.5" />
+      <NavLink to="/site/create" className="inline-block">
+        <Button color="blue" size="sm" className="mb-3 flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
           </svg>
           Thêm mới
-        </NavLink>
-      </button>
-
+        </Button>
+      </NavLink>
       <div className="container max-w-full">
         <Formik
           initialValues={{ ...searchTerm }}
           onSubmit={onSearchSubmit}
           className="max-w-full"
         >
-          <Form className="mb-3 flex flex-col justify-start gap-10 md:flex-row md:flex-wrap md:items-end">
+          <Form className="mb-3 flex flex-col justify-start gap-x-10 gap-y-2 md:flex-row md:flex-wrap md:items-end">
 
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-600">Site ID</label>
+              {/* <Typography variant="h6" color="blue-gray" className="">Site ID</Typography> */}
               <Field
                 name="siteId"
-                placeholder="Tìm theo Site ID"
-                className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+
+              // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
+                {({ field }) => (
+                  <Input
+                    {...field}
+                    label="Site ID"
+                    placeholder="Tìm theo Site Id"
+                    color="blue"
+                    variant="standard"
+                  />
+                )}
               </Field>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-600">Tỉnh/Thành phố</label>
+              {/* <Typography variant="h6" color="blue-gray" className="">Tỉnh/Thành phố</Typography> */}
               <Field
-                className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                as="select"
+                // className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                 name="province">
-                <option value="">- Chọn tất cả-</option>
-                {provinces.map(province => {
-                  return (
-                    <option key={province.id} value={province.name}>
-                      {province.name}
-                    </option>
-                  );
-                })}
+                {({ field }) => (
+                  <Select
+
+                    label="Tỉnh/TP"
+                    variant="standard"
+                    onChange={(event) => {
+                      // Cập nhật giá trị cho Formik
+                      field.setFieldValue('province', event.target.value);
+                    }}
+
+                  >
+                    <Option value=""> - Chọn tất cả- </Option>
+                    {provinces.map(province => {
+                      return (
+                        <Option key={province.id} value={province.name}>
+                          {province.name}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                )}
               </Field>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-600">Đơn vị sở hữu TD</label>
+              <Typography variant="h6" color="blue-gray" className="">Đơn vị sở hữu TD</Typography>
               <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                 as="select"
                 name="transOwner">
@@ -174,7 +195,7 @@ function SiteList() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-600">Loại truyền dẫn trạm</label>
+              <Typography variant="h6" color="blue-gray" className="">Loại truyền dẫn trạm</Typography>
               <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                 as="select"
                 name="transType">
@@ -188,21 +209,16 @@ function SiteList() {
                 })}
               </Field>
             </div>
-            <button
+            <Button
               type="submit"
-              className="flex h-8 items-center justify-center rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600 md:w-32"
+              size="sm"
+              className="flex items-center gap-2"
             >
-              <svg
-                fill="currentColor"
-                viewBox="0 0 16 16"
-                height="1em"
-                width="1em"
-                className="mr-2 inline-block"
-              >
-                <path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85a1.007 1.007 0 00-.115-.1zM12 6.5a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0z" />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
               Tìm
-            </button>
+            </Button>
 
           </Form>
         </Formik>
@@ -226,7 +242,7 @@ function SiteList() {
             <tbody className="text-sm font-light text-gray-600">
               {siteList.content.map((site) => {
                 return (
-                  <tr key={site.id} className="border-b border-gray-200 bg-white hover:bg-sky-100">
+                  <tr key={site.id} className="hover:bg-sky-100 border-b border-gray-200 bg-white">
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.province.name}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteId}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteId2}</td>
@@ -322,7 +338,7 @@ function SiteList() {
         <p className="mb-3">Xác nhận xóa trạm {deleteSiteId} khỏi cơ sở dữ liệu ?</p>
         <div className="mt-3 flex justify-end gap-3">
           <button
-            onClick={closeModal} className="inline-block rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600"
+            onClick={closeModal} className="bg-slate-500 hover:bg-slate-600 inline-block rounded-sm px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer"
           >Hủy</button>
           <button
             onClick={() => deleteSite(deleteId)}
@@ -332,7 +348,7 @@ function SiteList() {
 
 
       </Modal>
-    </div>
+    </div >
   )
 }
 export default SiteList;

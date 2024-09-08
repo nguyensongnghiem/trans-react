@@ -1,3 +1,4 @@
+import { Button } from "@material-tailwind/react";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -31,19 +32,19 @@ const Header = () => {
       </div>
       <div className="">
         {isLoggedIn ? (
-          <a
-            className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"
+          <Button
+            color="red"
             onClick={handleLogout}
           >
             Logout
-          </a>
+          </Button>
         ) : (
-          <a
-            className="inline-block rounded-sm bg-sky-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-sky-600"
+          <Button
+            color="blue"
             onClick={handleLogin}
           >
             Login
-          </a>
+          </Button>
         )}
       </div>
 
