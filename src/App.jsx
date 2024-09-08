@@ -10,6 +10,7 @@ import SiteCreate from "./pages/SiteCreate.jsx";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SiteEdit from "./pages/SiteEdit.jsx";
 
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/site" element={<SiteList />} />
                 <Route path="/router" element={<h1>Router List</h1>} />
                 <Route path="/site/create" element={<SiteCreate />} />
+                <Route path="/site/edit/:editId" element={<SiteEdit />} />
               </Routes>
             </main>
           </div>

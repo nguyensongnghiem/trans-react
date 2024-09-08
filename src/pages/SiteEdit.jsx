@@ -6,17 +6,20 @@ import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeSe
 import * as provinceService from "../services/ProvinceService"
 import * as siteOwnerService from "../services/SiteOwnerService"
 import { ErrorMessage, Field, Form, Formik } from "formik";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Modal from 'react-modal';
-import clsx from "clsx";
-function SiteCreate() {
+
+function SiteEdit() {
+  const { editId } = useParams();
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
   const [provinceList, setProvinceList] = useState([]);
   const [siteOwnerList, setSiteOwnerList] = useState([]);
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [editSite, setEditSite] = useState({})
   useEffect(() => {
     getAllTransmissionOwner();
   }, []);
@@ -56,10 +59,22 @@ function SiteCreate() {
     setSiteOwnerList(siteOwnerList)
   };
 
+  useEffect(() => {
+    getSiteById(editId);
+  }, [])
+  const getSiteById = async (editId) => {
+    const site = await siteService.getSiteById(editId)
+    setEditSite({ ...site })
+    setIsLoading(false)
+    console.log(site);
+
+  }
+
   const handleSubmit = async (site, { setErrors }) => {
     site.latitude = + site.latitude
     site.longitude = + site.longitude
     await siteService.saveSite(site, setErrors)
+    navigate("/site")
   };
 
   const validate = {
@@ -71,27 +86,18 @@ function SiteCreate() {
       .required("Không để trống")
       .typeError("Yêu cầu nhập số"),
   };
-
+  if (isLoading) return <p>Loading...</p>;
   return (
 
     <Formik
       onSubmit={handleSubmit}
       initialValues={{
-        province: { id: "DN" },
-        siteId: "",
-        siteId2: "",
-        siteName: "",
-        latitude: "",
-        longitude: "",
-        transmissionOwner: { id: 1 },
-        siteTransmissionType: { id: 1 },
-        siteOwner: { id: 1 },
-        note: "",
+        ...editSite
       }}
       validationSchema={Yup.object(validate)}
     >
       <Form className="container mx-auto mt-5 flex flex-col gap-5 rounded-lg px-16">
-        <p className="text-2xl font-semibold uppercase text-sky-600">Thêm trạm vào cơ sở dữ liệu</p>
+        <p className="text-2xl font-semibold uppercase text-sky-600">Sửa thông tin trạm </p>
         <div className="grid grid-cols-12 gap-5 p-2">
           <p className="col-span-full mt-5 text-2xl text-sky-600">Thông tin cơ bản</p>
           <div className="col-span-full flex flex-col gap-2 md:col-span-6 lg:col-span-3">
@@ -235,6 +241,7 @@ function SiteCreate() {
           type="submit"
           className="flex h-8 items-center justify-center rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600 md:w-32"
         >
+
           Lưu
         </button>
       </Form>
@@ -243,4 +250,4 @@ function SiteCreate() {
   )
 }
 
-export default SiteCreate
+export default SiteEdit

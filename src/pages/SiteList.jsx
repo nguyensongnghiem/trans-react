@@ -5,13 +5,11 @@ import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeSe
 import * as provinceService from "../services/ProvinceService"
 import { Field, Form, Formik } from "formik";
 import { NavLink, useNavigate } from "react-router-dom";
-import Modal from 'react-modal';
 import clsx from "clsx";
-import { toast } from "react-toastify";
-
+import Modal from 'react-modal';
 function SiteList() {
   const navigate = useNavigate();
-  const [siteList, setSiteList] = useState([]);
+  const [siteList, setSiteList] = useState({});
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -26,8 +24,10 @@ function SiteList() {
   const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false);
   Modal.setAppElement('#root');
-  let subtitle;
 
+
+  let subtitle;
+  let deleteSiteId
 
 
   useEffect(() => {
@@ -85,8 +85,8 @@ function SiteList() {
 
   // Modal function 
   function openModal(id) {
-    setIsOpen(true);
     setDeleteId(id);
+    setIsOpen(true);
   }
 
   function afterOpenModal() {
@@ -94,16 +94,21 @@ function SiteList() {
   }
 
   function closeModal() {
+    setDeleteId(null)
     setIsOpen(false);
   }
   const deleteSite = async (id) => {
     const result = await siteService.deleteSite(id);
+    getAllSites();
     closeModal()
-    setDeleteId(null)
-    setSiteList(siteList.filter(site => site.siteId != id));
-
   }
-
+  const handleEdit = (editId) => {
+    navigate(`/site/edit/${editId}`)
+  }
+  if (deleteId != null) {
+    deleteSiteId = siteList.content.find(site => site.id === deleteId).siteId
+    console.log(deleteSiteId);
+  }
   if (isLoading) return <p>Loading... </p>
   return (
     <div className="container px-3">
@@ -132,13 +137,16 @@ function SiteList() {
               <Field
                 name="siteId"
                 placeholder="Tìm theo Site ID"
-                className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600"
+                className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
               </Field>
             </div>
             <div className="flex flex-col gap-1">
               <label className="font-semibold text-slate-600">Tỉnh/Thành phố</label>
-              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600" as="select" name="province">
+              <Field
+                className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                as="select"
+                name="province">
                 <option value="">- Chọn tất cả-</option>
                 {provinces.map(province => {
                   return (
@@ -151,7 +159,9 @@ function SiteList() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="font-semibold text-slate-600">Đơn vị sở hữu TD</label>
-              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600" as="select" name="transOwner">
+              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                as="select"
+                name="transOwner">
                 <option value="">- Chọn tất cả-</option>
                 {transmissionOwnerList.map(transOwner => {
                   return (
@@ -165,7 +175,9 @@ function SiteList() {
 
             <div className="flex flex-col gap-1">
               <label className="font-semibold text-slate-600">Loại truyền dẫn trạm</label>
-              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600" as="select" name="transType">
+              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                as="select"
+                name="transType">
                 <option value="">- Chọn tất cả -</option>
                 {siteTransmissionTypeList.map(siteTransType => {
                   return (
@@ -202,11 +214,13 @@ function SiteList() {
                 <th className="py-1 text-center">Tỉnh</th>
                 <th className="py-1 text-center">Site ID</th>
                 <th className="py-1 text-center">Site ID khác</th>
+                <th className="py-1 text-center">Tên trạm</th>
                 <th className="py-1 text-center">Vĩ độ</th>
                 <th className="py-1 text-center">Kinh độ</th>
                 <th className="py-1 text-center">Đơn vị sở hữu TD</th>
                 <th className="py-1 text-center">Loại TD</th>
-                <th className="py-1 text-center">Action</th>
+                <th className="py-1 text-center">Ghi chú</th>
+                <th className="py-1 text-center">Tác động</th>
               </tr>
             </thead>
             <tbody className="text-sm font-light text-gray-600">
@@ -216,20 +230,27 @@ function SiteList() {
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.province.name}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteId}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteId2}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteName}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.latitude}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.longitude}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.transmissionOwner?.name}</td>
                     <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteTransmissionType?.name}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.note}</td>
 
                     <td className="px-6 py-3 text-center">
                       <div className="item-center flex justify-center gap-3">
-                        <div className="mr-2 w-4 transform hover:scale-150 hover:cursor-pointer hover:text-yellow-500">
+                        <div className="mr-2 w-4 transform text-yellow-500 hover:scale-150 hover:cursor-pointer hover:text-yellow-600">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </div>
-                        <div onClick={() => openModal(site.id)} className="mr-2 w-4 transform hover:scale-150 hover:cursor-pointer hover:text-red-500">
+                        <div onClick={() => handleEdit(site.id)} className="mr-2 w-4 transform text-green-500 hover:scale-150 hover:cursor-pointer hover:text-green-600">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" />
+                          </svg>
+                        </div>
+                        <div onClick={() => openModal(site.id)} className="mr-2 w-4 transform text-red-500 hover:scale-150 hover:cursor-pointer hover:text-red-600">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
@@ -294,19 +315,18 @@ function SiteList() {
         isOpen={isOpen}
         onAfterOpen={afterOpenModal}
         onRequestClose={closeModal}
-
         contentLabel="Example Modal"
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-6 shadow-lg"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-8 shadow-lg"
       >
         <h2 className="mb-3 text-lg font-bold text-red-500" ref={(_subtitle) => (subtitle = _subtitle)}>Xóa thông tin</h2>
-        <p className="mb-3">Xác nhận xóa trạm {deleteId} khỏi cơ sở dữ liệu ?</p>
-        <div className="flex justify-between gap-3">
+        <p className="mb-3">Xác nhận xóa trạm {deleteSiteId} khỏi cơ sở dữ liệu ?</p>
+        <div className="mt-3 flex justify-end gap-3">
           <button
-            onClick={closeModal} className="mb-3 inline-block rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600"
+            onClick={closeModal} className="inline-block rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600"
           >Hủy</button>
           <button
             onClick={() => deleteSite(deleteId)}
-            className="mb-3 inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"
+            className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"
           >Xóa dữ liệu</button>
         </div>
 

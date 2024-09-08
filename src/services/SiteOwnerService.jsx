@@ -1,6 +1,6 @@
 import axios from "axios";
 export const getAll = async () => {
-    const query = `http://localhost:8080/api/siteOwner`
+    const query = `http://localhost:8080/api/siteOwners`
     try {
         let result = await axios.get(query);
 

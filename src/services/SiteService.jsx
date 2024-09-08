@@ -1,6 +1,5 @@
 import axios from "axios";
 import { toast } from "react-toastify";
-import * as logger from "react-dom/test-utils";
 
 export const searchSites = async (page, siteId, transOwner, transType, province) => {
     const query = `http://localhost:8080/api/sites?page=${page}&siteId=${siteId}&transOwner=${transOwner}&transType=${transType}&province=${province}`
@@ -21,7 +20,7 @@ export const saveSite = async (site, setErrors) => {
 
     try {
         let response = await axios.post("http://localhost:8080/api/sites/rest", site);
-        toast.success("Thêm mới thành công");
+        toast.success(site.id !== null ? 'Cập nhật thành công' : 'Thêm mới thành công');
         return true;
     } catch (error) {
         console.log(error);
@@ -41,6 +40,16 @@ export const deleteSite = async (id) => {
         let response = await axios.delete(`http://localhost:8080/api/sites/${id}`);
         toast.success("Đã xóa thành công !")
         return true;
+    } catch (error) {
+        toast.error(error.response.data.message)
+        console.log(error);
+    }
+};
+
+export const getSiteById = async (id) => {
+    try {
+        let response = await axios.get(`http://localhost:8080/api/sites/${id}`);
+        return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
         console.log(error);
