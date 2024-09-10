@@ -5,7 +5,7 @@ import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeSe
 import * as provinceService from "../services/ProvinceService"
 import { Field, Form, Formik } from "formik";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Button, Option, Select, Typography } from "@material-tailwind/react";
+import { Button, MenuItem, Option, Select, Typography } from "@material-tailwind/react";
 import clsx from "clsx";
 import Modal from 'react-modal';
 import { Input } from "@material-tailwind/react";
@@ -77,7 +77,6 @@ function SiteList() {
 
   const onSearchSubmit = async (value) => {
     console.log(value);
-
     setSearchTerm(value)
     setPage(0)
     // const sites = await siteService.searchSites(page, value.siteId, value.transOwner, value.transType);
@@ -130,97 +129,102 @@ function SiteList() {
           onSubmit={onSearchSubmit}
           className="max-w-full"
         >
-          <Form className="mb-3 flex flex-col justify-start gap-x-10 gap-y-2 md:flex-row md:flex-wrap md:items-end">
+          {({
+            handleChange,
+            handleBlur,
+            values,
+            errors,
+            isValid,
+          }) => (
+            <Form className="mb-3 flex flex-col justify-start gap-x-10 gap-y-2 md:flex-row md:flex-wrap md:items-end">
 
-            <div className="flex flex-col gap-1">
-              {/* <Typography variant="h6" color="blue-gray" className="">Site ID</Typography> */}
-              <Field
-                name="siteId"
+              <div className="flex flex-col gap-1">
+                {/* <Typography variant="h6" color="blue-gray" className="">Site ID</Typography> */}
+                <Field
+                  name="siteId"
 
-              // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  {({ field }) => (
+                    <Input
+                      {...field}
+                      label="Site ID"
+                      placeholder="Tìm theo Site Id"
+                      color="blue"
+                      variant="standard"
+                    />
+                  )}
+                </Field>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Typography variant="h6" color="blue-gray" className="">Tỉnh/Thành phố</Typography>
+                <Field
+                  name='province'
+                  as='select'
+                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                >
+
+                  <option value=""> - Chọn tất cả- </option>
+                  {provinces.map(province => {
+                    console.log(province);
+
+                    return (
+                      <option key={province.name} value={province.name} >
+                        {province.name}
+                      </option>
+                    );
+                  })}
+                </Field>
+
+              </div>
+              <div className="flex flex-col gap-1">
+                <Typography variant="h6" color="blue-gray" className="">Đơn vị sở hữu TD</Typography>
+                <Field
+                  as="select"
+                  name="transOwner"
+                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                >
+
+                  <option value="">- Chọn tất cả-</option>
+                  {transmissionOwnerList.map(transOwner => {
+                    return (
+                      <option key={transOwner.id} value={transOwner.name}>
+                        {transOwner.name}
+                      </option>
+                    );
+                  })}
+                </Field>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <Typography variant="h6" color="blue-gray" className="">Loại truyền dẫn trạm</Typography>
+                <Field
+                  className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                  as="select"
+                  name="transType">
+                  <option value="">- Chọn tất cả -</option>
+                  {siteTransmissionTypeList.map(siteTransType => {
+                    return (
+                      <option key={siteTransType.id} value={siteTransType.name}>
+                        {siteTransType.name}
+                      </option>
+                    );
+                  })}
+                </Field>
+              </div>
+              <Button
+                type="submit"
+                size="sm"
+                className="flex items-center gap-2"
               >
-                {({ field }) => (
-                  <Input
-                    {...field}
-                    label="Site ID"
-                    placeholder="Tìm theo Site Id"
-                    color="blue"
-                    variant="standard"
-                  />
-                )}
-              </Field>
-            </div>
-            <div className="flex flex-col gap-1">
-              {/* <Typography variant="h6" color="blue-gray" className="">Tỉnh/Thành phố</Typography> */}
-              <Field
-                // className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                name="province">
-                {({ field }) => (
-                  <Select
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                Tìm
+              </Button>
 
-                    label="Tỉnh/TP"
-                    variant="standard"
-                    onChange={(event) => {
-                      // Cập nhật giá trị cho Formik
-                      field.setFieldValue('province', event.target.value);
-                    }}
-
-                  >
-                    <Option value=""> - Chọn tất cả- </Option>
-                    {provinces.map(province => {
-                      return (
-                        <Option key={province.id} value={province.name}>
-                          {province.name}
-                        </Option>
-                      );
-                    })}
-                  </Select>
-                )}
-              </Field>
-            </div>
-            <div className="flex flex-col gap-1">
-              <Typography variant="h6" color="blue-gray" className="">Đơn vị sở hữu TD</Typography>
-              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                as="select"
-                name="transOwner">
-                <option value="">- Chọn tất cả-</option>
-                {transmissionOwnerList.map(transOwner => {
-                  return (
-                    <option key={transOwner.id} value={transOwner.name}>
-                      {transOwner.name}
-                    </option>
-                  );
-                })}
-              </Field>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <Typography variant="h6" color="blue-gray" className="">Loại truyền dẫn trạm</Typography>
-              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                as="select"
-                name="transType">
-                <option value="">- Chọn tất cả -</option>
-                {siteTransmissionTypeList.map(siteTransType => {
-                  return (
-                    <option key={siteTransType.id} value={siteTransType.name}>
-                      {siteTransType.name}
-                    </option>
-                  );
-                })}
-              </Field>
-            </div>
-            <Button
-              type="submit"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-              Tìm
-            </Button>
-
-          </Form>
+            </Form>
+          )}
         </Formik>
 
         <div className="max-h-full overflow-x-auto">

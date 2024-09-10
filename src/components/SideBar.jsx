@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { TfiAngleRight } from "react-icons/tfi";
 import { BsMenuButtonFill } from "react-icons/bs";
 import { FaHouseSignal } from "react-icons/fa6";
 import { FaRegHardDrive } from "react-icons/fa6";
-import { BsDashLg } from "react-icons/bs";
-import { VscDash } from "react-icons/vsc";
+
 const Sidebar = () => {
   const [expandedMenu, setExpandedMenu] = useState(null);
 
@@ -26,7 +25,7 @@ const Sidebar = () => {
       label: "Quản lý trạm",
       subMenuItems: [
         { label: "Danh sách", to: "/site" },
-        { label: "Thêm mới", to: "/router" },
+        { label: "Thêm mới", to: "/site/create" },
       ],
     },
     {
@@ -38,21 +37,21 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="flex flex-col w-full bg-sky-950 text-slate-100">
+    <div className="flex w-full flex-col bg-blue-gray-900 text-blue-gray-300">
       <nav className="flex-1 py-4">
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.key}>
               <div>
                 <button
-                  className="block w-full px-4 py-2 hover:bg-sky-700 hover:border-l-sky-400 hover:border-l-8 transition-colors duration-100 text-left"
+                  className="hover:bg-sky-700 hover:border-l-sky-400 block w-full px-4 py-2 text-left transition-colors duration-100 hover:border-l-8"
                   onClick={() => toggleSubMenu(item.key)} to={item.to}>
                   <div className="flex flex-row items-center">
-                    <div className="basis-1/6 align-">
+                    <div className="align- basis-1/6">
                       {item.icon}
                     </div>
                     <div className="basis-5/6">
-                    {item.label}
+                      {item.label}
                     </div>
                     <span className={`float-right transition-transform duration-300 ${expandedMenu === item.key ? "rotate-90" : ""}`}>
                       {item.subMenuItems && <TfiAngleRight size="12px" />}
@@ -61,9 +60,9 @@ const Sidebar = () => {
                 </button>
 
                 {expandedMenu === item.key && item.subMenuItems && (
-                  <ul className=" rounded-lg mx-3">
+                  <ul className="mx-3 rounded-lg">
                     {item.subMenuItems.map((subItem, index) => (
-                      <li key={index}>                        
+                      <li key={index}>
                         <NavLink
                           to={subItem.to}
                           className={({ isActive }) =>
@@ -73,8 +72,8 @@ const Sidebar = () => {
                             ].join(" ")
                           }
                         >
-                          <p className="text-center">                      
-                          {subItem.label}
+                          <p className="text-center">
+                            {subItem.label}
                           </p>
                         </NavLink>
                       </li>
@@ -86,10 +85,10 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
-      <div className="mt-auto flex items-center justify-center py-2 border-t border-gray-700">
+      <div className="mt-auto flex items-center justify-center border-t border-gray-700 py-2">
         <a
           href="#"
-          className="text-gray-400 hover:text-white transition-colors duration-300"
+          className="text-gray-400 transition-colors duration-300 hover:text-white"
         >
           Logout
         </a>
