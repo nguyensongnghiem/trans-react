@@ -5,7 +5,7 @@ import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeSe
 import * as provinceService from "../services/ProvinceService"
 import { Field, Form, Formik } from "formik";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Button, MenuItem, Option, Select, Typography } from "@material-tailwind/react";
+import {Button, Chip, MenuItem, Option, Select, Typography} from "@material-tailwind/react";
 import clsx from "clsx";
 import Modal from 'react-modal';
 import { Input } from "@material-tailwind/react";
@@ -228,34 +228,36 @@ function SiteList() {
         </Formik>
 
         <div className="max-h-full overflow-x-auto">
-          <table className="min-w-full table-auto border-collapse border-2">
+          <table className="min-w-full table-auto border-collapse border-b-2">
             <thead>
-              <tr className="bg-gray-200 uppercase text-gray-600">
-                <th className="py-1 text-center">Tỉnh</th>
-                <th className="py-1 text-center">Site ID</th>
-                <th className="py-1 text-center">Site ID khác</th>
-                <th className="py-1 text-center">Tên trạm</th>
-                <th className="py-1 text-center">Vĩ độ</th>
-                <th className="py-1 text-center">Kinh độ</th>
-                <th className="py-1 text-center">Đơn vị sở hữu TD</th>
-                <th className="py-1 text-center">Loại TD</th>
-                <th className="py-1 text-center">Ghi chú</th>
-                <th className="py-1 text-center">Tác động</th>
+              <tr className="bg-blue-100 uppercase text-gray-600">
+                <th className="py-1 px-6  text-left">Tỉnh</th>
+                <th className="py-1 px-6 text-left">Site ID</th>
+                <th className="py-1 px-6 text-left">Site ID khác</th>
+                <th className="py-1 px-6 text-left">Tên trạm</th>
+                <th className="py-1 px-6 text-right ">Vĩ độ</th>
+                <th className="py-1 px-6 text-right">Kinh độ</th>
+                <th className="py-1 px-6 text-left">Đơn vị sở hữu TD</th>
+                <th className="py-1 px-6 text-left">Loại TD</th>
+                <th className="py-1 px-6 text-left">Ghi chú</th>
+                <th className="py-1 px-6 text-center">Tác động</th>
               </tr>
             </thead>
             <tbody className="text-sm font-light text-gray-600">
               {siteList.content.map((site) => {
                 return (
                   <tr key={site.id} className="hover:bg-sky-100 border-b border-gray-200 bg-white">
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.province.name}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteId}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteId2}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteName}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.latitude}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.longitude}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.transmissionOwner?.name}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.siteTransmissionType?.name}</td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">{site.note}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-left">{site.province.name}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-left">{site.siteId}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-left">{site.siteId2}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-left">{site.siteName}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-right">{site.latitude}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-right">{site.longitude}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                      <Chip value={site.transmissionOwner?.name} color='blue' size='sm' variant='outlined' className="rounded-full text-sm px-2 py-0 inline-block text-left" ></Chip>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-1 text-left">{site.siteTransmissionType?.name}</td>
+                    <td className="whitespace-nowrap px-6 py-1 text-left">{site.note}</td>
 
                     <td className="px-6 py-3 text-center">
                       <div className="item-center flex justify-center gap-3">

@@ -10,6 +10,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Modal from 'react-modal';
+import {Button, Card} from "@material-tailwind/react";
 
 function SiteEdit() {
   const { editId } = useParams();
@@ -97,154 +98,305 @@ function SiteEdit() {
       validationSchema={Yup.object(validate)}
     >
       <Form className="container mx-auto mt-5 flex flex-col gap-5 rounded-lg px-16">
-        <p className="text-2xl font-semibold uppercase text-sky-600">Sửa thông tin trạm </p>
-        <div className="grid grid-cols-12 gap-5 p-2">
-          <p className="col-span-full mt-5 text-2xl text-sky-600">Thông tin cơ bản</p>
-          <div className="col-span-full flex flex-col gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Site ID
-            </label>
+        <Card className="p-5">
+          <p className="text-xl text-blue-600 font-semibold uppercase">Cập nhật thông tin trạm</p>
+          <div className="grid grid-cols-12 gap-5 p-2">
+            <p className="text-sky-600 col-span-full mt-5 text-xl italic text-blue-500">Thông tin cơ bản</p>
+            <div className="col-span-full flex flex-col gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Site ID
+              </label>
 
-            <Field
-              name="siteId"
-              placeholder="Nhập Site ID"
-              className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-            </Field>
-            <ErrorMessage
-              className="justify-items-end text-sm font-light italic text-red-500"
-              name="siteId"
-              component="span"
-            ></ErrorMessage>
+              <Field
+                  name="siteId"
+                  placeholder="Nhập Site ID"
+                  className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+              </Field>
+              <ErrorMessage
+                  className="justify-items-end text-sm font-light italic text-red-500"
+                  name="siteId"
+                  component="span"
+              ></ErrorMessage>
 
-          </div>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Site ID khác</label>
-            <Field
-              name="siteId2"
-              placeholder="Nhập Site ID khác"
-              className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-            </Field>
-          </div>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Tên trạm</label>
-            <Field
-              name="siteName"
-              placeholder="Nhập tên trạm"
-              className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-            </Field>
-          </div>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Chủ nhà trạm </label>
-            <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteOwner.id" >
-              <option value="">Chọn chủ nhà trạm</option>
-              {siteOwnerList.map(siteOwner => {
-                return (
-                  <option key={siteOwner.id} value={siteOwner.id}>
-                    {siteOwner.name}
-                  </option>
-                );
-              })}
-            </Field>
-          </div>
-          <p className="col-span-full text-2xl text-sky-600">Vị trí</p>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Tỉnh </label>
-            <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="province.id">
+            </div>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Site ID khác</label>
+              <Field
+                  name="siteId2"
+                  placeholder="Nhập Site ID khác"
+                  className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+              </Field>
+            </div>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Tên trạm</label>
+              <Field
+                  name="siteName"
+                  placeholder="Nhập tên trạm"
+                  className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+              </Field>
+            </div>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Chủ nhà trạm </label>
+              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteOwner.id" >
+                <option value="">Chọn chủ nhà trạm</option>
+                {siteOwnerList.map(siteOwner => {
+                  return (
+                      <option key={siteOwner.id} value={siteOwner.id}>
+                        {siteOwner.name}
+                      </option>
+                  );
+                })}
+              </Field>
+            </div>
+            <p className=" col-span-full text-xl italic text-blue-500 ">Vị trí</p>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Tỉnh </label>
+              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="province.id">
 
-              {provinceList.map(province => {
-                return (
-                  <option key={province.id} value={province.id}>
-                    {province.name}
-                  </option>
-                );
-              })}
-            </Field>
-          </div>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Vĩ độ
-            </label>
-            <Field
+                {provinceList.map(province => {
+                  return (
+                      <option key={province.id} value={province.id}>
+                        {province.name}
+                      </option>
+                  );
+                })}
+              </Field>
+            </div>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Vĩ độ
+              </label>
+              <Field
 
-              name="latitude"
-              placeholder="Nhập vĩ độ"
-              className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-            </Field>
-            <ErrorMessage
-              className="text-sm font-light italic text-red-500"
-              name="latitude"
-              component="span"
-            ></ErrorMessage>
-          </div>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Kinh độ
-            </label>
-            <Field
-              type="number"
-              name="longitude"
-              placeholder="Nhập kinh độ"
-              className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-            </Field>
-            <ErrorMessage
-              className="text-sm font-light italic text-red-500"
-              name="longitude"
-              component="span"
-            ></ErrorMessage>
-          </div>
+                  name="latitude"
+                  placeholder="Nhập vĩ độ"
+                  className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+              </Field>
+              <ErrorMessage
+                  className="text-sm font-light italic text-red-500"
+                  name="latitude"
+                  component="span"
+              ></ErrorMessage>
+            </div>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Kinh độ
+              </label>
+              <Field
+                  type="number"
+                  name="longitude"
+                  placeholder="Nhập kinh độ"
+                  className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+              </Field>
+              <ErrorMessage
+                  className="text-sm font-light italic text-red-500"
+                  name="longitude"
+                  component="span"
+              ></ErrorMessage>
+            </div>
 
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">
-            <label className="font-semibold text-slate-400">Địa chỉ</label>
-            <Field
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Địa chỉ</label>
+              <Field
 
-              name="address"
-              placeholder="Nhập địa chỉ"
-              className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-            </Field>
+                  name="address"
+                  placeholder="Nhập địa chỉ"
+                  className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+              </Field>
+            </div>
+            <p className=" col-span-full text-xl italic text-blue-500 ">Thông tin truyền dẫn</p>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">
+              <label className="text-slate-400 font-semibold">Loại truyền dẫn</label>
+              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteTransmissionType.id">
+                {siteTransmissionTypeList.map(siteTransType => {
+                  return (
+                      <option key={siteTransType.id} value={siteTransType.id}>
+                        {siteTransType.name}
+                      </option>
+                  );
+                })}
+              </Field>
+            </div>
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+              <label className="text-slate-400 font-semibold">Đơn vị sở hữu TD</label>
+              <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="transmissionOwner.id">
+                <option value="">- Chưa có thông tin-</option>
+                {transmissionOwnerList.map(transOwner => {
+                  return (
+                      <option key={transOwner.id} value={transOwner.id}>
+                        {transOwner.name}
+                      </option>
+                  );
+                })}
+              </Field>
+            </div>
+            <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
+              <label className="text-slate-400 font-semibold">Ghi chú</label>
+              <Field className="h-24 h-8 rounded border border-gray-300 bg-amber-50 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="textarea" name="note">
+              </Field>
+            </div>
           </div>
-          <p className="col-span-full text-2xl text-sky-600">Thông tin truyền dẫn</p>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">
-            <label className="font-semibold text-slate-400">Loại truyền dẫn</label>
-            <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteTransmissionType.id">
-              {siteTransmissionTypeList.map(siteTransType => {
-                return (
-                  <option key={siteTransType.id} value={siteTransType.id}>
-                    {siteTransType.name}
-                  </option>
-                );
-              })}
-            </Field>
-          </div>
-          <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">
-            <label className="font-semibold text-slate-400">Đơn vị sở hữu TD</label>
-            <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="transmissionOwner.id">
-              <option value="">- Chưa có thông tin-</option>
-              {transmissionOwnerList.map(transOwner => {
-                return (
-                  <option key={transOwner.id} value={transOwner.id}>
-                    {transOwner.name}
-                  </option>
-                );
-              })}
-            </Field>
-          </div>
-          <div className="col-span-full col-start-1 flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">
-            <label className="font-semibold text-slate-400">Ghi chú</label>
-            <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="textarea" name="note">
-            </Field>
-          </div>
-        </div>
-        <button
-          type="submit"
-          className="flex h-8 items-center justify-center rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600 md:w-32"
-        >
-
-          Lưu
-        </button>
+          <Button
+              size="lg"
+              type="submit"
+          >
+            Lưu
+          </Button>
+        </Card>
       </Form>
+
+      {/*<Form className="container mx-auto mt-5 flex flex-col gap-5 rounded-lg px-16">*/}
+      {/*  <p className="text-2xl font-semibold uppercase text-sky-600">Sửa thông tin trạm </p>*/}
+      {/*  <div className="grid grid-cols-12 gap-5 p-2">*/}
+      {/*    <p className="col-span-full mt-5 text-2xl text-sky-600">Thông tin cơ bản</p>*/}
+      {/*    <div className="col-span-full flex flex-col gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Site ID*/}
+      {/*      </label>*/}
+
+      {/*      <Field*/}
+      {/*        name="siteId"*/}
+      {/*        placeholder="Nhập Site ID"*/}
+      {/*        className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"*/}
+      {/*      >*/}
+      {/*      </Field>*/}
+      {/*      <ErrorMessage*/}
+      {/*        className="justify-items-end text-sm font-light italic text-red-500"*/}
+      {/*        name="siteId"*/}
+      {/*        component="span"*/}
+      {/*      ></ErrorMessage>*/}
+
+      {/*    </div>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Site ID khác</label>*/}
+      {/*      <Field*/}
+      {/*        name="siteId2"*/}
+      {/*        placeholder="Nhập Site ID khác"*/}
+      {/*        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"*/}
+      {/*      >*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Tên trạm</label>*/}
+      {/*      <Field*/}
+      {/*        name="siteName"*/}
+      {/*        placeholder="Nhập tên trạm"*/}
+      {/*        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"*/}
+      {/*      >*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Chủ nhà trạm </label>*/}
+      {/*      <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteOwner.id" >*/}
+      {/*        <option value="">Chọn chủ nhà trạm</option>*/}
+      {/*        {siteOwnerList.map(siteOwner => {*/}
+      {/*          return (*/}
+      {/*            <option key={siteOwner.id} value={siteOwner.id}>*/}
+      {/*              {siteOwner.name}*/}
+      {/*            </option>*/}
+      {/*          );*/}
+      {/*        })}*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <p className="col-span-full text-2xl text-sky-600">Vị trí</p>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Tỉnh </label>*/}
+      {/*      <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="province.id">*/}
+
+      {/*        {provinceList.map(province => {*/}
+      {/*          return (*/}
+      {/*            <option key={province.id} value={province.id}>*/}
+      {/*              {province.name}*/}
+      {/*            </option>*/}
+      {/*          );*/}
+      {/*        })}*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Vĩ độ*/}
+      {/*      </label>*/}
+      {/*      <Field*/}
+
+      {/*        name="latitude"*/}
+      {/*        placeholder="Nhập vĩ độ"*/}
+      {/*        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"*/}
+      {/*      >*/}
+      {/*      </Field>*/}
+      {/*      <ErrorMessage*/}
+      {/*        className="text-sm font-light italic text-red-500"*/}
+      {/*        name="latitude"*/}
+      {/*        component="span"*/}
+      {/*      ></ErrorMessage>*/}
+      {/*    </div>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Kinh độ*/}
+      {/*      </label>*/}
+      {/*      <Field*/}
+      {/*        type="number"*/}
+      {/*        name="longitude"*/}
+      {/*        placeholder="Nhập kinh độ"*/}
+      {/*        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"*/}
+      {/*      >*/}
+      {/*      </Field>*/}
+      {/*      <ErrorMessage*/}
+      {/*        className="text-sm font-light italic text-red-500"*/}
+      {/*        name="longitude"*/}
+      {/*        component="span"*/}
+      {/*      ></ErrorMessage>*/}
+      {/*    </div>*/}
+
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-3">*/}
+      {/*      <label className="font-semibold text-slate-400">Địa chỉ</label>*/}
+      {/*      <Field*/}
+
+      {/*        name="address"*/}
+      {/*        placeholder="Nhập địa chỉ"*/}
+      {/*        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"*/}
+      {/*      >*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <p className="col-span-full text-2xl text-sky-600">Thông tin truyền dẫn</p>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">*/}
+      {/*      <label className="font-semibold text-slate-400">Loại truyền dẫn</label>*/}
+      {/*      <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteTransmissionType.id">*/}
+      {/*        {siteTransmissionTypeList.map(siteTransType => {*/}
+      {/*          return (*/}
+      {/*            <option key={siteTransType.id} value={siteTransType.id}>*/}
+      {/*              {siteTransType.name}*/}
+      {/*            </option>*/}
+      {/*          );*/}
+      {/*        })}*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">*/}
+      {/*      <label className="font-semibold text-slate-400">Đơn vị sở hữu TD</label>*/}
+      {/*      <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="transmissionOwner.id">*/}
+      {/*        <option value="">- Chưa có thông tin-</option>*/}
+      {/*        {transmissionOwnerList.map(transOwner => {*/}
+      {/*          return (*/}
+      {/*            <option key={transOwner.id} value={transOwner.id}>*/}
+      {/*              {transOwner.name}*/}
+      {/*            </option>*/}
+      {/*          );*/}
+      {/*        })}*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*    <div className="col-span-full col-start-1 flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">*/}
+      {/*      <label className="font-semibold text-slate-400">Ghi chú</label>*/}
+      {/*      <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="textarea" name="note">*/}
+      {/*      </Field>*/}
+      {/*    </div>*/}
+      {/*  </div>*/}
+      {/*  <button*/}
+      {/*    type="submit"*/}
+      {/*    className="flex h-8 items-center justify-center rounded-sm bg-slate-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-slate-600 md:w-32"*/}
+      {/*  >*/}
+
+      {/*    Lưu*/}
+      {/*  </button>*/}
+      {/*</Form>*/}
     </Formik>
 
   )

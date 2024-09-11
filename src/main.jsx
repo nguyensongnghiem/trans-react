@@ -20,7 +20,7 @@ const router = createBrowserRouter([
         element: <SiteList />
       },
       {
-        path: "/site/edit:editId",
+        path: "/site/edit/:editId",
         element: <SiteEdit />
       },
       {
