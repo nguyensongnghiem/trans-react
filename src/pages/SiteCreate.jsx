@@ -104,7 +104,7 @@ function SiteCreate() {
 
 
           <div className="grid grid-cols-12 gap-5 p-2">
-            <p className="col-span-full mt-5 text-xl text-blue-600">Thông tin cơ bản</p>
+            <p className="text-sky-600 col-span-full mt-5 text-2xl">Thông tin cơ bản</p>
             <div className="col-span-full flex flex-col gap-2 md:col-span-12 lg:col-span-6">
               <label className="text-slate-400 font-semibold">Site ID
               </label>
