@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import * as siteService from "../services/SiteService";
 import * as transOwnerService from "../services/TransmissionOwnerService";
 import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeService";
@@ -22,6 +24,8 @@ import {
   DialogHeader,
   DialogFooter,
   Spinner,
+  Chip,
+  Badge
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
@@ -101,15 +105,10 @@ function SiteList() {
     getAllSiteTransmissionType();
   }, []);
 
-  // useEffect(() => {
-
-  //   getSiteById(editId);
-  // }, [editId])
 
   const getSiteById = async (editId) => {
     const site = await siteService.getSiteById(editId);
     setEditSite({ ...site });
-    setIsLoading(false);
     console.log(site);
   };
   const handleCreate = async (site, { setErrors }) => {
@@ -134,7 +133,7 @@ function SiteList() {
     setIsOpen(true);
   }
 
-  function afterOpenModal() {}
+  function afterOpenModal() { }
 
   function closeModal() {
     setDeleteId(null);
@@ -162,7 +161,7 @@ function SiteList() {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
     await siteService.saveSite(site, setErrors);
-    
+    await getAllSites();
     setOpenEdit(!openEdit);
   };
 
@@ -183,7 +182,7 @@ function SiteList() {
 
   if (isLoading) return <Spinner />;
   return (
-    <div className="container px-3">
+    <div className="px-3">
       <Typography variant="h4" color="blue-gray" className="mb-3">
         Danh sách trạm
       </Typography>
@@ -223,7 +222,7 @@ function SiteList() {
                 <Field
                   name="siteId"
 
-                  // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                 >
                   {({ field }) => (
                     <Input
@@ -319,20 +318,217 @@ function SiteList() {
           )}
         </Formik>
 
-        <div className="max-h-full overflow-x-auto">
-          <table className="text-sm min-w-full table-auto border-collapse border-2">
+        <Card className="max-h-[60vh] w-full overflow-auto">
+          <table className="w-full min-w-max table-auto text-left">
+            <thead>
+              <tr >
+
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tỉnh
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Site ID
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Site ID khác
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tên trạm
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Vĩ độ
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Kinh độ
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Truyền dẫn trạm
+                  </Typography>
+                </th>
+
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Ghi chú
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tác động
+                  </Typography>
+                </th>
+
+
+              </tr>
+            </thead>
+            <tbody >
+              {siteList.content.map((site, index) => {
+                const isLast = index === siteList.length - 1;
+                const classes = isLast ? "p-4" : "p-4 border-b border-gray-300";
+
+                return (
+                  <tr key={site.id} className="text-left hover:bg-gray-50">
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
+                      >
+                        {site.province.name}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        className="font-bold text-gray-600"
+                      >
+                        {site.siteId}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        className="font-normal text-gray-600"
+                      >
+                        {site.siteId2}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        className="font-normal text-gray-600"
+                      >
+                        {site.siteName}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        className="font-normal text-gray-600"
+                      >
+                        {site.latitude}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        className="font-normal text-gray-600"
+                      >
+                        {site.longitude}
+                      </Typography>
+                    </td>
+
+                    <td className={classes}>
+                      <div className="flex items-center gap-2">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-normal leading-relaxed opacity-70"
+                        >
+                          {site.siteTransmissionType?.name}
+                        </Typography>
+                        <Chip
+                          variant="ghost"
+                          size="small"
+                          value={site.transmissionOwner?.name}
+                          color={site.transmissionOwner?.name === 'MobiFone' ? "blue" :
+                            site.transmissionOwner?.name === 'VNPT' ? "cyan" :
+                              site.transmissionOwner?.name === 'CMC' ? "yellow" :
+                                site.transmissionOwner?.name === 'PITC' ? "green" : "red"
+                          }
+                          className=""
+                        />
+                      </div>
+                    </td>
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        className="font-normal text-gray-600"
+                      >
+                        {site.note}
+                      </Typography>
+                    </td>
+                    <td className={classes}>
+                      <div className="flex items-center gap-2">
+                        <IconButton variant="text" size="sm" onClick={() => handleEdit(site.id)}>
+                          <PencilIcon className="h-4 w-4 text-gray-900" />
+                        </IconButton>
+                        <IconButton variant="text" size="sm" onClick={() => openModal(site.id)}>
+                          <TrashIcon
+                            strokeWidth={3}
+                            className="h-4 w-4 text-gray-900"
+                          />
+                        </IconButton>
+                      </div>
+                    </td>
+
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
+        {/* <div className="max-h-full overflow-x-auto rounded-lg shadow-lg">
+          <table className="min-w-full table-auto border-collapse">
             <thead>
               <tr className="bg-gray-200 text-gray-600">
-                <th className="py-1 text-center">Tỉnh</th>
-                <th className="py-1 text-center">Site ID</th>
-                <th className="py-1 text-center">Site ID khác</th>
-                <th className="py-1 text-center">Tên trạm</th>
-                <th className="py-1 text-center">Vĩ độ</th>
-                <th className="py-1 text-center">Kinh độ</th>
-                <th className="py-1 text-center">Đơn vị sở hữu TD</th>
-                <th className="py-1 text-center">Loại TD</th>
-                <th className="py-1 text-center">Ghi chú</th>
-                <th className="py-1 text-center">Tác động</th>
+                <th className="py-3 text-center uppercase">Tỉnh</th>
+                <th className="py-3 text-center uppercase">Site ID</th>
+                <th className="py-3 text-center uppercase">Site ID khác</th>
+                <th className="py-3 text-center uppercase">Tên trạm</th>
+                <th className="py-3 text-center uppercase">Vĩ độ</th>
+                <th className="py-3 text-center uppercase">Kinh độ</th>
+                <th className="py-3 text-center uppercase">Truyền dẫn trạm</th>
+                <th className="py-3 text-center uppercase">Ghi chú</th>
+                <th className="py-3 text-center uppercase">Tác động</th>
               </tr>
             </thead>
             <tbody className="text-sm font-light text-gray-600">
@@ -342,87 +538,82 @@ function SiteList() {
                     key={site.id}
                     className="hover:bg-sky-100 border-b border-gray-200 bg-white"
                   >
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       {site.province.name}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       {site.siteId}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       {site.siteId2}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       {site.siteName}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       {site.latitude}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+                    <td className="px21 whitespace-nowrap py-1 text-center">
                       {site.longitude}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
-                      {site.transmissionOwner?.name}
+                    <td className="whitespace-nowrap px-2 py-1">
+                      <div className="flex items-center justify-center gap-2">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-normal leading-relaxed opacity-70"
+                        >
+                          {site.siteTransmissionType?.name}
+                        </Typography>
+                        <Chip
+                          variant="ghost"
+                          size="small"
+                          value={site.transmissionOwner?.name}
+                          color={site.transmissionOwner?.name === 'MobiFone' ? "blue" :
+                            site.transmissionOwner?.name === 'VNPT' ? "cyan" :
+                              site.transmissionOwner?.name === 'CMC' ? "yellow" :
+                                site.transmissionOwner?.name === 'PITC' ? "green" : "red"
+                          }
+                          className=""
+                        />
+
+
+
+                      </div>
+
                     </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
-                      {site.siteTransmissionType?.name}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-1 text-center">
+
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       {site.note}
                     </td>
 
-                    <td className="px-6 py-3 text-center">
+                    <td className="whitespace-nowrap px-2 py-1 text-center">
                       <div className="item-center flex justify-center gap-3">
-                        <div className="mr-2 w-4 transform text-yellow-500 hover:scale-150 hover:cursor-pointer hover:text-yellow-600">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                            />
+                        <div className="mr-2 w-4 transform hover:scale-150 hover:cursor-pointer hover:text-blue-600">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                           </svg>
+
+
                         </div>
                         <div
                           onClick={() => handleEdit(site.id)}
-                          className="mr-2 w-4 transform text-green-500 hover:scale-150 hover:cursor-pointer hover:text-green-600"
+                          className="mr-2 w-4 transform hover:scale-150 hover:cursor-pointer hover:text-green-600"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="currentColor"
-                            class="bi bi-pencil"
-                            viewBox="0 0 16 16"
-                          >
-                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" />
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
                           </svg>
+
+
                         </div>
                         <div
                           onClick={() => openModal(site.id)}
-                          className="mr-2 w-4 transform text-red-500 hover:scale-150 hover:cursor-pointer hover:text-red-600"
+                          className="mr-2 w-4 transform hover:scale-150 hover:cursor-pointer hover:text-red-600"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                           </svg>
+
                         </div>
                       </div>
                     </td>
@@ -431,9 +622,9 @@ function SiteList() {
               })}
             </tbody>
           </table>
-        </div>
+        </div> */}
         <div className="mt-4 flex flex-wrap justify-between">
-          <p>{`Trang ${siteList.pageable.pageNumber + 1} / ${siteList.totalPages} - Tổng số : ${siteList.totalElements}`}</p>
+          <Typography variant="h6" color="gray" className="font-semibold">{`Tổng số trạm : ${siteList.totalElements} trạm`}</Typography>
           <div className="inline-flex items-center">
             <button
               onClick={() => setPage(siteList.number - 1)}
@@ -476,8 +667,8 @@ function SiteList() {
                     key={i}
                     onClick={() => setPage(i)}
                     className={clsx(
-                      "px-4 py-2 bg-white border-t border-b border-gray-200 hover:text-sky-400 hover:bg-slate-200",
-                      { "bg-sky-500 text-sky-500": siteList.number == i }
+                      "px-4 py-2  border-t border-b border-gray-200 hover:text-blue-400 hover:bg-slate-200",
+                      { "text-blue-400 rounded bg-slate-200": siteList.number == i }
                     )}
                     disabled={siteList.number == i}
                   >
@@ -560,9 +751,9 @@ function SiteList() {
         dismiss="false"
         size="sm"
       >
-        <div className="max-h-[90vh] p-3 overflow-y-auto">
+        <div className="max-h-[90vh] overflow-y-auto p-3">
           <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue-gray">
+            <Typography variant="h4" color="blue">
               Thêm mới trạm
             </Typography>
             <Typography className="mt-1 font-normal text-gray-600">
@@ -771,8 +962,8 @@ function SiteList() {
                 </Card>
               </DialogBody>
               <DialogFooter>
-                <Button size="md" type="submit">
-                  Lưu
+                <Button size="md" type="submit" color="red">
+                  Thêm mới
                 </Button>
               </DialogFooter>
             </Form>
@@ -788,7 +979,7 @@ function SiteList() {
         className="overflow-hidden"
         size="sm"
       >
-        <div className="max-h-[90vh] p-3 overflow-y-auto">
+        <div className="max-h-[90vh] overflow-y-auto p-3">
           <DialogHeader className="relative m-0 block">
             <Typography variant="h4" color="blue">
               Cập nhật thông tin trạm
