@@ -7,17 +7,21 @@ import * as provinceService from "../services/ProvinceService"
 import * as siteOwnerService from "../services/SiteOwnerService"
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
-import { Button, MenuItem, Option, Select, Typography, Card, CardHeader, CardBody, CardFooter } from "@material-tailwind/react";
+import { Button, MenuItem, Option, Select, Typography, Card, CardHeader, CardBody, CardFooter, Input } from "@material-tailwind/react";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
-import Modal from 'react-modal';
-import clsx from "clsx";
+
+import React from 'react';
+import MySvg from '../assets/svg/undraw_designer_re_5v95.svg';
+
+
 function SiteCreate() {
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
   const [provinceList, setProvinceList] = useState([]);
   const [siteOwnerList, setSiteOwnerList] = useState([]);
   const navigate = useNavigate();
+
   useEffect(() => {
     getAllTransmissionOwner();
   }, []);
@@ -93,33 +97,14 @@ function SiteCreate() {
     >
 
 
+      <Form className="container flex w-1/2 flex-initial flex-shrink flex-col gap-5 rounded-lg shadow-lg">
+        <Card className="p-5 shadow">
 
-      <Form className="container mx-auto mt-5 flex flex-col gap-5 rounded-lg px-16">
-        {/* <Card className="mt-6 w-96">
-          <CardHeader color="blue-gray" className="relative h-56">
-            <img
-              src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
-              alt="card-image"
-            />
-          </CardHeader>
-          <CardBody>
-            <Typography variant="h5" color="blue-gray" className="mb-2">
-              UI/UX Review Check
-            </Typography>
-            <Typography>
-              The place is close to Barceloneta Beach and bus stop just 2 min by
-              walk and near to &quot;Naviglio&quot; where you can enjoy the main
-              night life in Barcelona.
-            </Typography>
-          </CardBody>
-          <CardFooter className="pt-0">
-            <Button>Read More</Button>
-          </CardFooter>
-        </Card> */}
-        <Card className="p-5">
-          <p className="text-2xl font-semibold uppercase">Thêm trạm vào cơ sở dữ liệu</p>
+          <p className="text-xl font-semibold uppercase">Thêm trạm vào cơ sở dữ liệu</p>
+
+
           <div className="grid grid-cols-12 gap-5 p-2">
-            <p className="text-sky-600 col-span-full mt-5 text-2xl">Thông tin cơ bản</p>
+            <p className="col-span-full mt-5 text-xl text-blue-600">Thông tin cơ bản</p>
             <div className="col-span-full flex flex-col gap-2 md:col-span-12 lg:col-span-6">
               <label className="text-slate-400 font-semibold">Site ID
               </label>
@@ -129,6 +114,7 @@ function SiteCreate() {
                 placeholder="Nhập Site ID"
                 className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
+
               </Field>
               <ErrorMessage
                 className="justify-items-end text-sm font-light italic text-red-500"
@@ -146,7 +132,7 @@ function SiteCreate() {
               >
               </Field>
             </div>
-            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+            <div className="col-span-full flex flex-col items-stretch gap-2">
               <label className="text-slate-400 font-semibold">Tên trạm</label>
               <Field
                 name="siteName"
@@ -155,7 +141,7 @@ function SiteCreate() {
               >
               </Field>
             </div>
-            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+            <div className="col-span-full flex flex-col items-stretch gap-2">
               <label className="text-slate-400 font-semibold">Chủ nhà trạm </label>
               <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteOwner.id" >
                 <option value="">Chọn chủ nhà trạm</option>
@@ -168,8 +154,8 @@ function SiteCreate() {
                 })}
               </Field>
             </div>
-            <p className="text-sky-600 col-span-full text-2xl">Vị trí</p>
-            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+            {/* <p className="col-span-full text-2xl text-blue-600">Vị trí</p> */}
+            <div className="col-span-full flex flex-col items-stretch gap-2">
               <label className="text-slate-400 font-semibold">Tỉnh </label>
               <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="province.id">
 
@@ -215,7 +201,7 @@ function SiteCreate() {
               ></ErrorMessage>
             </div>
 
-            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
+            <div className="col-span-full flex flex-col items-stretch gap-2">
               <label className="text-slate-400 font-semibold">Địa chỉ</label>
               <Field
 
@@ -225,8 +211,9 @@ function SiteCreate() {
               >
               </Field>
             </div>
-            <p className="text-sky-600 col-span-full text-2xl">Thông tin truyền dẫn</p>
-            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-6 lg:col-span-4">
+            <p className="col-span-full text-xl text-blue-600">Truyền dẫn</p>
+
+            <div className="col-span-full flex flex-col items-stretch gap-2 md:col-span-12 lg:col-span-6">
               <label className="text-slate-400 font-semibold">Loại truyền dẫn</label>
               <Field className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200" as="select" name="siteTransmissionType.id">
                 {siteTransmissionTypeList.map(siteTransType => {
@@ -265,6 +252,8 @@ function SiteCreate() {
           </Button>
         </Card>
       </Form>
+      {/* <img src={MySvg} alt="" className="flex-initial p-5" /> */}
+
     </Formik >
 
   )

@@ -6,6 +6,9 @@ export default withMT({
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    fontFamily: {
+      sans: ["Ubuntu", "sans-serif"],
+    },
     extend: {},
   },
   plugins: [],

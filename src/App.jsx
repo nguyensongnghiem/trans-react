@@ -28,7 +28,7 @@ function App() {
           <nav className="flex overflow-y-auto sm:min-w-64">
             <SideBar></SideBar>
           </nav>
-          <main className="flex-1 overflow-y-auto bg-[#f9f9fb] px-3 py-2">
+          <main className="flex-1 overflow-y-auto p-5">
             <Outlet />
             {/* <Routes>
                 <Route path="/" element={<h1>Dashboard</h1>} />
