@@ -46,8 +46,8 @@ function SiteList() {
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [siteOwnerList, setSiteOwnerList] = useState([]);
-  const [editSite, setEditSite] = useState({})
-  const [editId, setEditId] = useState(null)
+  const [editSite, setEditSite] = useState({});
+  const [editId, setEditId] = useState(null);
 
   Modal.setAppElement("#root");
 
@@ -102,17 +102,16 @@ function SiteList() {
   }, []);
 
   // useEffect(() => {
-   
+
   //   getSiteById(editId);
   // }, [editId])
 
   const getSiteById = async (editId) => {
-    const editSite = await siteService.getSiteById(editId)
-    setEditSite({ ...editSite })
-    setIsLoading(false)
-    console.log(editSite);
-
-  }
+    const site = await siteService.getSiteById(editId);
+    setEditSite({ ...site });
+    setIsLoading(false);
+    console.log(site);
+  };
   const handleCreate = async (site, { setErrors }) => {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
@@ -150,17 +149,22 @@ function SiteList() {
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
   };
-  const handleEdit = (editId) => {
-    getSiteById(editId) 
-    handleOpenEdit()    
-    console.log(site);
-    
-    setEditSite({...site})   
+  const handleEdit = async (editId) => {
+    await getSiteById(editId);
+    handleOpenEdit();
   };
 
   const handleOpenEdit = () => {
-    setOpenEdit(!openEdit)
-  }
+    setOpenEdit(!openEdit);
+  };
+
+  const handleEditSubmit = async (site, { setErrors }) => {
+    site.latitude = +site.latitude;
+    site.longitude = +site.longitude;
+    await siteService.saveSite(site, setErrors);
+    
+    setOpenEdit(!openEdit);
+  };
 
   if (deleteId != null) {
     deleteSiteId = siteList.content.find((site) => site.id === deleteId).siteId;
@@ -177,7 +181,7 @@ function SiteList() {
       .typeError("Yêu cầu nhập số"),
   };
 
-  if (isLoading) return <spinner />;
+  if (isLoading) return <Spinner />;
   return (
     <div className="container px-3">
       <Typography variant="h4" color="blue-gray" className="mb-3">
@@ -185,7 +189,7 @@ function SiteList() {
       </Typography>
       <Button
         variant="gradient"
-        size="sm"      
+        size="sm"
         className="mb-3 flex items-center gap-3"
         onClick={handleOpenCreate}
       >
@@ -243,8 +247,6 @@ function SiteList() {
                 >
                   <option value=""> - Chọn tất cả- </option>
                   {provinces.map((province) => {
-                    console.log(province);
-
                     return (
                       <option key={province.name} value={province.name}>
                         {province.name}
@@ -448,14 +450,14 @@ function SiteList() {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke-width="2"
+                strokeWidth="2"
                 stroke="currentColor"
                 aria-hidden="true"
                 class="h-4 w-4"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
                 ></path>
               </svg>
@@ -502,14 +504,14 @@ function SiteList() {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke-width="2"
+                strokeWidth="2"
                 stroke="currentColor"
                 aria-hidden="true"
                 class="h-4 w-4"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
                 ></path>
               </svg>
@@ -549,7 +551,6 @@ function SiteList() {
           </button>
         </div>
       </Modal>
-
 
       {/* Modal Thêm mới */}
       <Dialog
@@ -780,19 +781,19 @@ function SiteList() {
         </div>
       </Dialog>
 
-       {/* Modal Sửa thông tin */}
-       <Dialog
+      {/* Modal Sửa thông tin */}
+      <Dialog
         open={openEdit}
         handler={handleOpenEdit}
-        className="overflow-hidden"       
+        className="overflow-hidden"
         size="sm"
       >
         <div className="max-h-[90vh] p-3 overflow-y-auto">
           <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue-gray">
+            <Typography variant="h4" color="blue">
               Cập nhật thông tin trạm
             </Typography>
-            <Typography className="mt-1 font-normal text-gray-600">
+            <Typography className="mt-1 font-normal text-gray-700">
               Cập nhật dữ liệu trạm đảm bảo thực tế
             </Typography>
             <IconButton
@@ -806,9 +807,9 @@ function SiteList() {
           </DialogHeader>
 
           <Formik
-            onSubmit={handleEdit}
+            onSubmit={handleEditSubmit}
             initialValues={{
-              ...editSite
+              ...editSite,
             }}
             validationSchema={Yup.object(validate)}
           >
@@ -989,8 +990,8 @@ function SiteList() {
                 </Card>
               </DialogBody>
               <DialogFooter>
-                <Button size="md" type="submit">
-                  Lưu
+                <Button size="md" type="submit" color="red">
+                  Cập nhật dữ liệu
                 </Button>
               </DialogFooter>
             </Form>
