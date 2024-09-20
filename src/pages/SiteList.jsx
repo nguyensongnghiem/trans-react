@@ -25,7 +25,7 @@ import {
   DialogFooter,
   Spinner,
   Chip,
-  Badge
+  Badge,
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
@@ -105,7 +105,6 @@ function SiteList() {
     getAllSiteTransmissionType();
   }, []);
 
-
   const getSiteById = async (editId) => {
     const site = await siteService.getSiteById(editId);
     setEditSite({ ...site });
@@ -133,7 +132,7 @@ function SiteList() {
     setIsOpen(true);
   }
 
-  function afterOpenModal() { }
+  function afterOpenModal() {}
 
   function closeModal() {
     setDeleteId(null);
@@ -183,31 +182,33 @@ function SiteList() {
   if (isLoading) return <Spinner />;
   return (
     <div className="px-3">
-      <Typography variant="h4" color="blue-gray" className="mb-3">
-        Danh sách trạm
-      </Typography>
-      <Button
-        variant="gradient"
-        size="sm"
-        className="mb-3 flex items-center gap-3"
-        onClick={handleOpenCreate}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="size-6"
+   
+        <Typography variant="h4" color="blue-gray" className="mb-3">
+          Danh sách trạm
+        </Typography>
+        <Button
+          variant="gradient"
+          size="sm"
+          className="mb-3 flex items-center gap-3"
+          onClick={handleOpenCreate}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15"
-          />
-        </svg>
-        Thêm mới
-      </Button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="size-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+          Thêm mới
+        </Button>
+    
 
       <div className="container max-w-full">
         <Formik
@@ -222,7 +223,7 @@ function SiteList() {
                 <Field
                   name="siteId"
 
-                // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                 >
                   {({ field }) => (
                     <Input
@@ -267,7 +268,24 @@ function SiteList() {
                   {transmissionOwnerList.map((transOwner) => {
                     return (
                       <option key={transOwner.id} value={transOwner.name}>
-                        {transOwner.name}
+                        <Chip
+                          variant="ghost"
+                          size="small"
+                          value={transOwner?.name}
+                          color={
+                            transOwner?.name === "MobiFone"
+                              ? "blue"
+                              : transOwner?.name === "VNPT"
+                                ? "cyan"
+                                : transOwner?.name === "CMC"
+                                  ? "yellow"
+                                  : transOwner?.name === "PITC"
+                                    ? "green"
+                                    : "red"
+                          }
+                          className=""
+                        />
+                        {/* {transOwner.name} */}
                       </option>
                     );
                   })}
@@ -321,8 +339,7 @@ function SiteList() {
         <Card className="max-h-[60vh] w-full overflow-auto">
           <table className="w-full min-w-max table-auto text-left">
             <thead>
-              <tr >
-
+              <tr>
                 <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
                   <Typography
                     variant="small"
@@ -341,7 +358,7 @@ function SiteList() {
                     Site ID
                   </Typography>
                 </th>
-                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                {/* <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
                   <Typography
                     variant="small"
                     color="blue-gray"
@@ -349,7 +366,7 @@ function SiteList() {
                   >
                     Site ID khác
                   </Typography>
-                </th>
+                </th> */}
                 <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
                   <Typography
                     variant="small"
@@ -405,14 +422,14 @@ function SiteList() {
                     Tác động
                   </Typography>
                 </th>
-
-
               </tr>
             </thead>
-            <tbody >
+            <tbody>
               {siteList.content.map((site, index) => {
                 const isLast = index === siteList.length - 1;
-                const classes = isLast ? "p-4" : "p-4 border-b border-gray-300";
+                const classes = isLast
+                  ? "px-4 py-2"
+                  : "px-4 py-2 border-b border-gray-300";
 
                 return (
                   <tr key={site.id} className="text-left hover:bg-gray-50">
@@ -433,14 +450,14 @@ function SiteList() {
                         {site.siteId}
                       </Typography>
                     </td>
-                    <td className={classes}>
+                    {/* <td className={classes}>
                       <Typography
                         variant="small"
                         className="font-normal text-gray-600"
                       >
                         {site.siteId2}
                       </Typography>
-                    </td>
+                    </td> */}
                     <td className={classes}>
                       <Typography
                         variant="small"
@@ -467,7 +484,7 @@ function SiteList() {
                     </td>
 
                     <td className={classes}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-center">
                         <Typography
                           variant="small"
                           color="blue-gray"
@@ -479,10 +496,16 @@ function SiteList() {
                           variant="ghost"
                           size="small"
                           value={site.transmissionOwner?.name}
-                          color={site.transmissionOwner?.name === 'MobiFone' ? "blue" :
-                            site.transmissionOwner?.name === 'VNPT' ? "cyan" :
-                              site.transmissionOwner?.name === 'CMC' ? "yellow" :
-                                site.transmissionOwner?.name === 'PITC' ? "green" : "red"
+                          color={
+                            site.transmissionOwner?.name === "MobiFone"
+                              ? "blue"
+                              : site.transmissionOwner?.name === "VNPT"
+                                ? "cyan"
+                                : site.transmissionOwner?.name === "CMC"
+                                  ? "yellow"
+                                  : site.transmissionOwner?.name === "PITC"
+                                    ? "green"
+                                    : "red"
                           }
                           className=""
                         />
@@ -498,10 +521,18 @@ function SiteList() {
                     </td>
                     <td className={classes}>
                       <div className="flex items-center gap-2">
-                        <IconButton variant="text" size="sm" onClick={() => handleEdit(site.id)}>
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          onClick={() => handleEdit(site.id)}
+                        >
                           <PencilIcon className="h-4 w-4 text-gray-900" />
                         </IconButton>
-                        <IconButton variant="text" size="sm" onClick={() => openModal(site.id)}>
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          onClick={() => openModal(site.id)}
+                        >
                           <TrashIcon
                             strokeWidth={3}
                             className="h-4 w-4 text-gray-900"
@@ -509,7 +540,6 @@ function SiteList() {
                         </IconButton>
                       </div>
                     </td>
-
                   </tr>
                 );
               })}
@@ -624,7 +654,11 @@ function SiteList() {
           </table>
         </div> */}
         <div className="mt-4 flex flex-wrap justify-between">
-          <Typography variant="h6" color="gray" className="font-semibold">{`Tổng số trạm : ${siteList.totalElements} trạm`}</Typography>
+          <Typography
+            variant="h6"
+            color="gray"
+            className="font-semibold"
+          >{`Tổng số trạm : ${siteList.totalElements} trạm`}</Typography>
           <div className="inline-flex items-center">
             <button
               onClick={() => setPage(siteList.number - 1)}
@@ -668,7 +702,10 @@ function SiteList() {
                     onClick={() => setPage(i)}
                     className={clsx(
                       "px-4 py-2  border-t border-b border-gray-200 hover:text-blue-400 hover:bg-slate-200",
-                      { "text-blue-400 rounded bg-slate-200": siteList.number == i }
+                      {
+                        "text-blue-400 rounded bg-slate-200":
+                          siteList.number == i,
+                      }
                     )}
                     disabled={siteList.number == i}
                   >

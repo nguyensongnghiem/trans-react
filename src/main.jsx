@@ -8,6 +8,7 @@ import ErrorPage from "./pages/ErrorPage.jsx";
 import SiteList from "./pages/SiteList.jsx";
 import SiteEdit from "./pages/SiteEdit.jsx";
 import SiteCreate from "./pages/SiteCreate.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
       {
         path: "/site/create",
         element: <SiteCreate />
+      },
+      {
+        path: "/",
+        element: <Dashboard />
       },
     ]
   },

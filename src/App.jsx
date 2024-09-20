@@ -7,6 +7,7 @@ import {
   RouterProvider,
   Outlet
 } from "react-router-dom";
+import SideBar2 from "./components/SideBar2.jsx";
 import SideBar from "./components/SideBar.jsx";
 import Main from "./components/Main.jsx";
 import SiteList from "./pages/SiteList.jsx";
@@ -26,7 +27,7 @@ function App() {
         <Header></Header>
         <div className="flex flex-1 flex-col overflow-y-hidden sm:flex-row">
           <nav className="flex overflow-y-auto sm:min-w-64">
-            <SideBar></SideBar>
+            <SideBar2></SideBar2>
           </nav>
           <main className="flex-1 overflow-y-auto p-5">
             <Outlet />
