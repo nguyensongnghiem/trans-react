@@ -8,7 +8,7 @@ import ErrorPage from "./pages/ErrorPage.jsx";
 import SiteList from "./pages/SiteList.jsx";
 import SiteEdit from "./pages/SiteEdit.jsx";
 import SiteCreate from "./pages/SiteCreate.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+import Dashboard from "./pages/dashboard/Dashboard.jsx";
 
 const router = createBrowserRouter([
   {

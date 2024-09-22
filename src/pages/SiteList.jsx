@@ -9,6 +9,7 @@ import * as Yup from "yup";
 import * as siteOwnerService from "../services/SiteOwnerService";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { NavLink, useNavigate } from "react-router-dom";
+import OwnerChip from "../components/OwnerChip";
 import {
   Button,
   MenuItem,
@@ -132,7 +133,7 @@ function SiteList() {
     setIsOpen(true);
   }
 
-  function afterOpenModal() {}
+  function afterOpenModal() { }
 
   function closeModal() {
     setDeleteId(null);
@@ -182,33 +183,33 @@ function SiteList() {
   if (isLoading) return <Spinner />;
   return (
     <div className="px-3">
-   
-        <Typography variant="h4" color="blue-gray" className="mb-3">
-          Danh sách trạm
-        </Typography>
-        <Button
-          variant="gradient"
-          size="sm"
-          className="mb-3 flex items-center gap-3"
-          onClick={handleOpenCreate}
+
+      <Typography variant="h4" color="blue-gray" className="mb-3">
+        Danh sách trạm
+      </Typography>
+      <Button
+        variant="gradient"
+        size="sm"
+        className="mb-3 flex items-center gap-3"
+        onClick={handleOpenCreate}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="size-6"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="size-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.5v15m7.5-7.5h-15"
-            />
-          </svg>
-          Thêm mới
-        </Button>
-    
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 4.5v15m7.5-7.5h-15"
+          />
+        </svg>
+        Thêm mới
+      </Button>
+
 
       <div className="container max-w-full">
         <Formik
@@ -223,7 +224,7 @@ function SiteList() {
                 <Field
                   name="siteId"
 
-                  // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                // className="stretch h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                 >
                   {({ field }) => (
                     <Input
@@ -268,24 +269,7 @@ function SiteList() {
                   {transmissionOwnerList.map((transOwner) => {
                     return (
                       <option key={transOwner.id} value={transOwner.name}>
-                        <Chip
-                          variant="ghost"
-                          size="small"
-                          value={transOwner?.name}
-                          color={
-                            transOwner?.name === "MobiFone"
-                              ? "blue"
-                              : transOwner?.name === "VNPT"
-                                ? "cyan"
-                                : transOwner?.name === "CMC"
-                                  ? "yellow"
-                                  : transOwner?.name === "PITC"
-                                    ? "green"
-                                    : "red"
-                          }
-                          className=""
-                        />
-                        {/* {transOwner.name} */}
+                        <OwnerChip name={transOwner?.name} />
                       </option>
                     );
                   })}
