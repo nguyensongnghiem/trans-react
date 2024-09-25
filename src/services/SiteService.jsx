@@ -90,10 +90,9 @@ export const countByProvince = async (province) => {
 export const countByTransmissionType = async (transmissionType) => {
     try {
         let response = await axios.get(`http://localhost:8080/api/sites/reports/count-by-transmission-type?transmission-type=${transmissionType}`);
-        console.log(response.data);
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
-        console.log(error);
+
     }
 };

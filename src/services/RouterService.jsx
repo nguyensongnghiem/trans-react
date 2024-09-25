@@ -14,7 +14,7 @@ export const getRouterById = async (id) => {
 
 export const getTotalRouters = async () => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/routers/total`);
+        let response = await axios.get(`http://localhost:8080/api/routers/reports/total`);
         console.log(response.data);
         (response.data)
         return response.data;

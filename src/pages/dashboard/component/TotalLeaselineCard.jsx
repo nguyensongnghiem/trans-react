@@ -9,22 +9,26 @@ function TotalLeaselineCard() {
     const [totalCostPerMonth, setTotalCostPerMonth] = useState(0);
     useEffect(() => {
         const getTotalLeaselines = async () => {
+            setIsTotalLoading(true)
             const totalLeaseline = await leaselineService.getTotalLeaselines();
+            setIsTotalLoading(false)
             setTotalLeaselines(totalLeaseline);
         }
-        setIsTotalLoading(true)
+
         getTotalLeaselines();
-        setIsTotalLoading(false)
+
         // getTotalRouters();
     }, [])
     useEffect(() => {
         const getTotalCostPerMonth = async () => {
+            setIsCostLoading(true)
             const totalCost = await leaselineService.getTotalCostPerMonth();
+            setIsCostLoading(false)
             setTotalCostPerMonth(totalCost);
         }
-        setIsCostLoading(true)
+
         getTotalCostPerMonth()
-        setIsCostLoading(false)
+
 
     }, [])
     const VND = new Intl.NumberFormat("vi-VN", {
