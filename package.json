@@ -17,6 +17,7 @@
     "@tabler/icons": "^3.11.0",
     "@tabler/icons-react": "^3.11.0",
     "@tanstack/react-table": "^8.19.3",
+    "ag-grid-react": "^32.2.0",
     "axios": "^1.7.2",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.12",

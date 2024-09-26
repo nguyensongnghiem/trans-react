@@ -9,6 +9,7 @@ import SiteList from "./pages/SiteList.jsx";
 import SiteEdit from "./pages/SiteEdit.jsx";
 import SiteCreate from "./pages/SiteCreate.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
+import SiteList2 from "./pages/SiteList2.jsx";
 
 const router = createBrowserRouter([
   {
@@ -18,7 +19,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/site",
-        element: <SiteList />
+        element: <SiteList2 />
       },
       {
         path: "/site/edit/:editId",
