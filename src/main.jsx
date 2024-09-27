@@ -10,6 +10,7 @@ import SiteEdit from "./pages/SiteEdit.jsx";
 import SiteCreate from "./pages/SiteCreate.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import SiteList2 from "./pages/SiteList2.jsx";
+import RouterList from "./pages/RouterList.jsx";
 
 const router = createBrowserRouter([
   {
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Dashboard />
+      },
+      {
+        path: "/router",
+        element: <RouterList />
       },
     ]
   },

@@ -3,7 +3,7 @@ function OwnerChip({ name }) {
     return (<Chip
         variant="ghost"
         size="small"
-        value={name}
+        value={name=== 'MobiFone'?'MBF':name}
         color={
             name === "MobiFone"
                 ? "blue"

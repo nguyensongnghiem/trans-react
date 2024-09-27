@@ -178,7 +178,7 @@ const Sidebar2 = () => {
           <AccordionBody className="py-1 ">
             <List className="p-0 text-white opacity-70">
               <NavLink
-                to="/site"
+                to="/router"
                 className={({ isActive }) =>
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
