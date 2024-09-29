@@ -31,13 +31,6 @@ function App() {
           </nav>
           <main className="flex-1 overflow-y-auto p-5">
             <Outlet />
-            {/* <Routes>
-                <Route path="/" element={<h1>Dashboard</h1>} />
-                <Route path="/site" element={<SiteList />} />
-                <Route path="/router" element={<h1>Router List</h1>} />
-                <Route path="/site/create" element={<SiteCreate />} />
-                <Route path="/site/edit/:editId" element={<SiteEdit />} />
-              </Routes> */}
           </main>
         </div>
         {/* <footer className="bg-gray-100 p-2">Footer</footer> */}

@@ -10,7 +10,7 @@ import {
 import { NavLink } from "react-router-dom";
 function DashboardCard({ icon, title, content, subContent, detailUrl, color, bgColor }) {
     return (
-        <Card className="mt-6 flex flex-col justify-between p-2" variant="gradient" color={bgColor}>
+        <Card className="mt-6 flex flex-col justify-between p-2" color={bgColor}>
             <CardBody className="p-2">
 
                 <Typography variant="h5" className="mb-2 uppercase" color={color}>

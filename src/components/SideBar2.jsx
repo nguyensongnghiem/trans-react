@@ -240,12 +240,19 @@ const Sidebar2 = () => {
                   Cáp quang đầu tư
                 </ListItem>
               </NavLink>
+              <NavLink
+                  to="/fo-contract"
+                  className={({ isActive }) =>
+                      [isActive ? "text-blue-400" : undefined].join(" ")
+                  }
+              >
               <ListItem>
                 <ListItemPrefix>
                   <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                 </ListItemPrefix>
                 Cáp quang thuê
               </ListItem>
+            </NavLink>
             </List>
           </AccordionBody>
         </Accordion>

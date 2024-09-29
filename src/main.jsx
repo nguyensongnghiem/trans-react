@@ -11,6 +11,8 @@ import SiteCreate from "./pages/SiteCreate.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import SiteList2 from "./pages/SiteList2.jsx";
 import RouterList from "./pages/RouterList.jsx";
+import FoContract from "./pages/foContract/FoContract.jsx";
+import FoConTractDetail from "./pages/foContract/FoConTractDetail.jsx";
 
 const router = createBrowserRouter([
   {
@@ -37,6 +39,16 @@ const router = createBrowserRouter([
       {
         path: "/router",
         element: <RouterList />
+      },
+      {
+        path: "/fo-contract",
+        element: <FoContract />,
+        children: [
+          {
+            path: "/fo-contract/:id",
+            element: <FoConTractDetail />
+          }
+        ]
       },
     ]
   },

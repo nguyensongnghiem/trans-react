@@ -144,15 +144,11 @@ function Dashboard() {
   for (let key in countByTransmissionType) {
     if (key.includes("FO")) totalFoSites += countByTransmissionType[key]
   }
-  console.log(totalFoSites);
 
   let totalMWSites = 0
   for (let key in countByTransmissionType) {
     if (key.includes("MW")) totalMWSites += countByTransmissionType[key]
   }
-
-  console.log(totalMWSites);
-
 
   let totalLLSites = 0
   for (let key in countByTransmissionType) {
@@ -183,14 +179,13 @@ function Dashboard() {
       countByTransmissionTypeInProvince[key]["LL"]
     ])
   })
-  console.log(transmissionTypeBarChartByProvince);
 
   return (
 
     <div>
       <div className="mb-6 grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {isSiteDataLoading ? <Spinner /> : <DashboardCard detailUrl="/site" title="Tổng số trạm" content={totalSites} color='white' bgColor="blue"></DashboardCard>}
-        {isRouterDataLoading ? <Spinner /> : <DashboardCard title="Tổng số thiết bị" content={totalRouters} color='white' bgColor="green"></DashboardCard>}
+        {isRouterDataLoading ? <Spinner /> : <DashboardCard detailUrl='/router' title="Tổng số thiết bị" content={totalRouters} color='white' bgColor="green"></DashboardCard>}
         {isLeaselineDataLoading ? <Spinner /> : <DashboardCard title="Tổng số kênh thuê" content={totalLeaselines} subContent={VND.format(totalCostPerMonth) + '/ tháng'} color='gray' bgColor="yellow"></DashboardCard>}
         {isTransmissionDataLoading ? <Spinner /> : <DashboardCard title="Tỷ lệ quang hóa" content={Math.round(totalFoSites / totalSites * 100) + '%'} color='white' bgColor="indigo"></DashboardCard>}
 

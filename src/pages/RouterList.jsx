@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
-// import Select from 'react-select';
+import Select from 'react-select'
 import * as siteService from "../services/SiteService";
-import { fetchData, postData } from "../services/apiService";
+import {deleteData, fetchData, postData} from "../services/apiService";
 import * as provinceService from "../services/ProvinceService";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
@@ -15,7 +15,6 @@ import {
   Button,
   MenuItem,
   Option,
-  Select,
   Input,
   Card,
   Dialog,
@@ -28,25 +27,28 @@ import {
   Spinner,
   Chip,
   Badge,
+  chip,
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import Modal from "react-modal";
+import { CustomMenuList } from "./CustomList";
+import {toast} from "react-toastify";
 function RouterList() {
   const navigate = useNavigate();
-  const [siteList, setSiteList] = useState({});
+
+  const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [routerList, setRouterList] = useState([]);
   const [routerTypeList, setRouterTypeList] = useState([]);
   const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
     []
   );
-
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
-  // const [siteOwnerList, setSiteOwnerList] = useState([]);
+
   const [editRouter, setEditRouter] = useState({});
   const [editId, setEditId] = useState(null);
   const [colDefs, setColDefs] = useState([
@@ -61,7 +63,17 @@ function RouterList() {
       headerName: "Loại thiết bị TD",
       valueGetter: (p) => p.data.transmissionDeviceType?.name,
     },
-    { headerName: "IP quản lý", valueGetter: (p) => p.data.ip },
+    {
+      headerName: "IP quản lý",
+      valueGetter: (p) => p.data.ip,
+      cellRenderer: (p) => {
+        return (
+          <div className="flex items-center">
+            <Chip color="green" size="sm" className="flex items-center rounded-full px-2 py-1" value={p.data.ip} />
+          </div>
+        )
+      }
+    },
     { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
     {
       headerName: "Tác động",
@@ -77,7 +89,7 @@ function RouterList() {
           <IconButton
             variant="text"
             size="sm"
-            onClick={() => openModal(p.data.id)}
+            onClick={() => handleDeleteRouter(p.data.id)}
           >
             <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
           </IconButton>
@@ -93,9 +105,7 @@ function RouterList() {
       floatingFilter: true,
     };
   });
-  Modal.setAppElement("#root");
 
-  let deleteRouterId;
 
   useEffect(() => {
     const getAllRouter = async () => {
@@ -107,17 +117,14 @@ function RouterList() {
     getAllRouter();
   }, []);
 
-  const getRouterById = async (editId) => {
-    const router = await fetchData(`routers/${editId}`);
-    setEditRouter({ ...router });
-    console.log(router);
-  };
-  const handleCreate = async (router, { setErrors }) => {
-    console.log(router);
-    const siteId = await fetchData(`sites/`);
-    await postData("routers", router);
-    setOpenCreate(!openCreate);
-  };
+  useEffect(() => {
+    const loadData = async () => {
+      const siteList = await fetchData("sites/simple-list");
+      setSimpleSiteList(siteList);
+      // console.log(siteList);
+    };
+    loadData();
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -136,27 +143,24 @@ function RouterList() {
     loadData();
   }, []);
 
-  // Modal function
-  function openModal(id) {
-    setDeleteId(id);
-    setIsOpen(true);
-  }
-
-  function afterOpenModal() {}
-
-  function closeModal() {
-    setDeleteId(null);
-    setIsOpen(false);
-  }
-  const deleteSite = async (id) => {
-    const result = await siteService.deleteSite(id);
-    getAllSites();
-    closeModal();
+  const getRouterById = async (editId) => {
+    const router = await fetchData(`routers/${editId}`);
+    setEditRouter({ ...router });
+    console.log(router);
   };
 
+  // Xử lý thêm mới
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
   };
+  const handleCreate = async (router, { setErrors }) => {
+    console.log(router);
+    // const siteId = await fetchData(`sites/`);
+    // await postData("routers", router);
+    setOpenCreate(!openCreate);
+  };
+  // Xử lý Edit
+
   const handleEdit = async (editId) => {
     await getRouterById(editId);
     handleOpenEdit();
@@ -166,22 +170,63 @@ function RouterList() {
     setOpenEdit(!openEdit);
   };
 
-  const handleEditSubmit = async (site, { setErrors }) => {
-    site.latitude = +site.latitude;
-    site.longitude = +site.longitude;
-    await siteService.saveSite(site, setErrors);
-    await getAllSites();
+  const handleEditSubmit = async (router) => {
+    try {
+      await postData('routers',router);
+      toast.success('Đã cập nhật thành công thiết bị')
+    }
+    catch (error) {
+      console.log(error)
+      if (error.response && error.response.status === 400) {
+        toast.error(error.data.message);
+      } else {
+        toast.error('Có lỗi bất thường xảy ra');
+      }
+    }
+    finally {
+      setOpenEdit(!openEdit);
+    }
     setOpenEdit(!openEdit);
   };
 
-  if (deleteId != null) {
-    deleteRouterId = siteList.content.find(
-      (site) => site.id === deleteId
-    ).siteId;
-    console.log(deleteRouterId);
+
+
+// Xử lý Xóa
+
+  const handleDeleteRouter = async (deleteId) => {
+    setDeleteId(deleteId)
+    handleOpenDelete();
+  };
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete);
+  };
+  const handleDeleteSubmit = async () => {
+    try {
+      await deleteData('routers/' + deleteId);
+      setDeleteId(null);
+      toast.success('Đã xóa thành công thiết bị')
+      setRouterList(prevState => prevState.filter(router => router.id !== deleteId))
+    }
+    catch (e) {
+      console.log(e)
+      toast.error('Có lỗi xảy ra khi xóa trạm')
+    }
+    finally {
+      handleOpenDelete();
+    }
   }
 
-  if (isLoading) return <Spinner />;
+  let deleteRouterName;
+  if (deleteId != null) {
+    deleteRouterName = routerList.find(
+      (router) => router.id === deleteId
+    ).name;
+    console.log(deleteRouterName);
+  }
+
+
+
+  // if (isLoading) return <Spinner />;
   return (
     <div className="px-3">
       <Typography variant="h4" color="blue-gray" className="mb-3">
@@ -210,7 +255,7 @@ function RouterList() {
         Thêm mới
       </Button>
       <div
-        className="ag-theme-quartz " // applying the Data Grid theme
+        className="ag-theme-quartz" // applying the Data Grid theme
         style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
       >
         <AgGridReact
@@ -223,37 +268,37 @@ function RouterList() {
         />
       </div>
 
-      <Modal
-        isOpen={isOpen}
-        onAfterOpen={afterOpenModal}
-        onRequestClose={closeModal}
-        contentLabel="Example Modal"
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-8 shadow-lg"
-      >
-        <h2
-          className="mb-3 text-lg font-bold text-red-500"
-          ref={(_subtitle) => (subtitle = _subtitle)}
-        >
-          Xóa thông tin
-        </h2>
-        <p className="mb-3">
-          Xác nhận xóa router {deleteRouterId} khỏi cơ sở dữ liệu ?
-        </p>
-        <div className="mt-3 flex justify-end gap-3">
-          <button
-            onClick={closeModal}
-            className="bg-slate-500 hover:bg-slate-600 inline-block rounded-sm px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={() => deleteSite(deleteId)}
-            className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"
-          >
-            Xóa dữ liệu
-          </button>
-        </div>
-      </Modal>
+      {/*<Modal*/}
+      {/*  isOpen={isOpen}*/}
+      {/*  onAfterOpen={afterOpenModal}*/}
+      {/*  onRequestClose={closeModal}*/}
+      {/*  contentLabel="Example Modal"*/}
+      {/*  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-8 shadow-lg"*/}
+      {/*>*/}
+      {/*  <h2*/}
+      {/*    className="mb-3 text-lg font-bold text-red-500"*/}
+      {/*    ref={(_subtitle) => (subtitle = _subtitle)}*/}
+      {/*  >*/}
+      {/*    Xóa thông tin*/}
+      {/*  </h2>*/}
+      {/*  <p className="mb-3">*/}
+      {/*    Xác nhận xóa router {deleteRouterName} khỏi cơ sở dữ liệu ?*/}
+      {/*  </p>*/}
+      {/*  <div className="mt-3 flex justify-end gap-3">*/}
+      {/*    <button*/}
+      {/*      onClick={closeModal}*/}
+      {/*      className="bg-slate-500 hover:bg-slate-600 inline-block rounded-sm px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer"*/}
+      {/*    >*/}
+      {/*      Hủy*/}
+      {/*    </button>*/}
+      {/*    <button*/}
+      {/*      onClick={() => deleteSite(deleteId)}*/}
+      {/*      className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"*/}
+      {/*    >*/}
+      {/*      Xóa dữ liệu*/}
+      {/*    </button>*/}
+      {/*  </div>*/}
+      {/*</Modal>*/}
 
       {/* Modal Thêm mới */}
       <Dialog
@@ -285,7 +330,7 @@ function RouterList() {
             onSubmit={handleCreate}
             initialValues={{
               name: "",
-              site: { siteId: "" },
+              site: { id: "" },
               ip: "",
               transmissionDeviceType: { id: 1 },
               routerType: { id: 1 },
@@ -294,7 +339,7 @@ function RouterList() {
             validationSchema={Yup.object({
               name: Yup.string().required("Yêu cầu nhập tên router"),
               site: Yup.object({
-                siteId: Yup.string().required("Yêu cầu nhập site ID"),
+                id: Yup.string().required("Yêu cầu nhập site ID"),
               }),
               ip: Yup.string().required("Yêu cầu nhập Ip quản lý"),
             })}
@@ -307,12 +352,13 @@ function RouterList() {
               setFieldValue,
               handleChange,
               resetForm,
+              getFieldProps
             }) => (
               <Form className="flex flex-initial flex-shrink flex-col">
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex flex-col gap-2 ">
+                      <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Tên thiết bị
                         </label>
@@ -328,23 +374,41 @@ function RouterList() {
                           component="span"
                         ></ErrorMessage>
                       </div>
-                      <div className="col-span-full flex flex-col gap-2 ">
+
+                      <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Site ID
                         </label>
+                        <Select
+                          placeholder="Site ID"
+                          value={simpleSiteList ? simpleSiteList.find(option => option.id === getFieldProps('site.id')) : ''}
+                          onChange={selectedOption => {
+                            setFieldValue('site.id', selectedOption.id);
+                          }}
+                          classNames={{
+                            control: (state) =>
+                              state.isFocused ? 'border-blue-500' : 'border-grey-300',
+                          }}
+                          components={{
+                            MenuList: CustomMenuList,
+                          }}
+                          isSearchable={true}
+                          options={simpleSiteList}
+                          name="site.id"
+                          getOptionLabel={option => option.siteId}
+                          isLoading={false}
+                          loadingMessage={() => "Đang lấy thông tin trạm..."}
+                          noOptionsMessage={() => "Site ID không tìm thấy"}
+                        />
 
-                        <Field
-                          name="site.siteId"
-                          placeholder="Nhập Site ID"
-                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
                         <ErrorMessage
                           className="justify-items-end text-sm font-light italic text-red-500"
-                          name="site.siteId"
+                          name="site.id"
                           component="span"
                         ></ErrorMessage>
                       </div>
-                      <div className="col-span-full flex flex-col items-stretch gap-2 ">
+
+                      <div className="col-span-full flex flex-col items-stretch gap-2">
                         <label className="text-slate-400 font-semibold">
                           IP quản lý
                         </label>
@@ -465,7 +529,7 @@ function RouterList() {
               <DialogBody className="space-y-4 pb-6">
                 <Card className="shadow-none">
                   <div className="grid grid-cols-12 gap-3 p-2">
-                    <div className="col-span-full flex flex-col gap-2 ">
+                    <div className="col-span-full flex flex-col gap-2">
                       <label className="text-slate-400 font-semibold">
                         Tên thiết bị
                       </label>
@@ -481,7 +545,7 @@ function RouterList() {
                         component="span"
                       ></ErrorMessage>
                     </div>
-                    <div className="col-span-full flex flex-col gap-2 ">
+                    <div className="col-span-full flex flex-col gap-2">
                       <label className="text-slate-400 font-semibold">
                         Site ID
                       </label>
@@ -497,7 +561,7 @@ function RouterList() {
                         component="span"
                       ></ErrorMessage>
                     </div>
-                    <div className="col-span-full flex flex-col items-stretch gap-2 ">
+                    <div className="col-span-full flex flex-col items-stretch gap-2">
                       <label className="text-slate-400 font-semibold">
                         IP quản lý
                       </label>
@@ -571,6 +635,28 @@ function RouterList() {
             {/* <img src={MySvg} alt="" className="flex-initial p-5" /> */}
           </Formik>
         </div>
+      </Dialog>
+
+
+      {/*Modal confirm xóa site*/}
+      <Dialog open={openDelete} handler={handleOpenDelete} size='md'>
+        <DialogHeader>Xác nhận xóa router khỏi cơ sở dữ liệu</DialogHeader>
+        <DialogBody>
+          Bạn muốn xóa thông tin trạm <span>{deleteRouterName}</span> ?
+        </DialogBody>
+        <DialogFooter>
+          <Button
+              variant="text"
+              color="green"
+              onClick={handleOpenDelete}
+              className="mr-1"
+          >
+            <span>Hủy</span>
+          </Button>
+          <Button variant="gradient" color="red" onClick={handleDeleteSubmit}>
+            <span>Xóa</span>
+          </Button>
+        </DialogFooter>
       </Dialog>
     </div>
   );

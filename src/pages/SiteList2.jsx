@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 import * as siteService from "../services/SiteService";
-import { fetchData } from "../services/apiService";
+import {deleteData, fetchData, postData} from "../services/apiService";
 import * as transOwnerService from "../services/TransmissionOwnerService";
 import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeService";
 import * as provinceService from "../services/ProvinceService";
@@ -18,6 +18,10 @@ import { Button, MenuItem, Option, Select, Input, Card, Dialog, Textarea, IconBu
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import Modal from "react-modal";
+import {toast} from "react-toastify";
+import * as logger from "react-dom/test-utils";
+
+
 
 
 function SiteList2() {
@@ -41,8 +45,8 @@ function SiteList2() {
     // { headerName: "Tên trạm", valueGetter: site => site.data.siteName },
     { headerName: "Vĩ độ", valueGetter: site => site.data.latitude, valueFormatter: p => p.value.toFixed(3) },
     { headerName: "Kinh độ", valueGetter: site => site.data.longitude, valueFormatter: p => p.value.toFixed(3) },
-    { headerName: "Ghi chú", valueGetter: site => site.data.note},
-    
+    { headerName: "Ghi chú", valueGetter: site => site.data.note },
+
     {
       headerName: "Tác động",
       cellRenderer: (p) => <div className="flex items-center justify-center">
@@ -56,7 +60,7 @@ function SiteList2() {
         <IconButton
           variant="text"
           size="sm"
-          onClick={() => openModal(p.data.id)}
+          onClick={() => handleDeleteSite(p.data.id)}
         >
           <TrashIcon
             strokeWidth={3}
@@ -75,52 +79,24 @@ function SiteList2() {
     };
   })
   const navigate = useNavigate();
-  const [siteList, setSiteList] = useState({});
   const [siteListFull, setSiteListFull] = useState([]);
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
   const [provinces, setProvinces] = useState([]);
-  const [page, setPage] = useState(0);
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  const [searchTerm, setSearchTerm] = useState({
-    siteId: "",
-    transOwner: "",
-    transType: "",
-    province: "",
-  });
   const [isLoading, setIsLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
   const [siteOwnerList, setSiteOwnerList] = useState([]);
   const [editSite, setEditSite] = useState({});
   const [editId, setEditId] = useState(null);
-
-  Modal.setAppElement("#root");
-
-  let deleteSiteId;
-
-  useEffect(() => {
-    const getAllSites = async () => {
-      const sites = await siteService.searchSites(
-        page,
-        searchTerm.siteId,
-        searchTerm.transOwner,
-        searchTerm.transType,
-        searchTerm.province
-      );
-      setSiteList(sites);
-      setIsLoading(false);
-    };
-    getAllSites();
-  }, [page, searchTerm]);
 
   useEffect(() => {
     const getAllSiteFull = async () => {
       setIsLoading(true);
       const sites = await fetchData('sites')
       setSiteListFull(sites);
-      console.log(sites);
 
       setIsLoading(false);
     };
@@ -164,6 +140,13 @@ function SiteList2() {
     setEditSite({ ...site });
     console.log(site);
   };
+
+
+  // Xử lý thêm mới
+  const handleOpenCreate = () => {
+    setOpenCreate(!openCreate);
+  };
+
   const handleCreate = async (site, { setErrors }) => {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
@@ -171,35 +154,7 @@ function SiteList2() {
     setOpenCreate(!openCreate);
   };
 
-  const onSearchSubmit = async (value) => {
-    console.log(value);
-    setSearchTerm(value);
-    setPage(0);
- 
-    setIsLoading(false);
-  };
-
-  // Modal function
-  function openModal(id) {
-    setDeleteId(id);
-    setIsOpen(true);
-  }
-
-  function afterOpenModal() { }
-
-  function closeModal() {
-    setDeleteId(null);
-    setIsOpen(false);
-  }
-  const deleteSite = async (id) => {
-    const result = await siteService.deleteSite(id);
-    getAllSites();
-    closeModal();
-  };
-
-  const handleOpenCreate = () => {
-    setOpenCreate(!openCreate);
-  };
+  // Xử lý Edit
   const handleEdit = async (editId) => {
     await getSiteById(editId);
     handleOpenEdit();
@@ -208,17 +163,55 @@ function SiteList2() {
   const handleOpenEdit = () => {
     setOpenEdit(!openEdit);
   };
-
-  const handleEditSubmit = async (site, { setErrors }) => {
+  const handleEditSubmit = async (site) => {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
-    await siteService.saveSite(site, setErrors);
-    await getAllSites();
-    setOpenEdit(!openEdit);
+    try {
+      await postData('sites',site);
+      toast.success('Đã cập nhật thành công trạm')
+    }
+    catch (error) {
+      console.log(error)
+      if (error.response && error.response.status === 400) {
+        toast.error(error.data.message);
+      } else {
+        toast.error('Có lỗi bất thường xảy ra');
+      }
+    }
+    finally {
+      setOpenEdit(!openEdit);
+    }
+    // await getAllSites();
   };
 
+  // Xử lý Xóa
+
+  const handleDeleteSite = async (deleteId) => {
+    setDeleteId(deleteId)
+    handleOpenDelete();
+  };
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete);
+  };
+  const handleDeleteSubmit = async () => {
+    try {
+    await deleteData('sites/' + deleteId);
+    toast.success('Đã xóa thành công trạm')
+      setSiteListFull(prevState => prevState.filter(site => site.id !== deleteId))
+    }
+    catch (e) {
+      console.log(e)
+      toast.error('Có lỗi xảy ra khi xóa thiết bị')
+    }
+    finally {
+      handleOpenDelete();
+    }
+  }
+
+
+  let deleteSiteId;
   if (deleteId != null) {
-    deleteSiteId = siteList.content.find((site) => site.id === deleteId).siteId;
+    deleteSiteId = siteListFull.find((site) => site.id === deleteId).siteId;
     console.log(deleteSiteId);
   }
 
@@ -232,7 +225,7 @@ function SiteList2() {
       .typeError("Yêu cầu nhập số"),
   };
 
-  if (isLoading) return <Spinner />;
+  // if (isLoading) return <Spinner />;
   return (
     <div className="px-3">
 
@@ -262,7 +255,7 @@ function SiteList2() {
         Thêm mới
       </Button>
       <div
-        className="ag-theme-quartz " // applying the Data Grid theme
+        className="ag-theme-quartz" // applying the Data Grid theme
         style={{ height: '100vh', width: "100%" }} // the Data Grid will fill the size of the parent container
       >
         <AgGridReact
@@ -274,39 +267,37 @@ function SiteList2() {
           className="overflow-x-auto"
         />
       </div>
-
-  
-      <Modal
-        isOpen={isOpen}
-        onAfterOpen={afterOpenModal}
-        onRequestClose={closeModal}
-        contentLabel="Example Modal"
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-8 shadow-lg"
-      >
-        <h2
-          className="mb-3 text-lg font-bold text-red-500"
-          ref={(_subtitle) => (subtitle = _subtitle)}
-        >
-          Xóa thông tin
-        </h2>
-        <p className="mb-3">
-          Xác nhận xóa trạm {deleteSiteId} khỏi cơ sở dữ liệu ?
-        </p>
-        <div className="mt-3 flex justify-end gap-3">
-          <button
-            onClick={closeModal}
-            className="bg-slate-500 hover:bg-slate-600 inline-block rounded-sm px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={() => deleteSite(deleteId)}
-            className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"
-          >
-            Xóa dữ liệu
-          </button>
-        </div>
-      </Modal>
+      {/*<Modal*/}
+      {/*  isOpen={isOpen}*/}
+      {/*  onAfterOpen={afterOpenModal}*/}
+      {/*  onRequestClose={closeModal}*/}
+      {/*  contentLabel="Example Modal"*/}
+      {/*  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-white p-8 shadow-lg"*/}
+      {/*>*/}
+      {/*  <h2*/}
+      {/*    className="mb-3 text-lg font-bold text-red-500"*/}
+      {/*    ref={(_subtitle) => (subtitle = _subtitle)}*/}
+      {/*  >*/}
+      {/*    Xóa thông tin*/}
+      {/*  </h2>*/}
+      {/*  <p className="mb-3">*/}
+      {/*    Xác nhận xóa trạm {deleteSiteId} khỏi cơ sở dữ liệu ?*/}
+      {/*  </p>*/}
+      {/*  <div className="mt-3 flex justify-end gap-3">*/}
+      {/*    <button*/}
+      {/*      onClick={closeModal}*/}
+      {/*      className="bg-slate-500 hover:bg-slate-600 inline-block rounded-sm px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer"*/}
+      {/*    >*/}
+      {/*      Hủy*/}
+      {/*    </button>*/}
+      {/*    <button*/}
+      {/*      onClick={() => deleteSite(deleteId)}*/}
+      {/*      className="inline-block rounded-sm bg-red-500 px-2 py-1 font-semibold text-white shadow-md hover:cursor-pointer hover:bg-red-600"*/}
+      {/*    >*/}
+      {/*      Xóa dữ liệu*/}
+      {/*    </button>*/}
+      {/*  </div>*/}
+      {/*</Modal>*/}
 
       {/* Modal Thêm mới */}
       <Dialog
@@ -754,6 +745,28 @@ function SiteList2() {
             {/* <img src={MySvg} alt="" className="flex-initial p-5" /> */}
           </Formik>
         </div>
+      </Dialog>
+
+
+      {/*Modal confirm xóa site*/}
+      <Dialog open={openDelete} handler={handleOpenDelete} size='md'>
+        <DialogHeader>Xác nhận xóa trạm khỏi cơ sở dữ liệu</DialogHeader>
+        <DialogBody>
+          Bạn muốn xóa thông tin trạm <span>{deleteSiteId}</span> ?
+        </DialogBody>
+        <DialogFooter>
+          <Button
+              variant="text"
+              color="green"
+              onClick={handleOpenDelete}
+              className="mr-1"
+          >
+            <span>Hủy</span>
+          </Button>
+          <Button variant="gradient" color="red" onClick={handleDeleteSubmit}>
+            <span>Xóa</span>
+          </Button>
+        </DialogFooter>
       </Dialog>
     </div>
   );

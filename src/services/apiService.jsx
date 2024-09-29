@@ -19,3 +19,13 @@ export const postData = async (endpoint, data) => {
         throw error; // Ném lỗi để xử lý ở nơi gọi
     }
 };
+
+export const deleteData = async (endpoint) => {
+    try {
+        await axios.delete(`${BASE_URL}/${endpoint}`);
+       // Trả về dữ liệu
+    } catch (error) {
+        console.error('Error deleting data:', error);
+        throw error; // Ném lỗi để xử lý ở nơi gọi
+    }
+};
