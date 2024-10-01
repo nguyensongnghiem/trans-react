@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
-import Select from 'react-select'
+import Select from "react-select";
 import * as siteService from "../services/SiteService";
-import {deleteData, fetchData, postData} from "../services/apiService";
+import { deleteData, fetchData, postData } from "../services/apiService";
 import * as provinceService from "../services/ProvinceService";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
@@ -33,7 +33,7 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import Modal from "react-modal";
 import { CustomMenuList } from "./CustomList";
-import {toast} from "react-toastify";
+import { toast } from "react-toastify";
 function RouterList() {
   const navigate = useNavigate();
 
@@ -41,7 +41,7 @@ function RouterList() {
   const [routerList, setRouterList] = useState([]);
   const [routerTypeList, setRouterTypeList] = useState([]);
   const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
-    []
+    [],
   );
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
@@ -69,10 +69,15 @@ function RouterList() {
       cellRenderer: (p) => {
         return (
           <div className="flex items-center">
-            <Chip color="green" size="sm" className="flex items-center rounded-full px-2 py-1" value={p.data.ip} />
+            <Chip
+              color="green"
+              size="sm"
+              className="flex items-center rounded-full px-2 py-1"
+              value={p.data.ip}
+            />
           </div>
-        )
-      }
+        );
+      },
     },
     { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
     {
@@ -105,7 +110,6 @@ function RouterList() {
       floatingFilter: true,
     };
   });
-
 
   useEffect(() => {
     const getAllRouter = async () => {
@@ -172,29 +176,25 @@ function RouterList() {
 
   const handleEditSubmit = async (router) => {
     try {
-      await postData('routers',router);
-      toast.success('Đã cập nhật thành công thiết bị')
-    }
-    catch (error) {
-      console.log(error)
+      await postData("routers", router);
+      toast.success("Đã cập nhật thành công thiết bị");
+    } catch (error) {
+      console.log(error);
       if (error.response && error.response.status === 400) {
         toast.error(error.data.message);
       } else {
-        toast.error('Có lỗi bất thường xảy ra');
+        toast.error("Có lỗi bất thường xảy ra");
       }
-    }
-    finally {
+    } finally {
       setOpenEdit(!openEdit);
     }
     setOpenEdit(!openEdit);
   };
 
-
-
-// Xử lý Xóa
+  // Xử lý Xóa
 
   const handleDeleteRouter = async (deleteId) => {
-    setDeleteId(deleteId)
+    setDeleteId(deleteId);
     handleOpenDelete();
   };
   const handleOpenDelete = () => {
@@ -202,29 +202,25 @@ function RouterList() {
   };
   const handleDeleteSubmit = async () => {
     try {
-      await deleteData('routers/' + deleteId);
+      await deleteData("routers/" + deleteId);
       setDeleteId(null);
-      toast.success('Đã xóa thành công thiết bị')
-      setRouterList(prevState => prevState.filter(router => router.id !== deleteId))
-    }
-    catch (e) {
-      console.log(e)
-      toast.error('Có lỗi xảy ra khi xóa trạm')
-    }
-    finally {
+      toast.success("Đã xóa thành công thiết bị");
+      setRouterList((prevState) =>
+        prevState.filter((router) => router.id !== deleteId),
+      );
+    } catch (e) {
+      console.log(e);
+      toast.error("Có lỗi xảy ra khi xóa trạm");
+    } finally {
       handleOpenDelete();
     }
-  }
+  };
 
   let deleteRouterName;
   if (deleteId != null) {
-    deleteRouterName = routerList.find(
-      (router) => router.id === deleteId
-    ).name;
+    deleteRouterName = routerList.find((router) => router.id === deleteId).name;
     console.log(deleteRouterName);
   }
-
-
 
   // if (isLoading) return <Spinner />;
   return (
@@ -344,16 +340,7 @@ function RouterList() {
               ip: Yup.string().required("Yêu cầu nhập Ip quản lý"),
             })}
           >
-            {({
-              values,
-              errors,
-              isSubmitting,
-              isValid,
-              setFieldValue,
-              handleChange,
-              resetForm,
-              getFieldProps
-            }) => (
+            {({ setFieldValue, getFieldProps }) => (
               <Form className="flex flex-initial flex-shrink flex-col">
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
@@ -381,13 +368,22 @@ function RouterList() {
                         </label>
                         <Select
                           placeholder="Site ID"
-                          value={simpleSiteList ? simpleSiteList.find(option => option.id === getFieldProps('site.id')) : ''}
-                          onChange={selectedOption => {
-                            setFieldValue('site.id', selectedOption.id);
+                          value={
+                            simpleSiteList
+                              ? simpleSiteList.find(
+                                  (option) =>
+                                    option.id === getFieldProps("site.id"),
+                                )
+                              : ""
+                          }
+                          onChange={(selectedOption) => {
+                            setFieldValue("site.id", selectedOption.id);
                           }}
                           classNames={{
                             control: (state) =>
-                              state.isFocused ? 'border-blue-500' : 'border-grey-300',
+                              state.isFocused
+                                ? "border-blue-500"
+                                : "border-grey-300",
                           }}
                           components={{
                             MenuList: CustomMenuList,
@@ -395,7 +391,7 @@ function RouterList() {
                           isSearchable={true}
                           options={simpleSiteList}
                           name="site.id"
-                          getOptionLabel={option => option.siteId}
+                          getOptionLabel={(option) => option.siteId}
                           isLoading={false}
                           loadingMessage={() => "Đang lấy thông tin trạm..."}
                           noOptionsMessage={() => "Site ID không tìm thấy"}
@@ -522,7 +518,7 @@ function RouterList() {
                   siteId: Yup.string().required("Yêu cầu nhập site ID"),
                 }),
                 ip: Yup.string().required("Yêu cầu nhập Ip quản lý"),
-              })
+              }),
             )}
           >
             <Form className="flex flex-initial flex-shrink flex-col">
@@ -637,19 +633,18 @@ function RouterList() {
         </div>
       </Dialog>
 
-
       {/*Modal confirm xóa site*/}
-      <Dialog open={openDelete} handler={handleOpenDelete} size='md'>
+      <Dialog open={openDelete} handler={handleOpenDelete} size="md">
         <DialogHeader>Xác nhận xóa router khỏi cơ sở dữ liệu</DialogHeader>
         <DialogBody>
           Bạn muốn xóa thông tin trạm <span>{deleteRouterName}</span> ?
         </DialogBody>
         <DialogFooter>
           <Button
-              variant="text"
-              color="green"
-              onClick={handleOpenDelete}
-              className="mr-1"
+            variant="text"
+            color="green"
+            onClick={handleOpenDelete}
+            className="mr-1"
           >
             <span>Hủy</span>
           </Button>
