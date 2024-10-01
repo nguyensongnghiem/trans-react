@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { fetchData } from "../../services/apiService.jsx";
 import { useParams } from "react-router-dom";
 import { DateTime } from "luxon";
-
+import {contractDB} from "../../services/firebase/config.js";
+import  {ref, uploadBytes, getDownloadURL} from 'firebase/storage'
 import {
   Button,
   Card,
@@ -79,8 +80,6 @@ function FoConTractDetail(props) {
   });
 
   const [open, setOpen] = React.useState(false);
-  const openDrawer = () => setOpen(true);
-  const closeDrawer = () => setOpen(false);
 
   useEffect(() => {
     const loadContract = async () => {
@@ -98,6 +97,9 @@ function FoConTractDetail(props) {
     loadContract();
   }, [id]);
 
+
+  const openDrawer = () => setOpen(true);
+  const closeDrawer = () => setOpen(false);
   const VND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -109,7 +111,19 @@ function FoConTractDetail(props) {
     openDrawer();
   }
 
-  function handleEditSubmit(value) {
+  async  function handleEditSubmit(value) {
+    console.log(value.contractUrl.name)
+    const contractPdf = ref(contractDB,`mobifone/${value.contractUrl.name}`);
+    try {
+      await uploadBytes(contractPdf,value.contractUrl)
+      const url = await getDownloadURL(contractPdf);
+      console.log(url)
+      value.contractUrl = url;
+    }
+    catch(e) {
+      console.log(e);
+    }
+
     console.log(value);
   }
 
@@ -249,83 +263,116 @@ function FoConTractDetail(props) {
               ),
             })}
           >
-            <Form className="flex flex-initial flex-shrink flex-col">
-              <DialogBody className="space-y-4 pb-6">
-                <Card className="shadow-none">
-                  <div className="grid grid-cols-12 gap-3 p-2">
-                    <div className="col-span-full flex flex-col gap-2">
-                      <label className="text-slate-400 font-semibold">
-                        Số hợp đồng
-                      </label>
-                      <Field
-                        name="contractNumber"
-                        placeholder="Nhập số hợp đồng"
-                        className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      ></Field>
-                      <ErrorMessage
-                        className="justify-items-end text-sm font-light italic text-red-500"
-                        name="contractNumber"
-                        component="span"
-                      ></ErrorMessage>
+            {({
+                values,
+                errors,
+                isSubmitting,
+                isValid,
+                setFieldValue,
+                handleChange,
+
+              })=>
+              ( <Form className="flex flex-initial flex-shrink flex-col">
+                <DialogBody className="space-y-4 pb-6">
+                  <Card className="shadow-none">
+                    <div className="grid grid-cols-12 gap-3 p-2">
+                      <div className="col-span-full flex flex-col gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Số hợp đồng
+                        </label>
+                        <Field
+                            name="contractNumber"
+                            placeholder="Nhập số hợp đồng"
+                            className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        ></Field>
+                        <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="contractNumber"
+                            component="span"
+                        ></ErrorMessage>
+                      </div>
+                      <div className="col-span-full flex flex-col gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Tên hợp đồng
+                        </label>
+                        <Field
+                            name="contractName"
+                            placeholder="Nhập tên hợp đồng"
+                            className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        ></Field>
+                        <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="contractName"
+                            component="span"
+                        ></ErrorMessage>
+                      </div>
+                      <div className="col-span-full flex flex-col items-stretch gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Ngày ký
+                        </label>
+                        <Field
+                            name="signedDate"
+                            type="date"
+                            placeholder="Nhập Site ID khác"
+                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        ></Field>
+                        <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="signedDate"
+                            component="span"
+                        ></ErrorMessage>
+                      </div>
+                      <div className="col-span-full flex flex-col items-stretch gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Ngày ký
+                        </label>
+                        <Field
+                            name="endDate"
+                            type="date"
+                            placeholder="Nhập Site ID khác"
+                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        ></Field>
+                        <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="endDate"
+                            component="span"
+                        ></ErrorMessage>
+                      </div>
+                      <div className="col-span-full flex flex-col items-stretch gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Upload hợp đồng
+                        </label>
+                        <input
+                            type="file"
+                            className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
+                            onChange={(e) => {
+                              // Object is possibly null error w/o check
+                              if (e.currentTarget.files) {
+                                setFieldValue("contractUrl", e.currentTarget.files[0]);
+                              }
+                            }}
+                        ></input>
+                        <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="contractUrl"
+                            component="span"
+                        ></ErrorMessage>
+                      </div>
+
                     </div>
-                    <div className="col-span-full flex flex-col gap-2">
-                      <label className="text-slate-400 font-semibold">
-                        Tên hợp đồng
-                      </label>
-                      <Field
-                        name="contractName"
-                        placeholder="Nhập tên hợp đồng"
-                        className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      ></Field>
-                      <ErrorMessage
-                        className="justify-items-end text-sm font-light italic text-red-500"
-                        name="contractName"
-                        component="span"
-                      ></ErrorMessage>
-                    </div>
-                    <div className="col-span-full flex flex-col items-stretch gap-2">
-                      <label className="text-slate-400 font-semibold">
-                        Ngày ký
-                      </label>
-                      <Field
-                        name="signedDate"
-                        type="date"
-                        placeholder="Nhập Site ID khác"
-                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      ></Field>
-                      <ErrorMessage
-                        className="justify-items-end text-sm font-light italic text-red-500"
-                        name="signedDate"
-                        component="span"
-                      ></ErrorMessage>
-                    </div>
-                    <div className="col-span-full flex flex-col items-stretch gap-2">
-                      <label className="text-slate-400 font-semibold">
-                        Ngày ký
-                      </label>
-                      <Field
-                        name="endDate"
-                        type="date"
-                        placeholder="Nhập Site ID khác"
-                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      ></Field>
-                      <ErrorMessage
-                        className="justify-items-end text-sm font-light italic text-red-500"
-                        name="endDate"
-                        component="span"
-                      ></ErrorMessage>
-                    </div>
-                  </div>
-                </Card>
-              </DialogBody>
-              <DialogFooter>
-                <Button size="md" type="submit" color="red">
-                  Cập nhật dữ liệu
-                </Button>
-              </DialogFooter>
-            </Form>
-            {/* <img src={MySvg} alt="" className="flex-initial p-5" /> */}
+                  </Card>
+                </DialogBody>
+                <DialogFooter>
+                  <Button size="md" type="submit" color="red">
+                    Cập nhật dữ liệu
+                  </Button>
+                </DialogFooter>
+              </Form>
+              )
+
+            }
           </Formik>
+
         </Drawer>
       </React.Fragment>
     </>
