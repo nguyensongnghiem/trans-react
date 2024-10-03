@@ -2,7 +2,7 @@ import { Chip } from "@material-tailwind/react";
 function OwnerChip({ name }) {
     return (<Chip
         variant="ghost"
-        size="small"
+        size="sm"
         value={name=== 'MobiFone'?'MBF':name}
         color={
             name === "MobiFone"

@@ -304,7 +304,6 @@ function SiteList2() {
         open={openCreate}
         handler={handleOpenCreate}
         className="overflow-hidden"
-        dismiss="false"
         size="sm"
       >
         <div className="max-h-[90vh] overflow-y-auto p-3">

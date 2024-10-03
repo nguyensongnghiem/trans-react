@@ -112,12 +112,11 @@ function FoConTractDetail(props) {
   }
 
   async  function handleEditSubmit(value) {
-    console.log(value.contractUrl.name)
+    console.log(value)
     const contractPdf = ref(contractDB,`mobifone/${value.contractUrl.name}`);
     try {
       await uploadBytes(contractPdf,value.contractUrl)
       const url = await getDownloadURL(contractPdf);
-      console.log(url)
       value.contractUrl = url;
     }
     catch(e) {
@@ -204,7 +203,6 @@ function FoConTractDetail(props) {
             />
           </div>
         </CardBody>
-        <CardFooter className="pt-0"></CardFooter>
       </Card>
 
       {/*   Drawer edit hợp đồng */}
@@ -258,9 +256,15 @@ function FoConTractDetail(props) {
               contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
               contractName: Yup.string().required("Yêu cầu nhập tên hợp đồng"),
               signedDate: Yup.date().required("Yêu cầu nhập ngày ký hợp đồng"),
-              endDate: Yup.date().required(
-                "Yêu cầu nhập ngày kết thúc hợp đồng",
-              ),
+              contractUrl: Yup.mixed().required('Yêu cầu tải lên văn bản pdf')
+                  .test('fileFormat', 'Yêu cầu định dạng pdf', value => {
+                    if (value) {
+                      const supportedFormats = ['pdf'];
+                      return supportedFormats.includes(value.name.split('.').pop());
+                    }
+                    return true;
+                  }),
+              endDate:Yup.string().required("Yêu cầu nhập ngày kết thúc hợp đồng")
             })}
           >
             {({
@@ -340,10 +344,12 @@ function FoConTractDetail(props) {
                       </div>
                       <div className="col-span-full flex flex-col items-stretch gap-2">
                         <label className="text-slate-400 font-semibold">
-                          Upload hợp đồng
+                          Tải lên văn bản hợp đồng
                         </label>
                         <input
                             type="file"
+                            name='contractUrl'
+                            accept='.pdf'
                             className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
                             onChange={(e) => {
                               // Object is possibly null error w/o check
