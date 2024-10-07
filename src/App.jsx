@@ -3,9 +3,12 @@ import { useState } from "react";
 import "./App.css";
 import Header from "./components/Header";
 import {
-  BrowserRouter, Route, Routes, createBrowserRouter,
+  BrowserRouter,
+  Route,
+  Routes,
+  createBrowserRouter,
   RouterProvider,
-  Outlet
+  Outlet,
 } from "react-router-dom";
 import SideBar2 from "./components/SideBar2.jsx";
 import SideBar from "./components/SideBar.jsx";
@@ -17,12 +20,9 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SiteEdit from "./pages/SiteEdit.jsx";
 
-
 function App() {
   return (
-
     <>
-
       <div className="flex h-screen min-h-screen flex-col">
         <Header></Header>
         <div className="flex flex-1 flex-col overflow-y-hidden sm:flex-row">
@@ -36,7 +36,6 @@ function App() {
         {/* <footer className="bg-gray-100 p-2">Footer</footer> */}
       </div>
       <ToastContainer />
-
     </>
   );
 }

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "react-toastify";
 const BASE_URL = "http://localhost:8080/api";
 export const fetchData = async (endpoint) => {
   try {
@@ -13,6 +14,8 @@ export const fetchData = async (endpoint) => {
 export const postData = async (endpoint, data) => {
   try {
     const response = await axios.post(`${BASE_URL}/${endpoint}`, data);
+    console.log(response.data);
+
     return response.data; // Trả về dữ liệu
   } catch (error) {
     console.error("Lỗi khi tạo mới:", error);

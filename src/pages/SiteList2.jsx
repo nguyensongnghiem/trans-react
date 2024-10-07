@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 import * as siteService from "../services/SiteService";
-import {deleteData, fetchData, postData} from "../services/apiService";
+import { deleteData, fetchData, postData, putData } from "../services/apiService";
 import * as transOwnerService from "../services/TransmissionOwnerService";
 import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeService";
 import * as provinceService from "../services/ProvinceService";
@@ -18,8 +18,9 @@ import { Button, MenuItem, Option, Select, Input, Card, Dialog, Textarea, IconBu
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import Modal from "react-modal";
-import {toast} from "react-toastify";
+import { toast } from "react-toastify";
 import * as logger from "react-dom/test-utils";
+
 
 
 
@@ -150,8 +151,20 @@ function SiteList2() {
   const handleCreate = async (site, { setErrors }) => {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
-    await siteService.saveSite(site, setErrors);
-    setOpenCreate(!openCreate);
+    console.log(site);
+
+    try {
+      await postData("sites", site);
+      toast.success("Đã thêm mới trạm thành công.")
+    }
+    catch (error) {
+      toast.error(error.response.data.message, {
+        zIndex: 9999
+      });
+    }
+    finally {
+      setOpenCreate(!openCreate);
+    }
   };
 
   // Xử lý Edit
@@ -167,7 +180,7 @@ function SiteList2() {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
     try {
-      await postData('sites',site);
+      await putData(`sites/${site.id}`, site);
       toast.success('Đã cập nhật thành công trạm')
     }
     catch (error) {
@@ -195,8 +208,8 @@ function SiteList2() {
   };
   const handleDeleteSubmit = async () => {
     try {
-    await deleteData('sites/' + deleteId);
-    toast.success('Đã xóa thành công trạm')
+      await deleteData('sites/' + deleteId);
+      toast.success('Đã xóa thành công trạm')
       setSiteListFull(prevState => prevState.filter(site => site.id !== deleteId))
     }
     catch (e) {
@@ -755,10 +768,10 @@ function SiteList2() {
         </DialogBody>
         <DialogFooter>
           <Button
-              variant="text"
-              color="green"
-              onClick={handleOpenDelete}
-              className="mr-1"
+            variant="text"
+            color="green"
+            onClick={handleOpenDelete}
+            className="mr-1"
           >
             <span>Hủy</span>
           </Button>

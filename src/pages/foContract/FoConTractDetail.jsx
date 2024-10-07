@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { fetchData } from "../../services/apiService.jsx";
+import { fetchData, postData, putData } from "../../services/apiService.jsx";
 import { useParams } from "react-router-dom";
 import { DateTime } from "luxon";
-import {contractDB} from "../../services/firebase/config.js";
-import  {ref, uploadBytes, getDownloadURL} from 'firebase/storage'
+import { contractDB } from "../../services/firebase/config.js";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { clsx } from "clsx";
 import {
   Button,
   Card,
   CardBody,
   CardFooter,
   CardHeader,
+  Chip,
   DialogBody,
   DialogFooter,
   Drawer,
@@ -26,7 +28,8 @@ import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the 
 import "ag-grid-community/styles/ag-theme-material.css"; // Optional Theme applied to the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css";
 import * as Yup from "yup";
-import { ErrorMessage, Field, Form, Formik } from "formik"; // Optional Theme applied to the Data Grid
+import { ErrorMessage, Field, Form, Formik } from "formik";
+import { toast } from "react-toastify"; // Optional Theme applied to the Data Grid
 function FoConTractDetail(props) {
   const { id } = props;
   const [contractDetail, setContractDetail] = useState();
@@ -97,6 +100,24 @@ function FoConTractDetail(props) {
     loadContract();
   }, [id]);
 
+  const fetchFile = async () => {
+
+    const fileRef = ref(contractDB, contractDetail.contractUrl); // Đường dẫn đến file trong Firebase Storage
+
+    try {
+      const url = await getDownloadURL(fileRef);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], 'contract_document.pdf', { type: blob.type }); // Đặt tên và kiểu file
+      return file
+    } catch (error) {
+      console.error("Error fetching file:", error);
+    }
+  };
+
+  if (contractDetail) {
+    const currentContractPdf = fetchFile()
+  }
 
   const openDrawer = () => setOpen(true);
   const closeDrawer = () => setOpen(false);
@@ -105,36 +126,44 @@ function FoConTractDetail(props) {
     currency: "VND",
   });
 
-  if (!contractDetail) return <p>Không có thông tin </p>;
-
   function handleOpenEditDrawer() {
     openDrawer();
   }
 
-  async  function handleEditSubmit(value) {
-    console.log(value)
-    const contractPdf = ref(contractDB,`mobifone/${value.contractUrl.name}`);
-    try {
-      await uploadBytes(contractPdf,value.contractUrl)
-      const url = await getDownloadURL(contractPdf);
-      value.contractUrl = url;
-    }
-    catch(e) {
-      console.log(e);
+  async function handleEditSubmit(value) {
+    console.log(value);
+    if (typeof value.contractUrl !== "string") {
+      console.log("upload lên firebase");
+      const contractPdf = ref(
+        contractDB,
+        `contracts/${value.contractUrl.name}`,
+      );
+      try {
+        await uploadBytes(contractPdf, value.contractUrl);
+        const url = await getDownloadURL(contractPdf);
+        value.contractUrl = url;
+      } catch (e) {
+        if (e.message) toast.error(e.message);
+      }
+      setContractDetail(value);
     }
 
-    console.log(value);
+    const { hiredFoLineList, ...submitContract } = value;
+    console.log(submitContract);
+    await putData(`contracts/${submitContract.id}`, submitContract);
+    handleCloseEditDrawer();
+    toast.success("Đã cập nhật thông tin hợp đồng");
   }
 
   function handleCloseEditDrawer() {
     closeDrawer();
   }
-
+  if (!contractDetail) return <p>Không có thông tin </p>;
   return (
     <>
-      <Card className="mt-6 rounded-none shadow-none">
-        <div className="border-b mb-5 flex justify-start gap-5 text-sm">
-          <div className="text-blue-600 flex items-center gap-2 pb-2 pr-2 border-b-2 border-blue-600 uppercase">
+      <Card className="mt-6 rounded-none shadow-lg p-4 text-blue-gray-600">
+        <div className="border-b mb-5 flex justify-start items-center gap-5">
+          <div className="text-blue-gray-600 flex items-center gap-2 pb-2 pr-2 border-b-2 border-blue-600 uppercase">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -152,13 +181,67 @@ function FoConTractDetail(props) {
               {contractDetail.contractNumber}
             </Typography>
           </div>
-          <IconButton variant="text" size="sm" onClick={handleOpenEditDrawer}>
-            <PencilIcon className="h-4 w-4 text-gray-900" />
-          </IconButton>
+          <Button
+            className="flex p-2.5 transition-all duration-200 gap-2 "
+            onClick={() => {
+              window.open(contractDetail.contractUrl, "_blank");
+            }}
+            variant="text"
+            color="blue"
+            size="sm"
+            disabled={contractDetail.contractUrl === null}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="#4b9bf3"
+              viewBox="0 0 512 512"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-4"
+            >
+              <path d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z" />
+            </svg>
+            Văn bản
+          </Button>
+          <Button
+            className="flex p-2.5 transition-all duration-300  gap-2"
+            onClick={handleOpenEditDrawer}
+            variant="text"
+            color="blue"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+              />
+            </svg>
+            Cập nhật
+          </Button>
+          <Chip
+            variant="ghost"
+            color={contractDetail.active ? "green" : "red"}
+            className="ml-auto"
+            size="sm"
+            value={contractDetail.active ? "Còn hiệu lực" : "Đã thanh lý"}
+            icon={
+              <span
+                className={clsx(
+                  "mx-auto mt-1 block h-2 w-2 rounded-full content-['']",
+                  contractDetail.active ? "bg-green-900" : "bg-red-900",
+                )}
+              />
+            }
+          />
         </div>
-        <Typography className="" color="blue" variant="h6">
-          {contractDetail.contractName}
-        </Typography>
+        <Typography variant="h6">{contractDetail.contractName}</Typography>
         <CardBody>
           <div className="grid grid-cols-4 mb-5 gap-2">
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
@@ -256,27 +339,31 @@ function FoConTractDetail(props) {
               contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
               contractName: Yup.string().required("Yêu cầu nhập tên hợp đồng"),
               signedDate: Yup.date().required("Yêu cầu nhập ngày ký hợp đồng"),
-              contractUrl: Yup.mixed().required('Yêu cầu tải lên văn bản pdf')
-                  .test('fileFormat', 'Yêu cầu định dạng pdf', value => {
-                    if (value) {
-                      const supportedFormats = ['pdf'];
-                      return supportedFormats.includes(value.name.split('.').pop());
-                    }
-                    return true;
-                  }),
-              endDate:Yup.string().required("Yêu cầu nhập ngày kết thúc hợp đồng")
+              contractUrl: Yup.mixed()
+                .required("Yêu cầu tải lên văn bản pdf")
+                .test("fileFormat", "Yêu cầu định dạng pdf", (value) => {
+                  if (value && typeof value === "object") {
+                    const supportedFormats = ["pdf"];
+                    return supportedFormats.includes(
+                      value.name.split(".").pop(),
+                    );
+                  }
+                  return true;
+                }),
+              endDate: Yup.string().required(
+                "Yêu cầu nhập ngày kết thúc hợp đồng",
+              ),
             })}
           >
             {({
-                values,
-                errors,
-                isSubmitting,
-                isValid,
-                setFieldValue,
-                handleChange,
-
-              })=>
-              ( <Form className="flex flex-initial flex-shrink flex-col">
+              values,
+              errors,
+              isSubmitting,
+              isValid,
+              setFieldValue,
+              handleChange,
+            }) => (
+              <Form className="flex flex-initial flex-shrink flex-col">
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
@@ -285,14 +372,14 @@ function FoConTractDetail(props) {
                           Số hợp đồng
                         </label>
                         <Field
-                            name="contractNumber"
-                            placeholder="Nhập số hợp đồng"
-                            className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          name="contractNumber"
+                          placeholder="Nhập số hợp đồng"
+                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                         ></Field>
                         <ErrorMessage
-                            className="justify-items-end text-sm font-light italic text-red-500"
-                            name="contractNumber"
-                            component="span"
+                          className="justify-items-end text-sm font-light italic text-red-500"
+                          name="contractNumber"
+                          component="span"
                         ></ErrorMessage>
                       </div>
                       <div className="col-span-full flex flex-col gap-2">
@@ -300,14 +387,14 @@ function FoConTractDetail(props) {
                           Tên hợp đồng
                         </label>
                         <Field
-                            name="contractName"
-                            placeholder="Nhập tên hợp đồng"
-                            className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          name="contractName"
+                          placeholder="Nhập tên hợp đồng"
+                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                         ></Field>
                         <ErrorMessage
-                            className="justify-items-end text-sm font-light italic text-red-500"
-                            name="contractName"
-                            component="span"
+                          className="justify-items-end text-sm font-light italic text-red-500"
+                          name="contractName"
+                          component="span"
                         ></ErrorMessage>
                       </div>
                       <div className="col-span-full flex flex-col items-stretch gap-2">
@@ -315,15 +402,14 @@ function FoConTractDetail(props) {
                           Ngày ký
                         </label>
                         <Field
-                            name="signedDate"
-                            type="date"
-                            placeholder="Nhập Site ID khác"
-                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          name="signedDate"
+                          type="date"
+                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                         ></Field>
                         <ErrorMessage
-                            className="justify-items-end text-sm font-light italic text-red-500"
-                            name="signedDate"
-                            component="span"
+                          className="justify-items-end text-sm font-light italic text-red-500"
+                          name="signedDate"
+                          component="span"
                         ></ErrorMessage>
                       </div>
                       <div className="col-span-full flex flex-col items-stretch gap-2">
@@ -331,40 +417,60 @@ function FoConTractDetail(props) {
                           Ngày ký
                         </label>
                         <Field
-                            name="endDate"
-                            type="date"
-                            placeholder="Nhập Site ID khác"
-                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          name="endDate"
+                          type="date"
+                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                         ></Field>
                         <ErrorMessage
-                            className="justify-items-end text-sm font-light italic text-red-500"
-                            name="endDate"
-                            component="span"
+                          className="justify-items-end text-sm font-light italic text-red-500"
+                          name="endDate"
+                          component="span"
                         ></ErrorMessage>
                       </div>
+
                       <div className="col-span-full flex flex-col items-stretch gap-2">
                         <label className="text-slate-400 font-semibold">
                           Tải lên văn bản hợp đồng
                         </label>
+                        {contractDetail.contractUrl ? (
+                            <Button
+                                variant=""
+                                color="blue"
+                                size="sm"
+                                className=""
+                                onClick={() => {
+                                  window.open(contractDetail.contractUrl, "_blank");
+                                }}
+                            >
+                              Văn bản hợp đồng
+                            </Button>
+                        ) : (
+                            <Typography color="blue-gray">
+                              - Chưa có hợp đồng
+                            </Typography>
+                        )}
                         <input
-                            type="file"
-                            name='contractUrl'
-                            accept='.pdf'
-                            className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
-                            onChange={(e) => {
-                              // Object is possibly null error w/o check
-                              if (e.currentTarget.files) {
-                                setFieldValue("contractUrl", e.currentTarget.files[0]);
-                              }
-                            }}
+                          type="file"
+                          name="contractUrl"
+                          accept=".pdf"
+                          className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
+                          onChange={(e) => {
+                            // Object is possibly null error w/o check
+                            const file = e.currentTarget.files[0];
+                            if (e.currentTarget.files) {
+                              setFieldValue(
+                                "contractUrl",
+                                file || currentContractPdf,
+                              );
+                            }
+                          }}
                         ></input>
                         <ErrorMessage
-                            className="justify-items-end text-sm font-light italic text-red-500"
-                            name="contractUrl"
-                            component="span"
+                          className="justify-items-end text-sm font-light italic text-red-500"
+                          name="contractUrl"
+                          component="span"
                         ></ErrorMessage>
                       </div>
-
                     </div>
                   </Card>
                 </DialogBody>
@@ -374,11 +480,8 @@ function FoConTractDetail(props) {
                   </Button>
                 </DialogFooter>
               </Form>
-              )
-
-            }
+            )}
           </Formik>
-
         </Drawer>
       </React.Fragment>
     </>
