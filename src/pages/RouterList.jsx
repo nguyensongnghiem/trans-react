@@ -189,7 +189,7 @@ function RouterList() {
   };
 
   const handleEditSubmit = async (router) => {
-    console.log(router)
+    console.log(router);
     try {
       await putData(`routers/${router.id}`, router);
       toast.success("Đã cập nhật thành công thiết bị");
@@ -352,11 +352,9 @@ function RouterList() {
                           placeholder="Site ID"
                           value={
                             simpleSiteList
-                              ? simpleSiteList.find(
-                                  (option) =>{
-                                    return option.id === getFieldProps("site.id")
-                                  }
-                                )
+                              ? simpleSiteList.find((option) => {
+                                  return option.id === getFieldProps("site.id");
+                                })
                               : ""
                           }
                           onChange={(selectedOption) => {
@@ -534,14 +532,15 @@ function RouterList() {
                         </label>
                         <Select
                           placeholder="Site ID"
+                          defaultValue={simpleSiteList.find(
+                            ({ id }) => id === values.site.id,
+                          )}
                           value={
                             simpleSiteList
-                                ? simpleSiteList.find(
-                                    (option) =>{
-                                      return option.id === getFieldProps("site.id")
-                                    }
-                                )
-                                : ""
+                              ? simpleSiteList.find((option) => {
+                                  return option.id === getFieldProps("site.id");
+                                })
+                              : ""
                           }
                           onChange={(selectedOption) => {
                             setFieldValue("site.id", selectedOption.id);
@@ -549,7 +548,7 @@ function RouterList() {
                           classNames={{
                             control: (state) =>
                               state.isFocused
-                                ? "border-blue-500"
+                                ? "border-blue-300"
                                 : "border-grey-300",
                           }}
                           components={{
@@ -561,7 +560,7 @@ function RouterList() {
                           getOptionLabel={(option) => option.siteId}
                           isLoading={false}
                           loadingMessage={() => "Đang lấy thông tin trạm..."}
-                          noOptionsMessage={() => "Site ID không tìm thấy"}
+                          noOptionsMessage={() => "Không có thông tin trạm"}
                         />
                         <ErrorMessage
                           className="justify-items-end text-sm font-light italic text-red-500"
