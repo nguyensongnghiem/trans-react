@@ -240,7 +240,7 @@ function SiteList2() {
 
   // if (isLoading) return <Spinner />;
   return (
-    <div className="px-3">
+    <div className="p-5">
 
       <Typography variant="h4" color="blue-gray" className="mb-3">
         Danh sách trạm

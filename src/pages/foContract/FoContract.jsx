@@ -32,6 +32,7 @@ import {
   Alert,
   Input,
   IconButton,
+  Badge,
 } from "@material-tailwind/react";
 import {
   PresentationChartBarIcon,
@@ -56,7 +57,7 @@ function FoContract() {
   const navigate = useNavigate();
   const [contractList, setContractList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [open, setOpen] = React.useState(0);
+  const [open, setOpen] = React.useState({});
   const [openAlert, setOpenAlert] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState();
@@ -76,9 +77,10 @@ function FoContract() {
     loadContractList();
   }, []);
 
-  const handleOpen = (value) => {
-    console.log(value);
-    setOpen(open === value ? 0 : value);
+  const handleOpen = (year) => {
+
+    setOpen(Object.keys(open).includes(String(year)) ? { ...open, [year]: !open[year] } : { ...open, [year]: true });
+
   };
 
   function handleContractSearch(e) {
@@ -115,9 +117,9 @@ function FoContract() {
 
   // if (isLoading) return <Spinner />;
   return (
-    <div className="grid grid-cols-12 gap-3">
+    <div className="grid grid-cols-12 gap-3 p-5">
       <div className="col-span-3">
-        <div className="h-[calc(100vh-2rem)] w-full p-2 border-r-2 border-r-gray-300 overflow-y-auto">
+        <div className="h-[calc(100vh-2rem)] w-full overflow-y-auto border-r-2 border-r-gray-300 p-2">
           <div className="mb-2 flex items-center gap-4">
             <Typography variant="h5" color="blue-gray">
               Danh mục hợp đồng
@@ -137,7 +139,7 @@ function FoContract() {
               return (
                 <Accordion
                   key={item.year}
-                  open={open === item.year}
+                  open={open[item.year]}
                   icon={
                     <Chip
                       value={item.count}
@@ -181,16 +183,21 @@ function FoContract() {
                             >
                               <ListItemPrefix>
                                 <ArrowRightCircleIcon
-                                  strokeWidth={1}
+                                  strokeWidth={2}
                                   className="h-3 w-3"
                                 />
                               </ListItemPrefix>
                               <Typography
                                 color="blue-gray"
-                                className="text-md "
+                                className="text-md"
                               >
                                 {contract.contractNumber}
                               </Typography>
+                              {/* <ListItemSuffix>
+                                <Badge color={contract.active ? 'green' : 'red'}>
+
+                                </Badge>
+                              </ListItemSuffix> */}
                             </ListItem>
                           );
                         })}

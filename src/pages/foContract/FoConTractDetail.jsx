@@ -16,7 +16,7 @@ import {
   DialogFooter,
   Drawer,
   IconButton,
-  Input,
+  Input, Switch,
   Textarea,
   Typography,
 } from "@material-tailwind/react";
@@ -46,9 +46,21 @@ function FoConTractDetail(props) {
       valueGetter: (p) => p.data.coreQuantity,
     },
     {
-      headerName: "Chi phí / tháng",
+      headerName: "Đơn giá/km",
       valueGetter: (p) => p.data.cost,
       cellRenderer: (p) => VND.format(p.data.cost),
+    },
+    {
+      headerName: "Trạng thái",
+      valueGetter: (p) => p.data.active,
+      cellRenderer: (p) => {
+        return (
+          <span className={`inline-flex items-center ${p.data.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}>
+            <span className={`w-2 h-2 me-1 ${p.data.active ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></span>
+            {p.data.active ? 'Hoạt động' : 'Không hoạt động'}
+          </span>
+        );
+      },
     },
     { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
     {
@@ -145,25 +157,34 @@ function FoConTractDetail(props) {
       } catch (e) {
         if (e.message) toast.error(e.message);
       }
-      setContractDetail(value);
+
     }
 
     const { hiredFoLineList, ...submitContract } = value;
+
     console.log(submitContract);
     await putData(`contracts/${submitContract.id}`, submitContract);
+    setContractDetail({ ...contractDetail, ...submitContract });
+    // setContractDetail(submitContract)
     handleCloseEditDrawer();
     toast.success("Đã cập nhật thông tin hợp đồng");
   }
 
-  function handleCloseEditDrawer() {
+  function handleCloseEditDrawer(resetForm) {
     closeDrawer();
   }
   if (!contractDetail) return <p>Không có thông tin </p>;
+
+  function handleDismissEditDrawer(resetForm) {
+    resetForm()
+    closeDrawer();
+  }
+
   return (
     <>
-      <Card className="mt-6 rounded-none shadow-lg p-4 text-blue-gray-600">
-        <div className="border-b mb-5 flex justify-start items-center gap-5">
-          <div className="text-blue-gray-600 flex items-center gap-2 pb-2 pr-2 border-b-2 border-blue-600 uppercase">
+      <Card className="mt-6 rounded-none p-4 text-blue-gray-600 shadow-lg">
+        <div className="mb-5 flex items-center justify-start gap-5 border-b">
+          <div className="flex items-center gap-2 border-b-2 border-blue-600 pb-2 pr-2 uppercase text-blue-gray-600">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -182,7 +203,7 @@ function FoConTractDetail(props) {
             </Typography>
           </div>
           <Button
-            className="flex p-2.5 transition-all duration-200 gap-2 "
+            className="flex gap-2 p-2.5 transition-all duration-200"
             onClick={() => {
               window.open(contractDetail.contractUrl, "_blank");
             }}
@@ -204,7 +225,7 @@ function FoConTractDetail(props) {
             Văn bản
           </Button>
           <Button
-            className="flex p-2.5 transition-all duration-300  gap-2"
+            className="flex gap-2 p-2.5 transition-all duration-300"
             onClick={handleOpenEditDrawer}
             variant="text"
             color="blue"
@@ -243,7 +264,7 @@ function FoConTractDetail(props) {
         </div>
         <Typography variant="h6">{contractDetail.contractName}</Typography>
         <CardBody>
-          <div className="grid grid-cols-4 mb-5 gap-2">
+          <div className="mb-5 grid grid-cols-4 gap-2">
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
               <InfoCard
                 header="Số tuyến cáp"
@@ -275,8 +296,8 @@ function FoConTractDetail(props) {
           </div>
 
           <div
-            className="ag-theme-quartz w-full h-[500px]" // applying the Data Grid theme
-            // style={{ height: "400px", width: "100%" }} // the Data Grid will fill the size of the parent container
+            className="ag-theme-quartz h-[500px] w-full" // applying the Data Grid theme
+          // style={{ height: "400px", width: "100%" }} // the Data Grid will fill the size of the parent container
           >
             <AgGridReact
               rowData={contractDetail.hiredFoLineList}
@@ -297,38 +318,9 @@ function FoConTractDetail(props) {
           placement="right"
           className="pt-4"
           size={500}
+          dismiss={{ enabled: false }}
         >
-          <div className="flex items-center justify-between px-4 pb-2">
-            <Typography variant="h4" color="blue">
-              Cập nhật thông tin hợp đồng
-            </Typography>
 
-            <IconButton
-              variant="text"
-              color="blue-gray"
-              onClick={handleCloseEditDrawer}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="h-5 w-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </IconButton>
-          </div>
-          <div className="mb-5 px-4">
-            <Typography variant="small" color="gray" className="font-normal ">
-              Cập nhật thông tin cơ bản của hợp đồng
-            </Typography>
-          </div>
           <Formik
             onSubmit={handleEditSubmit}
             initialValues={{
@@ -357,6 +349,7 @@ function FoConTractDetail(props) {
           >
             {({
               values,
+              resetForm,
               errors,
               isSubmitting,
               isValid,
@@ -364,9 +357,59 @@ function FoConTractDetail(props) {
               handleChange,
             }) => (
               <Form className="flex flex-initial flex-shrink flex-col">
+                <div className="flex items-center justify-between px-4 pb-2">
+                  <Typography variant="h4" color="blue">
+                    Cập nhật thông tin hợp đồng
+                  </Typography>
+
+                  <IconButton
+                    variant="text"
+                    color="blue-gray"
+                    onClick={() => handleDismissEditDrawer(resetForm)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </IconButton>
+                </div>
+                <div className="mb-5 px-4">
+                  <Typography variant="small" color="gray" className="font-normal">
+                    Cập nhật thông tin cơ bản của hợp đồng
+                  </Typography>
+                </div>
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
+                      <div className="col-span-full flex justify-end gap-2">
+                        {/*<label className="text-slate-400 font-semibold">*/}
+                        {/*  Trạng thái*/}
+                        {/*</label>*/}
+                        <Field
+                          as={Switch}
+                          name="active"
+                          color="green"
+                          label={
+                            <Typography variant="h6">
+                              {values.active ? 'Còn hiệu lực' : 'Đã thanh lý'}
+                            </Typography>
+                          }
+                          checked={values.active}
+                          onChange={({ target }) =>
+                            setFieldValue("active", target.checked)
+                          } // Thiết lập giá trị true/false
+                        />
+                      </div>
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Số hợp đồng
@@ -433,27 +476,27 @@ function FoConTractDetail(props) {
                           Tải lên văn bản hợp đồng
                         </label>
                         {contractDetail.contractUrl ? (
-                            <Button
-                                variant=""
-                                color="blue"
-                                size="sm"
-                                className=""
-                                onClick={() => {
-                                  window.open(contractDetail.contractUrl, "_blank");
-                                }}
-                            >
-                              Văn bản hợp đồng
-                            </Button>
+                          <Button
+
+                            color="blue"
+                            size="sm"
+
+                            onClick={() => {
+                              window.open(contractDetail.contractUrl, "_blank");
+                            }}
+                          >
+                            Văn bản hợp đồng
+                          </Button>
                         ) : (
-                            <Typography color="blue-gray">
-                              - Chưa có hợp đồng
-                            </Typography>
+                          <Typography color="blue-gray">
+                            - Chưa có hợp đồng
+                          </Typography>
                         )}
                         <input
                           type="file"
                           name="contractUrl"
                           accept=".pdf"
-                          className="w-full text-gray-400 font-semibold text-sm bg-white border file:cursor-pointer cursor-pointer file:border-0 file:py-3 file:px-4 file:mr-4 file:bg-gray-100 file:hover:bg-gray-200 file:text-gray-500 rounded"
+                          className="w-full cursor-pointer rounded border bg-white text-sm font-semibold text-gray-400 file:mr-4 file:cursor-pointer file:border-0 file:bg-gray-100 file:px-4 file:py-3 file:text-gray-500 file:hover:bg-gray-200"
                           onChange={(e) => {
                             // Object is possibly null error w/o check
                             const file = e.currentTarget.files[0];

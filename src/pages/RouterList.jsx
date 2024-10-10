@@ -32,7 +32,7 @@ import {
   Spinner,
   Chip,
   Badge,
-  chip,
+  chip, Switch,
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
@@ -71,20 +71,20 @@ function RouterList() {
     {
       headerName: "IP quản lý",
       valueGetter: (p) => p.data.ip,
+    },
+    { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
+    {
+      headerName: "Trạng thái",
+      valueGetter: (p) => p.data.active,
       cellRenderer: (p) => {
         return (
-          <div className="flex items-center">
-            <Chip
-              color="green"
-              size="sm"
-              className="flex items-center rounded-full px-2 py-1"
-              value={p.data.ip}
-            />
-          </div>
+          <span className={`inline-flex items-center ${p.data.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}>
+            <span className={`w-2 h-2 me-1 ${p.data.active ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></span>
+            {p.data.active ? 'Hoạt động' : 'Không hoạt động'}
+          </span>
         );
       },
     },
-    { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
     {
       headerName: "Tác động",
       cellRenderer: (p) => (
@@ -192,6 +192,10 @@ function RouterList() {
     console.log(router);
     try {
       await putData(`routers/${router.id}`, router);
+      setRouterList((prevList) =>
+        prevList.map((item) =>
+          item.id === router.id ? router : item)
+      )
       toast.success("Đã cập nhật thành công thiết bị");
     } catch (error) {
       console.log(error);
@@ -239,7 +243,7 @@ function RouterList() {
 
   // if (isLoading) return <Spinner />;
   return (
-    <div className="px-3">
+    <div className="p-5">
       <Typography variant="h4" color="blue-gray" className="mb-3">
         Danh sách thiết bị
       </Typography>
@@ -353,8 +357,8 @@ function RouterList() {
                           value={
                             simpleSiteList
                               ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
+                                return option.id === getFieldProps("site.id");
+                              })
                               : ""
                           }
                           onChange={(selectedOption) => {
@@ -510,11 +514,29 @@ function RouterList() {
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
+                      <div className="col-span-full flex justify-end gap-2">
+                        {/*<label className="text-slate-400 font-semibold">*/}
+                        {/*  Trạng thái*/}
+                        {/*</label>*/}
+                        <Field
+                          as={Switch}
+                          name="active"
+                          color="green"
+                          label={
+                            <Typography variant="h6">
+                              {values.active ? 'Đang hoạt động' : 'Không hoạt động'}
+                            </Typography>
+                          }
+                          checked={values.active}
+                          onChange={({ target }) =>
+                            setFieldValue("active", target.checked)
+                          } // Thiết lập giá trị true/false
+                        />
+                      </div>
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Tên thiết bị
                         </label>
-
                         <Field
                           name="name"
                           placeholder="Nhập tên thiết bị"
@@ -526,6 +548,7 @@ function RouterList() {
                           component="span"
                         ></ErrorMessage>
                       </div>
+
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Site ID
@@ -538,8 +561,8 @@ function RouterList() {
                           value={
                             simpleSiteList
                               ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
+                                return option.id === getFieldProps("site.id");
+                              })
                               : ""
                           }
                           onChange={(selectedOption) => {

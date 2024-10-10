@@ -29,7 +29,7 @@ function App() {
           <nav className="flex overflow-y-auto sm:min-w-64">
             <SideBar2></SideBar2>
           </nav>
-          <main className="flex-1 overflow-y-auto p-5">
+          <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>
         </div>

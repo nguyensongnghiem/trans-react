@@ -138,15 +138,22 @@ const Sidebar2 = () => {
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Tra cứu
+                  Danh sách trạm
                 </ListItem>
               </NavLink>
+              <NavLink
+                  to="/site/lookup"
+                  className={({ isActive }) =>
+                      [isActive ? "text-blue-400" : undefined].join(" ")
+                  }
+              >
               <ListItem>
                 <ListItemPrefix>
                   <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                 </ListItemPrefix>
-                Comming soon
+                Tra cứu thông tin trạm
               </ListItem>
+              </NavLink>
             </List>
           </AccordionBody>
         </Accordion>

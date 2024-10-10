@@ -10,10 +10,10 @@ import {
 import { NavLink } from "react-router-dom";
 function DashboardCard({ icon, title, content, subContent, detailUrl, color, bgColor }) {
     return (
-        <Card className="mt-6 flex flex-col justify-between p-2" color={bgColor}>
+        <Card className="mt-6 flex flex-col justify-between rounded-sm p-4 hover:shadow-lg" color={bgColor}>
             <CardBody className="p-2">
-
-                <Typography variant="h5" className="mb-2 uppercase" color={color}>
+                <Typography variant="h5" className="mb-2 flex gap-3 uppercase" color={color}>
+                    {icon}
                     {title}
                 </Typography>
                 <div className="text-end">
@@ -24,7 +24,7 @@ function DashboardCard({ icon, title, content, subContent, detailUrl, color, bgC
                 </div>
 
             </CardBody>
-            <CardFooter className="p-1 text-end" divider={true} color={bgColor}  >
+            <CardFooter className="p-1 text-end" color={bgColor}  >
                 <NavLink to={detailUrl}>
                     <Button
                         size="sm"

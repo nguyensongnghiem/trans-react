@@ -13,6 +13,7 @@ import SiteList2 from "./pages/SiteList2.jsx";
 import RouterList from "./pages/RouterList.jsx";
 import FoContract from "./pages/foContract/FoContract.jsx";
 import FoConTractDetail from "./pages/foContract/FoConTractDetail.jsx";
+import SiteLookup from "./pages/siteLookup/SiteLookup.jsx";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
       {
         path: "/site",
         element: <SiteList2 />
+      },
+      {
+        path: "/site/lookup",
+        element: <SiteLookup />
       },
       {
         path: "/site/edit/:editId",
