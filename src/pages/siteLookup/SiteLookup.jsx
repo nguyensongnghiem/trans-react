@@ -32,7 +32,12 @@ import {
   Alert,
   Input,
   IconButton,
-  Spinner
+  Spinner,
+  Button,
+  Tabs, Tab,
+  TabPanel,
+  TabsBody,
+  TabsHeader,
 } from "@material-tailwind/react";
 import {
   PresentationChartBarIcon,
@@ -53,12 +58,14 @@ import {
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import SiteInfoCard from "./component/SiteInfoCard.jsx";
+import { Label } from "recharts";
+import DeviceInfoCard from "./component/DeviceInfoCard.jsx";
 function SiteLookup() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchId, setSearchId] = useState();
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [site, setSite] = useState();
-
+  const [activeTab, setActiveTab] = React.useState("siteInfo");
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -75,26 +82,12 @@ function SiteLookup() {
     loadData();
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const siteList = await fetchData("sites/simple-list");
-        setSimpleSiteList(siteList);
-        console.log(siteList);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       try {
 
-        const result = await fetchData(`sites/${searchId}`);
+        const result = await fetchData(`sites/${searchId}/detail`);
         setSite(result);
         console.log(result);
 
@@ -122,7 +115,7 @@ function SiteLookup() {
 
   if (isLoading) return <Spinner />;
   return (
-    <div className="mt-5">
+    <div className="container mx-auto p-5">
       <Formik
         initialValues={{
           searchTerm: ""
@@ -133,29 +126,35 @@ function SiteLookup() {
         })}
       >
         <Form>
-          <div className="relative mx-auto flex w-2/4 items-center">
-            <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
-              <svg className="h-4 w-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-              </svg>
-            </div>
+          <div className="flex gap-3">
             <Field
               name="searchTerm"
-              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-4 ps-10 text-lg text-blue-gray-800"
+              as={Input}
+              icon={<MagnifyingGlassIcon />}
+              variant="static"
+              label="Site ID"
               placeholder="Tìm theo Site ID..."
             >
             </Field>
-            <button type="submit" className="absolute bottom-2.5 end-2.5 rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Tìm</button>
+            <Button type="submit" size="sm" variant="gradient">Tìm</Button>
           </div>
+
         </Form>
 
       </Formik>
       {site &&
-        <div className="flex">
-          <SiteInfoCard site={site} siteList={simpleSiteList} />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-1 h-full">
+            <DeviceInfoCard site={site} />
+          </div>
+          <div className="col-span-1 h-full">
+            <SiteInfoCard site={site} siteList={simpleSiteList} />
+          </div>
+
+
         </div>
       }
-    </div>
+    </div >
   );
 }
 export default SiteLookup;
