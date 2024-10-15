@@ -14,6 +14,9 @@ import RouterList from "./pages/RouterList.jsx";
 import FoContract from "./pages/foContract/FoContract.jsx";
 import FoConTractDetail from "./pages/foContract/FoConTractDetail.jsx";
 import SiteLookup from "./pages/siteLookup/SiteLookup.jsx";
+import AuthProvider from "./contexts/authContext.jsx";
+import PrivateRoutes from "./utils/PrivateRoutes.jsx";
+import Login from "./pages/Login.jsx";
 
 const router = createBrowserRouter([
   {
@@ -21,38 +24,41 @@ const router = createBrowserRouter([
     element: <App />,
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: "/site",
-        element: <SiteList2 />
-      },
-      {
-        path: "/site/lookup",
-        element: <SiteLookup />
-      },
-      {
-        path: "/site/edit/:editId",
-        element: <SiteEdit />
-      },
-      {
-        path: "/site/create",
-        element: <SiteCreate />
-      },
+
       {
         path: "/",
         element: <Dashboard />
       },
       {
-        path: "/router",
-        element: <RouterList />
+        path: "/login",
+        element: <Login />
       },
+
       {
-        path: "/fo-contract",
-        element: <FoContract />,
+        element: <PrivateRoutes />,
         children: [
           {
-            path: "/fo-contract/:id",
-            element: <FoConTractDetail />
-          }
+            path: "/fo-contract",
+            element: <FoContract />,
+            children: [
+              {
+                path: "/fo-contract/:id",
+                element: <FoConTractDetail />
+              }
+            ]
+          },
+          {
+            path: "/router",
+            element: <RouterList />
+          },
+          {
+            path: "/site",
+            element: <SiteList2 />
+          },
+          {
+            path: "/site/lookup",
+            element: <SiteLookup />
+          },
         ]
       },
     ]
@@ -61,7 +67,9 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>
 

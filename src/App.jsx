@@ -11,18 +11,16 @@ import {
   Outlet,
 } from "react-router-dom";
 import SideBar2 from "./components/SideBar2.jsx";
-import SideBar from "./components/SideBar.jsx";
-import Main from "./components/Main.jsx";
-import SiteList from "./pages/SiteList.jsx";
-import SiteCreate from "./pages/SiteCreate.jsx";
-
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import SiteEdit from "./pages/SiteEdit.jsx";
+
+import { useAuth } from "./contexts/authContext.jsx";
 
 function App() {
+  const { user } = useAuth();
   return (
     <>
+
       <div className="flex h-screen min-h-screen flex-col">
         <Header></Header>
         <div className="flex flex-1 flex-col overflow-y-hidden sm:flex-row">
@@ -36,6 +34,7 @@ function App() {
         {/* <footer className="bg-gray-100 p-2">Footer</footer> */}
       </div>
       <ToastContainer />
+
     </>
   );
 }
