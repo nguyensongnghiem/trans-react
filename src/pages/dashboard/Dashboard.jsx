@@ -232,7 +232,7 @@ function Dashboard() {
 
       <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {isTransmissionDataLoading ? <Spinner /> :
-          <Card className="col-span-2 p-4 lg:col-span-1">
+          <Card className="col-span-2 rounded-sm p-4 lg:col-span-1">
             <Typography variant="h4" className="border-b border-gray-200 p-4 uppercase" >Tỷ lệ truyền dẫn trạm</Typography>
             <Chart
               chartType="PieChart"
@@ -245,7 +245,7 @@ function Dashboard() {
         }
 
         {isSiteDataLoading ? <Spinner /> :
-          <Card className="col-span-2 p-4 lg:col-span-1">
+          <Card className="col-span-2 rounded-sm p-4 lg:col-span-1">
             <Typography variant="h4" className="border-b border-gray-200 p-4 uppercase" >Số trạm theo tỉnh</Typography>
             <Chart
               chartType="Bar"
@@ -271,7 +271,7 @@ function Dashboard() {
           </Card>
         }
         {isTransmissionDataLoading ? <Spinner /> :
-          <Card className="col-span-1 p-4 lg:col-span-2">
+          <Card className="col-span-1 rounded-sm p-4 lg:col-span-2">
             <Typography variant="h4" className="border-b border-gray-200 p-4 uppercase" >Tỷ lệ truyền dẫn theo tỉnh</Typography>
             <Chart
               chartType="BarChart"

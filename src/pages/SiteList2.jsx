@@ -106,8 +106,13 @@ function SiteList2() {
 
   useEffect(() => {
     const getAllSiteOwner = async () => {
-      const siteOwnerList = await siteOwnerService.getAll();
-      setSiteOwnerList(siteOwnerList);
+      try {
+        const siteOwnerList = await fetchData('siteOwners')
+        setSiteOwnerList(siteOwnerList);
+      }
+      catch (error) {
+        console.log(error);
+      }
     };
     getAllSiteOwner();
   }, []);
