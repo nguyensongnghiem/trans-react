@@ -1,16 +1,34 @@
-import { Button } from "@material-tailwind/react";
+import {
+  Button,
+  Dialog,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+} from "@material-tailwind/react";
 import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
-import { jwtDecode } from 'jwt-decode';
-import { Avatar, Menu, MenuHandler, MenuItem, MenuList, Typography } from "@material-tailwind/react";
+import { jwtDecode } from "jwt-decode";
+import {
+  Avatar,
+  Menu,
+  MenuHandler,
+  MenuItem,
+  MenuList,
+  Typography,
+} from "@material-tailwind/react";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { token, login, logout } = useAuth();
+
   const navigate = useNavigate();
-  let username
+
+  const [openLogout, setOpenLogout] = React.useState(false);
+
+  const handleOpenLogout = () => setOpenLogout(!openLogout);
+  let username;
   if (token) {
     const decoded = jwtDecode(token);
     username = decoded.sub;
@@ -23,6 +41,7 @@ const Header = () => {
   };
 
   const handleLogout = () => {
+    handleOpenLogout();
     logout();
   };
 
@@ -32,7 +51,11 @@ const Header = () => {
 
   return (
     <header className="flex w-full items-center gap-x-8 bg-gray-200 px-4 py-2">
-      <img src="./src/assets/mobifone.png" alt="logo" className="mr-auto h-full" />
+      <img
+        src="./src/assets/mobifone.png"
+        alt="logo"
+        className="mr-auto h-full"
+      />
       <div className="">
         <input
           type="text"
@@ -46,7 +69,17 @@ const Header = () => {
         {token ? (
           <Menu>
             <MenuHandler>
-              <Button color="green" size="sm" >{username}</Button>
+              <div className="flex justify-center items-center gap-2 cursor-pointer px-2 hover:text-blue-600">
+                <Avatar
+                  variant="circular"
+                  alt="user_avatar"
+                  className="cursor-pointer shadow-sm"
+                  src="./src/assets/avatar-default.png"
+                />
+                <Typography variant="h5" >
+                  {username}
+                </Typography>
+              </div>
             </MenuHandler>
             <MenuList>
               <MenuItem className="flex items-center gap-2">
@@ -126,25 +159,39 @@ const Header = () => {
                   />
                 </svg>
 
-
-                <Typography variant="small" className="font-medium" onClick={handleLogout}>
+                <Typography
+                  variant="small"
+                  className="font-medium"
+                  onClick={handleOpenLogout}
+                >
                   Đăng xuất
                 </Typography>
-
               </MenuItem>
             </MenuList>
           </Menu>
         ) : (
-          <Button
-            color="blue"
-            onClick={handleLogin}
-            variant="text"
-          >
+          <Button color="blue" onClick={handleLogin} variant="text">
             Đăng nhập
           </Button>
         )}
+        <Dialog open={openLogout} handler={handleOpenLogout} size="sm">
+          <DialogHeader>Đăng xuất</DialogHeader>
+          <DialogBody>Bạn xác nhận muốn đăng xuất khỏi hệ thống</DialogBody>
+          <DialogFooter>
+            <Button
+              variant="text"
+              color="red"
+              onClick={handleOpenLogout}
+              className="mr-1"
+            >
+              <span>Hủy</span>
+            </Button>
+            <Button variant="gradient" color="green" onClick={handleLogout}>
+              <span>Đăng xuất</span>
+            </Button>
+          </DialogFooter>
+        </Dialog>
       </div>
-
     </header>
   );
 };

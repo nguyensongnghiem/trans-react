@@ -1,9 +1,9 @@
-import axios from "axios";
+import {axiosInstance}  from '../axios/axiosConfig'; // Import axiosInstance
 import { toast } from "react-toastify";
-const BASE_URL = "http://localhost:8080/api";
+// const BASE_URL = "http://localhost:8080/api";
 export const fetchData = async (endpoint) => {
   try {
-    const response = await axios.get(`${BASE_URL}/${endpoint}`);
+    const response = await axiosInstance.get(`/${endpoint}`);
     return response.data; // Trả về dữ liệu
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -13,7 +13,7 @@ export const fetchData = async (endpoint) => {
 
 export const postData = async (endpoint, data) => {
   try {
-    const response = await axios.post(`${BASE_URL}/${endpoint}`, data);
+    const response = await axiosInstance.post(`/${endpoint}`, data);
     console.log(response.data);
 
     return response.data; // Trả về dữ liệu
@@ -25,7 +25,7 @@ export const postData = async (endpoint, data) => {
 
 export const putData = async (endpoint, data) => {
   try {
-    const response = await axios.put(`${BASE_URL}/${endpoint}`, data);
+    const response = await axiosInstance.put(`$/${endpoint}`, data);
     return response.data; // Trả về dữ liệu
   } catch (error) {
     console.error("Lỗi khi cập nhật dữ liệu:", error);
@@ -35,7 +35,7 @@ export const putData = async (endpoint, data) => {
 
 export const deleteData = async (endpoint) => {
   try {
-    await axios.delete(`${BASE_URL}/${endpoint}`);
+    await axiosInstance.delete(`/${endpoint}`);
     // Trả về dữ liệu
   } catch (error) {
     console.error("Error deleting data:", error);
