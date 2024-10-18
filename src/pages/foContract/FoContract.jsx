@@ -10,6 +10,7 @@ import OwnerChip from "../../components/OwnerChip.jsx";
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+import { useAxios } from "../../axios/axiosConfig.jsx";
 import {
   ArrowRightCircleIcon,
   MinusIcon,
@@ -61,13 +62,13 @@ function FoContract() {
   const [openAlert, setOpenAlert] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState();
-
+  const { axiosInstance } = useAxios();
   useEffect(() => {
     const loadContractList = async () => {
       setIsLoading(true);
       try {
-        const list = await fetchData("contracts");
-        setContractList(list);
+        const response = await axiosInstance.get("contracts");
+        setContractList(response.data);
       } catch (e) {
         console.log(e);
       } finally {

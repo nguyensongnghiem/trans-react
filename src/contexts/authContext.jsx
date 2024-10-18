@@ -1,14 +1,10 @@
-import React, { useContext, useState,useEffect } from 'react'
-import {setupAxiosInterceptor} from '../axios/axiosConfig'
+import React, { useContext, useState, useEffect } from 'react'
+
 const AuthContext = React.createContext();
 
 export default function AuthProvider({ children }) {
     // const [user, setUser] = useState();
     const [token, setToken] = useState();
-    useEffect(() => {
-        setupAxiosInterceptor(token); // Thiết lập interceptor với token hiện tại
-    console.log('token mới:'+ token)
-    }, [token]);
 
     const login = (tokenData) => {
         // setUser(userData)
@@ -16,7 +12,7 @@ export default function AuthProvider({ children }) {
     }
     const logout = () => {
         // setUser()
-        setToken(undefined)
+        setToken(null)
     }
 
     return (

@@ -2,23 +2,28 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/authContext';
 import { postData } from '../services/apiService';
 import { useNavigate } from 'react-router-dom';
+import { useAxios } from '../axios/axiosConfig';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
+    const axiosInstance = useAxios()
+    console.log(axiosInstance);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const submitCredentials = { 'username': username, 'password': password };
         try {
-            const response = await postData('auth/login', submitCredentials);
-            if (response.accessToken) {
-                login(response.accessToken);
+            const response = await axiosInstance.post('auth/login', submitCredentials);
+            if (response.data.accessToken) {
+                console.log(' token nhận về sau khi login : ' + response.data.accessToken);
+
+                login(response.data.accessToken);
                 navigate('/');
             } else {
-                setError(response.message);
+                setError(response.data.message);
 
             }
         } catch (error) {

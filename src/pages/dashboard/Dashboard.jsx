@@ -17,9 +17,7 @@ import {
 } from "@material-tailwind/react";
 import DashboardCard from "./component/DashboardCard";
 import { Chart } from "react-google-charts";
-import TotalSiteCard from "./component/TotalSiteCard";
-import TotalRouterCard from "./component/TotalRouterCard";
-import TotalLeaselineCard from "./component/TotalLeaselineCard";
+import { useAxios } from "../../axios/axiosConfig";
 
 function Dashboard() {
   const [error, setError] = useState();
@@ -34,11 +32,12 @@ function Dashboard() {
   const [totalRouters, setTotalRouters] = useState(0);
   const [totalLeaselines, setTotalLeaselines] = useState(0);
   const [totalCostPerMonth, setTotalCostPerMonth] = useState(0);
+  const axiosInstance = useAxios();
   useEffect(() => {
     const getTotalRouters = async () => {
       setIsRouterDataLoading(true)
-      const totalRouters = await routerService.getTotalRouters();
-      setTotalRouters(totalRouters);
+      const response = await axiosInstance.get("routers/reports/total");
+      setTotalRouters(response.data);
       setIsRouterDataLoading(false)
     }
     getTotalRouters();
@@ -49,9 +48,8 @@ function Dashboard() {
     const loadSiteData = async () => {
       setIsSiteDataLoading(true)
       try {
-        const data = await fetchData("sites/reports/count-by-province");
-        setCountSitesByProvince(data);
-
+        const response = await axiosInstance.get("sites/reports/count-by-province");
+        setCountSitesByProvince(response.data);
 
       } catch (error) {
         console.log(error);
@@ -69,11 +67,11 @@ function Dashboard() {
       setIsTransmissionDataLoading(true)
       try {
         const [countByTransType, countByTransTypeInProvince] = await Promise.all([
-          fetchData("sites/reports/count-by-transmission-type"),
-          fetchData("sites/reports/count-by-transmission-type-in-province")
+          axiosInstance.get("sites/reports/count-by-transmission-type"),
+          axiosInstance.get("sites/reports/count-by-transmission-type-in-province")
         ])
-        setCountByTransmissionType(countByTransType)
-        setCountByTransmissionTypeInProvince(countByTransTypeInProvince)
+        setCountByTransmissionType(countByTransType.data)
+        setCountByTransmissionTypeInProvince(countByTransTypeInProvince.data)
       } catch (error) {
         console.log(error);
 
@@ -90,8 +88,8 @@ function Dashboard() {
     const loadData = async () => {
       setIsTransmissionDataLoading(true)
       try {
-        const result = await fetchData("sites/reports/count-by-transmission-type")
-        setCountByTransmissionType(result);
+        const response = await axiosInstance.get("sites/reports/count-by-transmission-type")
+        setCountByTransmissionType(response.data);
       } catch (error) {
         console.log(error);
 
@@ -110,11 +108,11 @@ function Dashboard() {
       setIsLeaselineDataLoading(true)
       try {
         const [totalLeaselines, totalCostPerMonth] = await Promise.all([
-          fetchData("leaselines/reports/total"),
-          fetchData("leaselines/reports/total-cost-per-month")
+          axiosInstance.get("leaselines/reports/total"),
+          axiosInstance.get("leaselines/reports/total-cost-per-month")
         ])
-        setTotalLeaselines(totalLeaselines)
-        setTotalCostPerMonth(totalCostPerMonth)
+        setTotalLeaselines(totalLeaselines.data)
+        setTotalCostPerMonth(totalCostPerMonth.data)
       } catch (error) {
         console.log(error);
 

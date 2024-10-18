@@ -69,7 +69,7 @@ const Header = () => {
         {token ? (
           <Menu>
             <MenuHandler>
-              <div className="flex justify-center items-center gap-2 cursor-pointer px-2 hover:text-blue-600">
+              <div className="flex cursor-pointer items-center justify-center gap-2 px-2 hover:text-blue-600">
                 <Avatar
                   variant="circular"
                   alt="user_avatar"
@@ -186,7 +186,7 @@ const Header = () => {
             >
               <span>Hủy</span>
             </Button>
-            <Button variant="gradient" color="green" onClick={handleLogout}>
+            <Button variant="gradient" color="red" onClick={handleLogout}>
               <span>Đăng xuất</span>
             </Button>
           </DialogFooter>
