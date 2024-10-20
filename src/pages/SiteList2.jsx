@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 import * as siteService from "../services/SiteService";
 import { deleteData, fetchData, postData, putData } from "../services/apiService";
@@ -7,21 +7,19 @@ import * as transOwnerService from "../services/TransmissionOwnerService";
 import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeService";
 import * as provinceService from "../services/ProvinceService";
 import * as Yup from "yup";
-import * as siteOwnerService from "../services/SiteOwnerService";
+
 import { ErrorMessage, Field, Form, Formik } from "formik";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import OwnerChip from "../components/OwnerChip";
 import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
-import { Button, MenuItem, Option, Select, Input, Card, Dialog, Textarea, IconButton, Typography, DialogBody, DialogHeader, DialogFooter, Spinner, Chip, Badge, } from "@material-tailwind/react";
+import { Button, Card, Dialog, Textarea, IconButton, Typography, DialogBody, DialogHeader, DialogFooter, Spinner } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import Modal from "react-modal";
 import { toast } from "react-toastify";
-import * as logger from "react-dom/test-utils";
-
-
+import { useAxios } from "../libs/axios/axiosConfig";
+import { a } from "@table-library/react-table-library/index-a318de9b";
 
 
 
@@ -83,35 +81,43 @@ function SiteList2() {
   const [siteListFull, setSiteListFull] = useState([]);
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
+  const [siteOwnerList, setSiteOwnerList] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [siteOwnerList, setSiteOwnerList] = useState([]);
   const [editSite, setEditSite] = useState({});
   const [editId, setEditId] = useState(null);
-
+  const axiosInstance = useAxios();
   useEffect(() => {
     const getAllSiteFull = async () => {
-      setIsLoading(true);
-      const sites = await fetchData('sites')
-      setSiteListFull(sites);
-
-      setIsLoading(false);
+      try {
+        const sites = await axiosInstance.get('sites')
+        setSiteListFull(sites.data || []);
+      } catch (error) {
+        console.log(error);
+      }
+      finally {
+        setIsLoading(false);
+      }
     };
     getAllSiteFull();
   }, []);
 
   useEffect(() => {
     const getAllSiteOwner = async () => {
+      setIsLoading(true);
       try {
-        const siteOwnerList = await fetchData('siteOwners')
-        setSiteOwnerList(siteOwnerList);
+        const siteOwnerList = await axiosInstance.get('siteOwners')
+        setSiteOwnerList(siteOwnerList.data || []);
       }
       catch (error) {
         console.log(error);
+      }
+      finally {
+        setIsLoading(false);
       }
     };
     getAllSiteOwner();
@@ -119,33 +125,59 @@ function SiteList2() {
 
   useEffect(() => {
     const getAllTransmissionOwner = async () => {
-      const transOwnerList = await transOwnerService.getAll();
-      setTransmissionOwnerList(transOwnerList);
+      setIsLoading(true);
+      try {
+        const transOwnerList = await axiosInstance.get('transmissionOwners')
+        setTransmissionOwnerList(transOwnerList.data || [])
+      }
+      catch (error) {
+        console.log(error);
+      }
+      finally {
+        setIsLoading(false);
+      }
+
     };
     getAllTransmissionOwner();
   }, []);
 
   useEffect(() => {
+
+
     const getAllProvince = async () => {
-      const provinces = await provinceService.getAll();
-      setProvinces(provinces);
+      setIsLoading(true);
+      try {
+        const provinces = await axiosInstance.get('provinces');
+        console.log(provinces);
+
+        setProvinces(provinces.data || [])
+      } catch (error) {
+        console.log(error)
+      }
+      finally {
+        setIsLoading(false)
+      }
     };
-    getAllProvince();
+    getAllProvince()
   }, []);
 
   useEffect(() => {
     const getAllSiteTransmissionType = async () => {
-      const siteTransTypeList = await siteTransmissionTypeService.getAll();
-      setSiteTransmissionTypeList(siteTransTypeList);
+      setIsLoading(true);
+      try {
+        const siteTransTypeList = await axiosInstance.get('site-transmission-types')
+        setSiteTransmissionTypeList(siteTransTypeList.data || []);
+      } catch (error) {
+        console.log(error)
+      }
+      finally {
+        setIsLoading(false)
+      }
     };
-    getAllSiteTransmissionType();
+    getAllSiteTransmissionType()
   }, []);
 
-  const getSiteById = async (editId) => {
-    const site = await siteService.getSiteById(editId);
-    setEditSite({ ...site });
-    console.log(site);
-  };
+
 
 
   // Xử lý thêm mới
@@ -173,9 +205,22 @@ function SiteList2() {
   };
 
   // Xử lý Edit
+
   const handleEdit = async (editId) => {
-    await getSiteById(editId);
-    handleOpenEdit();
+    const getSiteById = async (editId) => {
+      try {
+        const site = await axiosInstance.get(`sites/${editId}`)
+        setEditSite({ ...site.data })
+        handleOpenEdit()
+        console.log(site.data)
+      }
+      catch (error) {
+        console.log('Lỗi api:');
+        console.log(error)
+      }
+
+    };
+    getSiteById(editId)
   };
 
   const handleOpenEdit = () => {
@@ -185,7 +230,8 @@ function SiteList2() {
     site.latitude = +site.latitude;
     site.longitude = +site.longitude;
     try {
-      await putData(`sites/${site.id}`, site);
+      await axiosInstance.put(`sites/${site.id}`, site);
+      setSiteListFull(prevState => prevState.map(s => s.id === site.id ? site : s))
       toast.success('Đã cập nhật thành công trạm')
     }
     catch (error) {
@@ -219,7 +265,7 @@ function SiteList2() {
     }
     catch (e) {
       console.log(e)
-      toast.error('Có lỗi xảy ra khi xóa thiết bị')
+      toast.error('Có lỗi xảy ra khi xóa trạm')
     }
     finally {
       handleOpenDelete();

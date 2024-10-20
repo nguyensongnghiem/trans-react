@@ -17,7 +17,7 @@ import {
 } from "@material-tailwind/react";
 import DashboardCard from "./component/DashboardCard";
 import { Chart } from "react-google-charts";
-import { useAxios } from "../../axios/axiosConfig";
+import { useAxios } from "../../libs/axios/axiosConfig";
 
 function Dashboard() {
   const [error, setError] = useState();

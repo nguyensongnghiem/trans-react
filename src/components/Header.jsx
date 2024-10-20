@@ -21,19 +21,17 @@ import {
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { token, login, logout } = useAuth();
+  const { auth, setAuth } = useAuth();
 
   const navigate = useNavigate();
 
   const [openLogout, setOpenLogout] = React.useState(false);
-
+  const token = auth.accessToken;
   const handleOpenLogout = () => setOpenLogout(!openLogout);
   let username;
   if (token) {
     const decoded = jwtDecode(token);
     username = decoded.sub;
-    console.log(decoded.sub);
-    console.log(token);
   }
 
   const handleLogin = () => {
@@ -42,7 +40,7 @@ const Header = () => {
 
   const handleLogout = () => {
     handleOpenLogout();
-    logout();
+    setAuth({})
   };
 
   const handleSearchChange = (event) => {

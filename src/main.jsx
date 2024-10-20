@@ -15,7 +15,7 @@ import FoContract from "./pages/foContract/FoContract.jsx";
 import FoConTractDetail from "./pages/foContract/FoConTractDetail.jsx";
 import SiteLookup from "./pages/siteLookup/SiteLookup.jsx";
 import AuthProvider from "./contexts/authContext.jsx";
-import PrivateRoutes from "./utils/PrivateRoutes.jsx";
+import PrivateRoutes from "./routes/PrivateRoutes.jsx";
 import Login from "./pages/Login.jsx";
 
 const router = createBrowserRouter([
@@ -25,10 +25,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
 
-      {
-        path: "/",
-        element: <Dashboard />
-      },
+
       {
         path: "/login",
         element: <Login />
@@ -59,6 +56,10 @@ const router = createBrowserRouter([
             path: "/site/lookup",
             element: <SiteLookup />
           },
+          {
+            path: "/",
+            element: <Dashboard />
+          }
         ]
       },
     ]

@@ -30,7 +30,7 @@ import "ag-grid-community/styles/ag-theme-quartz.css";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { toast } from "react-toastify"; // Optional Theme applied to the Data Grid
-import { useAxios } from "../../axios/axiosConfig.jsx";
+import { useAxios } from "../../libs/axios/axiosConfig.jsx";
 function FoConTractDetail(props) {
   const { id } = props;
   const [contractDetail, setContractDetail] = useState();
