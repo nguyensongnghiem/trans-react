@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/authContext';
 import { postData } from '../services/apiService';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAxios } from '../libs/axios/axiosConfig';
+import axios from '../libs/axios/axiosConfig';
 import { Button, Typography } from '@material-tailwind/react';
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -11,14 +11,14 @@ const Login = () => {
     const [error, setError] = useState('');
     const { auth, setAuth } = useAuth();
     const navigate = useNavigate();
-    const axiosInstance = useAxios()
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const submitCredentials = { 'username': username, 'password': password };
         try {
             setSuccess(false);
-            const response = await axiosInstance.post('auth/login', submitCredentials);
+            const response = await axios.post('auth/login', submitCredentials);
             const accessToken = response.data.accessToken;
             console.log(accessToken);
             setAuth({ username, password, accessToken });

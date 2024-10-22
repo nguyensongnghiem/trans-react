@@ -3,15 +3,29 @@ import axios from "axios";
 import { useAuth } from "../../contexts/authContext";
 // Tạo một instance của axios
 
+const BASE_URL = "http://localhost:8080/api";
+export default axios.create({
+  baseURL: BASE_URL,
+});
+
+export const axiosPrivate = axios.create({
+  baseURL: "http://localhost:8080/api",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  withCredentials: true
+});
+
+
 export const useAxios = () => {
   const { auth } = useAuth();
   const token = auth.accessToken
-  const axiosInstance = axios.create({
+  const axiosPrivate = axios.create({
     baseURL: "http://localhost:8080/api",
   });
 
   // Thêm interceptor để tự động thêm token vào header
-  axiosInstance.interceptors.request.use(
+  axiosPrivate.interceptors.request.use(
     (config) => {
 
       if (token && !isTokenExpired(token)) {
@@ -36,7 +50,7 @@ export const useAxios = () => {
     }
   );
 
-  // axiosInstance.interceptors.response.use(
+  // axiosPrivate.interceptors.response.use(
   //   (response) => {
   //     return response;
   //   },
@@ -49,6 +63,6 @@ export const useAxios = () => {
     const expirationDate = payload.exp * 1000; // Chuyển đổi sang milliseconds
     return Date.now() >= expirationDate;
   };
-  return axiosInstance;
+  return axiosPrivate;
 
 }
