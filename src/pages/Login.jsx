@@ -4,12 +4,13 @@ import { postData } from '../services/apiService';
 import { NavLink, useNavigate } from 'react-router-dom';
 import axios from '../libs/axios/axiosConfig';
 import { Button, Typography } from '@material-tailwind/react';
+import { jwtDecode } from 'jwt-decode';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
-    const { auth, setAuth } = useAuth();
+    const { auth, setToken } = useAuth();
     const navigate = useNavigate();
 
 
@@ -19,9 +20,13 @@ const Login = () => {
         try {
             setSuccess(false);
             const response = await axios.post('auth/login', submitCredentials);
+            console.log(response.data);
             const accessToken = response.data.accessToken;
-            console.log(accessToken);
-            setAuth({ username, password, accessToken });
+            const claims = jwtDecode(accessToken);            
+            console.log(claims);
+            console.log(new Date(claims.exp * 1000));
+            
+            setToken(accessToken);
             console.log(auth);
             setSuccess(true);
 

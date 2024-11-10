@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/authContext"
 
 const useAxiosPrivate = () => {
     const { auth } = useAuth();
-    const token = auth.accessToken
+    const token = auth?.accessToken
     axiosPrivate.interceptors.request.use(
         (config) => {
 
@@ -13,7 +13,7 @@ const useAxiosPrivate = () => {
                 config.headers["Authorization"] = `Bearer ${token}`; // Thêm token vào header      
             } else if (!token) {
                 // console.log('Interceptor: Xóa token khỏi header');
-                console.log('Không có token');
+                console.error('Không có token');
 
                 delete config.headers["Authorization"]; // Xóa header nếu không có token  
             }

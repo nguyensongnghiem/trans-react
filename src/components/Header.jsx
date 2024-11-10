@@ -21,12 +21,12 @@ import {
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { auth, setAuth } = useAuth();
+  const { auth, setToken, logout } = useAuth();
 
   const navigate = useNavigate();
 
   const [openLogout, setOpenLogout] = React.useState(false);
-  const token = auth.accessToken;
+  const token = auth?.accessToken;
   const handleOpenLogout = () => setOpenLogout(!openLogout);
   let username;
   if (token) {
@@ -40,7 +40,7 @@ const Header = () => {
 
   const handleLogout = () => {
     handleOpenLogout();
-    setAuth({})
+    logout()
   };
 
   const handleSearchChange = (event) => {

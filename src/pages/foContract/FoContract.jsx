@@ -10,7 +10,7 @@ import OwnerChip from "../../components/OwnerChip.jsx";
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
-import { useAxios } from "../../libs/axios/axiosConfig";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import {
   ArrowRightCircleIcon,
   MinusIcon,
@@ -20,35 +20,24 @@ import clsx from "clsx";
 import { toast } from "react-toastify";
 import React from "react";
 import {
-  Card,
+
   Typography,
   List,
   ListItem,
   ListItemPrefix,
-  ListItemSuffix,
   Chip,
   Accordion,
   AccordionHeader,
   AccordionBody,
-  Alert,
   Input,
-  IconButton,
-  Badge,
+
 } from "@material-tailwind/react";
 import {
-  PresentationChartBarIcon,
-  ShoppingBagIcon,
-  DocumentTextIcon,
-  UserCircleIcon,
-  Cog6ToothIcon,
-  InboxIcon,
-  PowerIcon,
+
   HashtagIcon,
 } from "@heroicons/react/24/solid";
 import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  CubeTransparentIcon,
+
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import FoConTractDetail from "./FoConTractDetail.jsx";
@@ -62,7 +51,7 @@ function FoContract() {
   const [openAlert, setOpenAlert] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState();
-  const { axiosInstance } = useAxios();
+  const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const loadContractList = async () => {
       setIsLoading(true);

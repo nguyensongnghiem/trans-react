@@ -18,9 +18,7 @@ import { Button, Card, Dialog, Textarea, IconButton, Typography, DialogBody, Dia
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { toast } from "react-toastify";
-import { useAxios } from "../libs/axios/axiosConfig";
-import { a } from "@table-library/react-table-library/index-a318de9b";
-
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 
 
 function SiteList2() {
@@ -90,7 +88,7 @@ function SiteList2() {
   const [isLoading, setIsLoading] = useState(true);
   const [editSite, setEditSite] = useState({});
   const [editId, setEditId] = useState(null);
-  const axiosInstance = useAxios();
+  const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const getAllSiteFull = async () => {
       try {

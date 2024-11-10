@@ -30,12 +30,12 @@ import "ag-grid-community/styles/ag-theme-quartz.css";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { toast } from "react-toastify"; // Optional Theme applied to the Data Grid
-import { useAxios } from "../../libs/axios/axiosConfig.jsx";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 function FoConTractDetail(props) {
   const { id } = props;
   const [contractDetail, setContractDetail] = useState();
   const [isLoading, setIsLoading] = useState(false);
-  const axiosInstance = useAxios();
+  const axiosInstance = useAxiosPrivate();
   const [colDefs, setColDefs] = useState([
     {
       headerName: "Tên tuyến",

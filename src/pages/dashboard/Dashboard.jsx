@@ -17,7 +17,7 @@ import {
 } from "@material-tailwind/react";
 import DashboardCard from "./component/DashboardCard";
 import { Chart } from "react-google-charts";
-import { useAxios } from "../../libs/axios/axiosConfig";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 
 function Dashboard() {
   const [error, setError] = useState();
@@ -32,11 +32,13 @@ function Dashboard() {
   const [totalRouters, setTotalRouters] = useState(0);
   const [totalLeaselines, setTotalLeaselines] = useState(0);
   const [totalCostPerMonth, setTotalCostPerMonth] = useState(0);
-  const axiosInstance = useAxios();
+  const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const getTotalRouters = async () => {
       setIsRouterDataLoading(true)
       const response = await axiosInstance.get("routers/reports/total");
+      console.log(response.data);
+
       setTotalRouters(response.data);
       setIsRouterDataLoading(false)
     }

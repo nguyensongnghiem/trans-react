@@ -6,7 +6,7 @@ export default function PrivateRoutes() {
     const { auth } = useAuth();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true); // Thêm trạng thái loading
-    const token = auth.accessToken;
+    const token = auth?.accessToken;
     useEffect(() => {
         const checkAuthenticated = async () => {
             setIsLoading(true); // Bắt đầu quá trình xác thực
