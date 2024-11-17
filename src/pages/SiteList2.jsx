@@ -145,9 +145,7 @@ function SiteList2() {
     const getAllProvince = async () => {
       setIsLoading(true);
       try {
-        const provinces = await axiosInstance.get('provinces');
-        console.log(provinces);
-
+        const provinces = await axiosInstance.get('provinces');       
         setProvinces(provinces.data || [])
       } catch (error) {
         console.log(error)

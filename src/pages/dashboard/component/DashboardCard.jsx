@@ -20,7 +20,7 @@ function DashboardCard({ icon, title, content, subContent, detailUrl, color, bgC
                     <Typography variant='h2'>{content}</Typography>
                 </div>
                 <div className="text-end">
-                    <Typography variant='h5'>{subContent}</Typography>
+                    <Typography variant='h5'>{subContent?subContent:""}</Typography>
                 </div>
 
             </CardBody>

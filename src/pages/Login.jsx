@@ -5,21 +5,24 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import axios from '../libs/axios/axiosConfig';
 import { Button, Typography } from '@material-tailwind/react';
 import { jwtDecode } from 'jwt-decode';
+import useRefreshToken from '../hooks/useRefreshToken';
 const Login = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
-    const { auth, setToken } = useAuth();
-    const navigate = useNavigate();
-
+    const [username, setUsername] = useState('')
+    const [password, setPassword] = useState('')
+    const [success, setSuccess] = useState(false)
+    const [error, setError] = useState('')
+    const { auth, setToken } = useAuth()
+    const navigate = useNavigate()
+    const {refreshToken} = useRefreshToken()
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const submitCredentials = { 'username': username, 'password': password };
         try {
             setSuccess(false);
-            const response = await axios.post('auth/login', submitCredentials);
+            const response = await axios.post('auth/login', submitCredentials, {
+                withCredentials:true
+            });
             console.log(response.data);
             const accessToken = response.data.accessToken;
             const claims = jwtDecode(accessToken);            
@@ -59,6 +62,8 @@ const Login = () => {
                             <a className="text-blue-500 underline hover:text-blue-700">
                                 Về trang chủ
                             </a>
+                            <br/>
+                             <button onClick={()=> {refreshToken()}}>Làm mới token</button>
 
                         </NavLink>
                     </div >) :

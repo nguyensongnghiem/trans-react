@@ -1,10 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-
-import { deleteData, fetchData, postData } from "../../services/apiService.jsx";
-
-import * as Yup from "yup";
-
-import { ErrorMessage, Field, Form, Formik } from "formik";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import OwnerChip from "../../components/OwnerChip.jsx";
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
@@ -12,11 +6,8 @@ import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the 
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import {
-  ArrowRightCircleIcon,
-  MinusIcon,
-  XMarkIcon,
+  ArrowRightCircleIcon,  
 } from "@heroicons/react/24/outline";
-import clsx from "clsx";
 import { toast } from "react-toastify";
 import React from "react";
 import {
@@ -41,7 +32,6 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import FoConTractDetail from "./FoConTractDetail.jsx";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid/index.js";
 
 function FoContract() {
   const navigate = useNavigate();
@@ -200,7 +190,7 @@ function FoContract() {
         </div>
       </div>
       <div className="col-span-9">
-        <FoConTractDetail id={selectedId} />
+        {selectedId && <FoConTractDetail id={selectedId} />}
       </div>
     </div>
   );

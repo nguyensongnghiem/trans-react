@@ -1,9 +1,4 @@
 import { useEffect, useState } from "react";
-import * as siteService from "../../services/SiteService";
-import * as routerService from "../../services/RouterService";
-import { fetchData, postData } from "../../services/apiService";
-import * as leaselineService from "../../services/LeaselineService";
-import * as siteTransmissionTypeService from "../../services/SiteTransmissionTypeService";
 import { ArrowDownTrayIcon, HomeIcon, HomeModernIcon } from "@heroicons/react/24/outline";
 import { PieChart, Pie, Sector, Cell, ResponsiveContainer } from 'recharts';
 import {
@@ -36,9 +31,7 @@ function Dashboard() {
   useEffect(() => {
     const getTotalRouters = async () => {
       setIsRouterDataLoading(true)
-      const response = await axiosInstance.get("routers/reports/total");
-      console.log(response.data);
-
+      const response = await axiosInstance.get("routers/reports/total");  
       setTotalRouters(response.data);
       setIsRouterDataLoading(false)
     }
@@ -103,7 +96,6 @@ function Dashboard() {
     loadData()
 
   }, [])
-
 
   useEffect(() => {
     const loadLeaselineData = async () => {
