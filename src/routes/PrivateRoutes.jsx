@@ -35,6 +35,6 @@ export default function PrivateRoutes() {
     // }
 
     return (
-        isAuthenticated ? <Outlet /> : <Navigate to="/login" />
+        token ? <Outlet /> : <Navigate to="/login" />
     );
 }

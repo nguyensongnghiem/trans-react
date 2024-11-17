@@ -1,61 +1,43 @@
 import { useEffect, useMemo, useState } from "react";
 import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import Select from "react-select";
-import * as siteService from "../services/SiteService";
-import {
-  deleteData,
-  fetchData,
-  postData,
-  putData,
-} from "../services/apiService";
-import * as provinceService from "../services/ProvinceService";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
-import { NavLink, useNavigate } from "react-router-dom";
-import OwnerChip from "../components/OwnerChip";
+import { useNavigate } from "react-router-dom";
+
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import {
   Button,
-  MenuItem,
-  Option,
-  Input,
   Card,
-  Dialog,
-  Textarea,
+  Dialog, 
   IconButton,
   Typography,
   DialogBody,
   DialogHeader,
   DialogFooter,
-  Spinner,
-  Chip,
-  Badge,
-  chip, Switch,
+  Switch,
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
-import Modal from "react-modal";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 function RouterList() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [routerList, setRouterList] = useState([]);
   const [routerTypeList, setRouterTypeList] = useState([]);
-  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
-    [],
-  );
+  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
   const [editRouter, setEditRouter] = useState({});
   const [editId, setEditId] = useState(null);
+  const axiosInstance = useAxiosPrivate();
   const [colDefs, setColDefs] = useState([
     { headerName: "Tỉnh", valueGetter: (p) => p.data.site.province?.name },
     { headerName: "Site ID", valueGetter: (p) => p.data.site.siteId },
@@ -78,9 +60,13 @@ function RouterList() {
       valueGetter: (p) => p.data.active,
       cellRenderer: (p) => {
         return (
-          <span className={`inline-flex items-center ${p.data.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}>
-            <span className={`w-2 h-2 me-1 ${p.data.active ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></span>
-            {p.data.active ? 'Hoạt động' : 'Không hoạt động'}
+          <span
+            className={`inline-flex items-center ${p.data.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}
+          >
+            <span
+              className={`w-2 h-2 me-1 ${p.data.active ? "bg-green-500" : "bg-red-500"} rounded-full`}
+            ></span>
+            {p.data.active ? "Hoạt động" : "Không hoạt động"}
           </span>
         );
       },
@@ -118,46 +104,63 @@ function RouterList() {
 
   useEffect(() => {
     const getAllRouter = async () => {
-      setIsLoading(true);
-      const routers = await fetchData("routers");
-      setRouterList(routers);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const routers = await axiosInstance.get("routers");
+        setRouterList(routers.data);
+      } catch (error) {
+        console.log(error);
+      } 
+      finally {
+        setIsLoading(false);
+      }
     };
     getAllRouter();
   }, []);
 
   useEffect(() => {
     const loadData = async () => {
-      const siteList = await fetchData("sites/simple-list");
-      setSimpleSiteList(siteList);
-      // console.log(siteList);
+      try {
+        const siteList = await axiosInstance.get("sites/simple-list");
+        setSimpleSiteList(siteList.data);
+      } catch (error) {
+        console.log(error);
+      }
     };
     loadData();
   }, []);
 
   useEffect(() => {
     const loadData = async () => {
-      const routerTypes = await fetchData("router-types");
-
-      setRouterTypeList(routerTypes);
+      try {
+        const routerTypes = await axiosInstance.get("router-types");
+        setRouterTypeList(routerTypes.data);
+      } catch (error) {
+        console.log(error);
+      }
     };
     loadData();
   }, []);
 
   useEffect(() => {
     const loadData = async () => {
-      const transDeviceTypeList = await fetchData("transmission-device-types");
-      setTransmissionDeviceTypeList(transDeviceTypeList);
+      try {
+        const transDeviceTypeList = await axiosInstance.get("transmission-device-types");
+        setTransmissionDeviceTypeList(transDeviceTypeList.data);
+      } catch (error) {
+        console.log(error);
+      }
     };
     loadData();
   }, []);
 
   const getRouterById = async (editId) => {
-    const router = await fetchData(`routers/${editId}`);
-    setEditRouter({ ...router });
-    console.log("edit router:");
-
-    console.log(router);
+    try {
+      const router = await axiosInstance.get(`routers/${editId}`);
+      setEditRouter({ ...router.data });
+    } catch (error) {
+      console.log(error);
+    }      
   };
 
   // Xử lý thêm mới
@@ -167,7 +170,7 @@ function RouterList() {
   const handleCreate = async (router) => {
     console.log(router);
     try {
-      await postData("routers", router);
+      await axiosInstance.post("routers", router);
       toast.success("Đã thêm mới thiết bị thành công.");
     } catch (error) {
       toast.error(error.response.data.message, {
@@ -191,11 +194,10 @@ function RouterList() {
   const handleEditSubmit = async (router) => {
     console.log(router);
     try {
-      await putData(`routers/${router.id}`, router);
+      await axiosInstance.put(`routers/${router.id}`, router);
       setRouterList((prevList) =>
-        prevList.map((item) =>
-          item.id === router.id ? router : item)
-      )
+        prevList.map((item) => (item.id === router.id ? router : item))
+      );
       toast.success("Đã cập nhật thành công thiết bị");
     } catch (error) {
       console.log(error);
@@ -221,11 +223,11 @@ function RouterList() {
   };
   const handleDeleteSubmit = async () => {
     try {
-      await deleteData("routers/" + deleteId);
+      await axiosInstance.delete("routers/" + deleteId);
       setDeleteId(null);
       toast.success("Đã xóa thành công thiết bị");
       setRouterList((prevState) =>
-        prevState.filter((router) => router.id !== deleteId),
+        prevState.filter((router) => router.id !== deleteId)
       );
     } catch (e) {
       console.log(e);
@@ -357,8 +359,8 @@ function RouterList() {
                           value={
                             simpleSiteList
                               ? simpleSiteList.find((option) => {
-                                return option.id === getFieldProps("site.id");
-                              })
+                                  return option.id === getFieldProps("site.id");
+                                })
                               : ""
                           }
                           onChange={(selectedOption) => {
@@ -524,7 +526,9 @@ function RouterList() {
                           color="green"
                           label={
                             <Typography variant="h6">
-                              {values.active ? 'Đang hoạt động' : 'Không hoạt động'}
+                              {values.active
+                                ? "Đang hoạt động"
+                                : "Không hoạt động"}
                             </Typography>
                           }
                           checked={values.active}
@@ -556,13 +560,13 @@ function RouterList() {
                         <Select
                           placeholder="Site ID"
                           defaultValue={simpleSiteList.find(
-                            ({ id }) => id === values.site.id,
+                            ({ id }) => id === values.site.id
                           )}
                           value={
                             simpleSiteList
                               ? simpleSiteList.find((option) => {
-                                return option.id === getFieldProps("site.id");
-                              })
+                                  return option.id === getFieldProps("site.id");
+                                })
                               : ""
                           }
                           onChange={(selectedOption) => {

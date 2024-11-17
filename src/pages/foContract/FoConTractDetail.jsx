@@ -119,8 +119,8 @@ function FoConTractDetail(props) {
 
     try {
       const url = await getDownloadURL(fileRef);
-      const response = await fetch(url);
-      const blob = await response.blob();
+      const response = await axiosInstance.get(url);
+      const blob = await response.data.blob();
       const file = new File([blob], 'contract_document.pdf', { type: blob.type }); // Đặt tên và kiểu file
       return file
     } catch (error) {
@@ -164,7 +164,7 @@ function FoConTractDetail(props) {
     const { hiredFoLineList, ...submitContract } = value;
 
     console.log(submitContract);
-    await putData(`contracts/${submitContract.id}`, submitContract);
+    await axiosInstance.put(`contracts/${submitContract.id}`, submitContract);
     setContractDetail({ ...contractDetail, ...submitContract });
     // setContractDetail(submitContract)
     handleCloseEditDrawer();

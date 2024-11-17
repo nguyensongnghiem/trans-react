@@ -21,7 +21,7 @@ import {
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { auth, setToken, logout } = useAuth();
+  const { auth, setToken, logout, isAuthenticated } = useAuth();
 
   const navigate = useNavigate();
 
@@ -40,7 +40,7 @@ const Header = () => {
 
   const handleLogout = () => {
     handleOpenLogout();
-    logout()
+    logout();
   };
 
   const handleSearchChange = (event) => {
@@ -64,7 +64,7 @@ const Header = () => {
         />
       </div>
       <div className="">
-        {token ? (
+        {isAuthenticated ? (
           <Menu>
             <MenuHandler>
               <div className="flex cursor-pointer items-center justify-center gap-2 px-2 hover:text-blue-600">
@@ -74,9 +74,7 @@ const Header = () => {
                   className="cursor-pointer shadow-sm"
                   src="./src/assets/avatar-default.png"
                 />
-                <Typography variant="h5" >
-                  {username}
-                </Typography>
+                <Typography variant="h5">{username}</Typography>
               </div>
             </MenuHandler>
             <MenuList>
@@ -169,7 +167,7 @@ const Header = () => {
           </Menu>
         ) : (
           <Button color="blue" onClick={handleLogin} variant="text">
-            Đăng nhập
+            ĐĂNG NHẬP
           </Button>
         )}
         <Dialog open={openLogout} handler={handleOpenLogout} size="sm">

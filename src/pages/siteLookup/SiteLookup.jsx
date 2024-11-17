@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { deleteData, fetchData, postData } from "../../services/apiService.jsx";
 
 import * as Yup from "yup";
-
+import useAxiosPrivate from "../../hooks/useAxiosPrivate.jsx"; 
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import OwnerChip from "../../components/OwnerChip.jsx";
@@ -19,46 +19,16 @@ import clsx from "clsx";
 import { toast } from "react-toastify";
 import React from "react";
 import {
-  Card,
-  Typography,
-  List,
-  ListItem,
-  ListItemPrefix,
-  ListItemSuffix,
-  Chip,
-  Accordion,
-  AccordionHeader,
-  AccordionBody,
-  Alert,
   Input,
-  IconButton,
   Spinner,
   Button,
-  Tabs, Tab,
-  TabPanel,
-  TabsBody,
-  TabsHeader,
+  
 } from "@material-tailwind/react";
 import {
-  PresentationChartBarIcon,
-  ShoppingBagIcon,
-  DocumentTextIcon,
-  UserCircleIcon,
-  Cog6ToothIcon,
-  InboxIcon,
-  PowerIcon,
-  HashtagIcon,
-} from "@heroicons/react/24/solid";
-import {
-  ChevronRightIcon,
-  ChevronDownIcon,
-  CubeTransparentIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import SiteInfoCard from "./component/SiteInfoCard.jsx";
-import { Label } from "recharts";
 import DeviceInfoCard from "./component/DeviceInfoCard.jsx";
 function SiteLookup() {
   const [isLoading, setIsLoading] = useState(true);
@@ -66,12 +36,13 @@ function SiteLookup() {
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [site, setSite] = useState();
   const [activeTab, setActiveTab] = React.useState("siteInfo");
+  const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const siteList = await fetchData("sites/simple-list");
-        setSimpleSiteList(siteList);
+        const siteList = await axiosInstance.get("sites/simple-list");
+        setSimpleSiteList(siteList.data);
         console.log(siteList);
       } catch (error) {
         console.log(error);
@@ -87,13 +58,10 @@ function SiteLookup() {
     const loadData = async () => {
       try {
 
-        const result = await fetchData(`sites/${searchId}/detail`);
-        setSite(result);
-        console.log(result);
-
-
+        const result = await axiosInstance.get(`sites/${searchId}/detail`);
+        setSite(result.data)     
       } catch (error) {
-        console.log(error);
+        console.log(error)
       }
     }
     loadData();
