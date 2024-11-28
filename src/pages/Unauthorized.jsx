@@ -1,14 +1,14 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 
-const ErrorPage = () => {
+const Unauthorized = () => {
   const location = useLocation();
   return (
     <div className="flex h-screen items-center justify-center bg-gray-100">
       <div className="text-center">
-        <h1 className="text-6xl font-bold text-red-600">404</h1>
-        <p className="mt-4 text-lg text-gray-700">Không tìm thấy trang này.</p>
+        <h1 className="text-6xl font-bold text-red-600">401</h1>
+        <p className="mt-4 text-lg text-gray-700">Không có quyền truy cập.</p>
         <p className="mt-2 text-sm text-gray-500">
-          Xin vui lòng kiểm tra lại URL hoặc quay lại trang chủ.
+          Xin vui lòng liên hệ quản trị viên hoặc quay lại trang chủ.
         </p>
         <NavLink
           to="/"
@@ -22,4 +22,4 @@ const ErrorPage = () => {
   );
 };
 
-export default ErrorPage;
+export default Unauthorized;

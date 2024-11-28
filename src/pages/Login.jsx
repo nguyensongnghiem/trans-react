@@ -19,7 +19,6 @@ const Login = () => {
     e.preventDefault();
     const submitCredentials = { username: username, password: password };
     try {
-
       const response = await axios.post("auth/login", submitCredentials, {
         withCredentials: true,
       });

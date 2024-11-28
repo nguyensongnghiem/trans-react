@@ -17,6 +17,7 @@ import SiteLookup from "./pages/siteLookup/SiteLookup.jsx";
 import AuthProvider from "./contexts/authContext.jsx";
 import PrivateRoutes from "./routes/PrivateRoutes.jsx";
 import Login from "./pages/Login.jsx";
+import Unauthorized from "./pages/Unauthorized.jsx";
 
 const router = createBrowserRouter([
   {
@@ -26,11 +27,14 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/login",
-        element: <Login />
+        element: <Login />,
       },
-
       {
-        element: <PrivateRoutes />,
+        path: "/unauthorized",
+        element: <Unauthorized />,
+      },
+      {
+        element: <PrivateRoutes allowedRoles={["ROLE_ADMIN"]} />,
         children: [
           {
             path: "/fo-contract",
@@ -38,29 +42,34 @@ const router = createBrowserRouter([
             children: [
               {
                 path: "/fo-contract/:id",
-                element: <FoConTractDetail />
-              }
-            ]
+                element: <FoConTractDetail />,
+              },
+            ],
           },
           {
             path: "/router",
-            element: <RouterList />
+            element: <RouterList />,
           },
           {
             path: "/site",
-            element: <SiteList2 />
+            element: <SiteList2 />,
           },
           {
             path: "/site/lookup",
-            element: <SiteLookup />
+            element: <SiteLookup />,
           },
+        ],
+      },
+      {
+        element: <PrivateRoutes allowedRoles={["ROLE_USER"]} />,
+        children: [
           {
             path: "/",
-            element: <Dashboard />
-          }
-        ]
+            element: <Dashboard />,
+          },
+        ],
       },
-    ]
+    ],
   },
 ]);
 ReactDOM.createRoot(document.getElementById("root")).render(
