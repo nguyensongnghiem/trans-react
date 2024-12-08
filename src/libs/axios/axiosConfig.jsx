@@ -1,7 +1,7 @@
 // axiosConfig.js
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8088/trans/api";
+const BASE_URL = "http://localhost:8088/api";
 export default axios.create({
   baseURL: BASE_URL,
 });

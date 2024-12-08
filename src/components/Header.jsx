@@ -49,11 +49,7 @@ const Header = () => {
 
   return (
     <header className="flex w-full items-center gap-x-8 bg-gray-200 px-4 py-2">
-      <img
-        src="./src/assets/mobifone.png"
-        alt="logo"
-        className="mr-auto h-full"
-      />
+      <img src="/images/mobifone.png" alt="logo" className="mr-auto h-full" />
       <div className="">
         <input
           type="text"
@@ -72,7 +68,7 @@ const Header = () => {
                   variant="circular"
                   alt="user_avatar"
                   className="cursor-pointer shadow-sm"
-                  src="./src/assets/avatar-default.png"
+                  src="/images/avatar-default.png"
                 />
                 <Typography variant="h5">{username}</Typography>
               </div>
