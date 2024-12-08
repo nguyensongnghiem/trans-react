@@ -18,6 +18,7 @@ import AuthProvider from "./contexts/authContext.jsx";
 import PrivateRoutes from "./routes/PrivateRoutes.jsx";
 import Login from "./pages/Login.jsx";
 import Unauthorized from "./pages/Unauthorized.jsx";
+import LeaselineList from "./pages/LeaselineList.jsx";
 
 const router = createBrowserRouter([
   {
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
           {
             path: "/site/lookup",
             element: <SiteLookup />,
+          },
+          {
+            path: "/leaseline",
+            element: <LeaselineList />,
           },
         ],
       },

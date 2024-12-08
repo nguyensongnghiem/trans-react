@@ -16,12 +16,11 @@ function DeviceInfoCard(props) {
       <List >
         {site.routerList.length > 0 ? site.routerList.map((router, index) => (
           <ListItem key={index}>
-            <ListItemPrefix className="flex flex-col gap-1">
+            <ListItemPrefix className="flex gap-1">
               <Chip color="red" variant="ghost" size="sm" value={router.transmissionDeviceType ? router.transmissionDeviceType.name : "N/A"} />
               <Chip color="teal" variant="ghost" size="sm" value={router.routerType ? router.routerType.name : "N/A"} />
             </ListItemPrefix>
-            <div>
-
+            <div className="flex gap-2">
               <Typography variant="h7" color="blue-gray" className="font-bold">
                 {router.name}
               </Typography>
