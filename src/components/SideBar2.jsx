@@ -261,6 +261,19 @@ const Sidebar2 = () => {
                   Hơp đồng thuê FO
                 </ListItem>
               </NavLink>
+              <NavLink
+                to="/hired-fo"
+                className={({ isActive }) =>
+                  [isActive ? "text-blue-400" : undefined].join(" ")
+                }
+              >
+                <ListItem>
+                  <ListItemPrefix>
+                    <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
+                  </ListItemPrefix>
+                  Danh sách tuyến thuê FO
+                </ListItem>
+              </NavLink>
             </List>
           </AccordionBody>
         </Accordion>
