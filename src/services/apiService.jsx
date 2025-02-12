@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 const BASE_URL = "http://localhost:8080/api";
 
 export const fetchData = async (endpoint) => {
-
   try {
     const response = await axios.get(`${BASE_URL}/${endpoint}`);
     return response.data; // Trả về dữ liệu
