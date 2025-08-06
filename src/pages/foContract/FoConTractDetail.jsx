@@ -38,6 +38,10 @@ function FoConTractDetail(props) {
   const axiosInstance = useAxiosPrivate();
   const [colDefs, setColDefs] = useState([
     {
+      headerName: "Tỉnh",
+      valueGetter: (p) => p.data.nearSite?.province.name,
+    },
+    {
       headerName: "Tên tuyến",
       valueGetter: (p) =>
         p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,

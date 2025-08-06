@@ -14,7 +14,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshToken } = useRefreshToken();
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname || "/"; 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const submitCredentials = { username: username, password: password };
