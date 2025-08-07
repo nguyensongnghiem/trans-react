@@ -6,7 +6,7 @@ function useContracts() {
   const [contracts, setContracts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [axiosPrivate] = useAuth();
+  const {axiosPrivate} = useAuth();
   // Hàm để lấy danh sách (Read)
   const fetchContracts = async () => {
     setIsLoading(true);
@@ -25,7 +25,7 @@ function useContracts() {
   // Hàm để tạo mới (Create)
   const createContract = async (newContract) => {
     try {
-      const response = await axios.post(`${BASE_URL}/contracts`, newContract);
+      const response = await axiosPrivate.post(`${BASE_URL}/contracts`, newContract);
       // Cập nhật lại state sau khi thêm thành công
       setContracts((prevContracts) => [...prevContracts, response.data]);
       toast.success("Tạo hợp đồng thành công!");
@@ -38,7 +38,7 @@ function useContracts() {
   // Hàm để chỉnh sửa (Update)
   const updateContract = async (id, updatedContract) => {
     try {
-      const response = await axios.put(`${BASE_URL}/contracts/${id}`, updatedContract);
+      const response = await axiosPrivate.put(`${BASE_URL}/contracts/${id}`, updatedContract);
       setContracts((prevContracts) =>
         prevContracts.map((contract) =>
           contract.id === id ? response.data : contract
@@ -72,3 +72,4 @@ function useContracts() {
 
   return { contracts, isLoading, error, createContract, updateContract, deleteContract, fetchContracts };
 }
+export default useContracts;

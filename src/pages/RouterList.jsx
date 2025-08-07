@@ -11,7 +11,7 @@ import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied
 import {
   Button,
   Card,
-  Dialog, 
+  Dialog,
   IconButton,
   Typography,
   DialogBody,
@@ -23,13 +23,15 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import useSimpleSites from "../hooks/useSimpleSites";
+import useRouters from "../hooks/useRouters"; // Import your custom hook for routers
 function RouterList() {
   // const navigate = useNavigate();
 
-  const [simpleSiteList, setSimpleSiteList] = useState([]);
-  const [routerList, setRouterList] = useState([]);
   const [routerTypeList, setRouterTypeList] = useState([]);
-  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState([]);
+  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
+    []
+  );
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -101,34 +103,20 @@ function RouterList() {
       floatingFilter: true,
     };
   });
-
-  useEffect(() => {
-    const getAllRouter = async () => {
-      try {
-        setIsLoading(true);
-        const routers = await axiosInstance.get("routers");
-        setRouterList(routers.data);
-      } catch (error) {
-        console.log(error);
-      } 
-      finally {
-        setIsLoading(false);
-      }
-    };
-    getAllRouter();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const siteList = await axiosInstance.get("sites/simple-list");
-        setSimpleSiteList(siteList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
+  const {
+    simpleSites: simpleSiteList,
+    setSimpleSites: setSimpleSiteList,
+    isLoading: isSimpleSitesLoading,
+  } = useSimpleSites();
+  const {
+    routers: routerList,
+    setRouters: setRouterList,
+    isLoadding: isRoutersLoading,
+    createRouter,
+    updateRouter,
+    deleteRouter,
+    fetchRouters,
+  } = useRouters();
 
   useEffect(() => {
     const loadData = async () => {
@@ -145,7 +133,9 @@ function RouterList() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const transDeviceTypeList = await axiosInstance.get("transmission-device-types");
+        const transDeviceTypeList = await axiosInstance.get(
+          "transmission-device-types"
+        );
         setTransmissionDeviceTypeList(transDeviceTypeList.data);
       } catch (error) {
         console.log(error);
@@ -160,7 +150,7 @@ function RouterList() {
       setEditRouter({ ...router.data });
     } catch (error) {
       console.log(error);
-    }      
+    }
   };
 
   // Xử lý thêm mới
@@ -169,16 +159,9 @@ function RouterList() {
   };
   const handleCreate = async (router) => {
     console.log(router);
-    try {
-      await axiosInstance.post("routers", router);
-      toast.success("Đã thêm mới thiết bị thành công.");
-    } catch (error) {
-      toast.error(error.response.data.message, {
-        zIndex: 9999,
-      });
-    } finally {
-      setOpenCreate(!openCreate);
-    }
+    await createRouter(router);
+    setOpenCreate(!openCreate);
+    
   };
   // Xử lý Edit
 

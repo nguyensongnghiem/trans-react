@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import useSites from "../../hooks/useSites.jsx";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import React from "react";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import * as Yup from "yup";
+import useContracts from "../../hooks/useContracts.jsx";
 import {
   Stepper,
   Step,
@@ -39,8 +40,10 @@ import FoConTractDetail from "./FoConTractDetail.jsx";
 
 function FoContract() {
   const navigate = useNavigate();
-  const [simpleSiteList, setSimpleSiteList] = useState([]);
-  const [contractList, setContractList] = useState([]);
+  const {contracts:contractList} = useContracts();
+  const {simpleSites, isSitesLoading, fetchSites } = useSites();
+  // const [simpleSiteList, setSimpleSiteList] = useState([]);
+  // const [contractList, setContractList] = useState([]);
   const [newContract, setNewContract] = useState({
     contractNumber: null,
     contractName: null,
@@ -74,32 +77,32 @@ function FoContract() {
     getAllTransmissionOwner();
   }, []);
 
-  useEffect(() => {
-    const loadContractList = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axiosInstance.get("contracts");
-        setContractList(response.data);
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadContractList();
-  }, []);
+  // useEffect(() => {
+  //   const loadContractList = async () => {
+  //     setIsLoading(true);
+  //     try {
+  //       const response = await axiosInstance.get("contracts");
+  //       setContractList(response.data);
+  //     } catch (e) {
+  //       console.log(e);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   loadContractList();
+  // }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const siteList = await axiosInstance.get("sites/simple-list");
-        setSimpleSiteList(siteList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
+  // useEffect(() => {
+  //   const loadData = async () => {
+  //     try {
+  //       const siteList = await axiosInstance.get("sites/simple-list");
+  //       setSimpleSiteList(siteList.data);
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+  //   loadData();
+  // }, []);
 
   const handleOpen = (year) => {
     setOpen(
