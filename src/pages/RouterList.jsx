@@ -176,22 +176,7 @@ function RouterList() {
 
   const handleEditSubmit = async (router) => {
     console.log(router);
-    try {
-      await axiosInstance.put(`routers/${router.id}`, router);
-      setRouterList((prevList) =>
-        prevList.map((item) => (item.id === router.id ? router : item))
-      );
-      toast.success("Đã cập nhật thành công thiết bị");
-    } catch (error) {
-      console.log(error);
-      if (error.response && error.response.status === 400) {
-        toast.error(error.data.message);
-      } else {
-        toast.error("Có lỗi bất thường xảy ra");
-      }
-    } finally {
-      setOpenEdit(!openEdit);
-    }
+    await updateRouter(router.id, router);    
     setOpenEdit(!openEdit);
   };
 
@@ -204,20 +189,10 @@ function RouterList() {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete);
   };
-  const handleDeleteSubmit = async () => {
-    try {
-      await axiosInstance.delete("routers/" + deleteId);
-      setDeleteId(null);
-      toast.success("Đã xóa thành công thiết bị");
-      setRouterList((prevState) =>
-        prevState.filter((router) => router.id !== deleteId)
-      );
-    } catch (e) {
-      console.log(e);
-      toast.error("Có lỗi xảy ra khi xóa trạm");
-    } finally {
-      handleOpenDelete();
-    }
+  const handleDeleteSubmit = async () => {    
+    await deleteRouter(deleteId);
+    setDeleteId(null);
+    setOpenDelete(!openDelete);   
   };
 
   let deleteRouterName;

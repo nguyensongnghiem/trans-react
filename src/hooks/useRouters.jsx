@@ -23,9 +23,11 @@ function useRouters() {
 
   // Hàm để tạo mới (Create)
   const createRouter = async (newRouter) => {
-    try {
+    setIsLoading(true);
+    try {      
       const response = await axiosPrivate.post(`${BASE_URL}/routers`, newRouter);
       // Cập nhật lại state sau khi thêm thành công
+      console.log("New router created:", response.data);
       setRouters((prevRouters) => [...prevRouters, response.data]);
       toast.success("Tạo router mới thành công!");
     } catch (error) {
@@ -41,17 +43,23 @@ function useRouters() {
 
   // Hàm để chỉnh sửa (Update)
   const updateRouter = async (id, updatedRouter) => {
+    setIsLoading(true);
     try {
+      console.log("Updating router with ID:", id, "Data:", updatedRouter);
       const response = await axiosPrivate.put(`${BASE_URL}/routers/${id}`, updatedRouter);
       setRouters((prevRouters) =>
         prevRouters.map((router) =>
-          router.id === id ? response.data : router
+          router.id === id ? updatedRouter : router
         )
       );
       toast.success("Cập nhật router thành công!");
     } catch (error) {
       setError(error);
-      toast.error("Lỗi khi cập nhật thông tin router!");
+          if (error.response && error.response.status === 400) {
+        toast.error(error.data.message);
+      } else {
+        toast.error("Có lỗi bất thường xảy ra");
+      }      
     }
     finally {
       setIsLoading(false);
@@ -60,6 +68,7 @@ function useRouters() {
 
   // Hàm để xóa (Delete)
   const deleteRouter = async (id) => {
+    setIsLoading(true);
     try {
       await axiosPrivate.delete(`${BASE_URL}/routers/${id}`);
       setRouters((prevRouters) =>
