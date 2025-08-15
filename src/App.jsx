@@ -33,7 +33,7 @@ function App() {
         </div>
         {/* <footer className="bg-gray-100 p-2">Footer</footer> */}
       </div>
-      <ToastContainer />
+      <ToastContainer className="custom-z-index"/>
 
     </>
   );

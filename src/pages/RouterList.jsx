@@ -157,6 +157,8 @@ function RouterList() {
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
   };
+
+  // Tạo mới Router
   const handleCreate = async (router) => {
     console.log(router);
     await createRouter(router);

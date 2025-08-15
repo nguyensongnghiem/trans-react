@@ -13,4 +13,7 @@
   a .active {
     color: red;
   }
+  .custom-z-index {
+    z-index: 10000 !important;
+  }
 }

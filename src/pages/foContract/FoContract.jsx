@@ -14,7 +14,7 @@ import {
   Stepper,
   Step,
   Button,
-  Card,  
+  Card,
   Typography,
   List,
   ListItem,
@@ -27,7 +27,7 @@ import {
   Dialog,
   IconButton,
   DialogBody,
-  DialogHeader,  
+  DialogHeader,
 } from "@material-tailwind/react";
 import { HashtagIcon } from "@heroicons/react/24/solid";
 import {
@@ -40,8 +40,12 @@ import FoConTractDetail from "./FoConTractDetail.jsx";
 
 function FoContract() {
   const navigate = useNavigate();
-  const {contracts:contractList} = useContracts();
-  const {simpleSites, isSitesLoading, fetchSites } = useSites();
+  const {
+    contracts: contractList,
+    createContract,
+    fetchContracts,
+  } = useContracts();
+  const { simpleSites, isSitesLoading, fetchSites } = useSites();
   // const [simpleSiteList, setSimpleSiteList] = useState([]);
   // const [contractList, setContractList] = useState([]);
   const [newContract, setNewContract] = useState({
@@ -63,6 +67,7 @@ function FoContract() {
   const [activeStep, setActiveStep] = React.useState(0);
   const [isLastStep, setIsLastStep] = React.useState(false);
   const [isFirstStep, setIsFirstStep] = React.useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
   const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const getAllTransmissionOwner = async () => {
@@ -76,33 +81,6 @@ function FoContract() {
     };
     getAllTransmissionOwner();
   }, []);
-
-  // useEffect(() => {
-  //   const loadContractList = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const response = await axiosInstance.get("contracts");
-  //       setContractList(response.data);
-  //     } catch (e) {
-  //       console.log(e);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   loadContractList();
-  // }, []);
-
-  // useEffect(() => {
-  //   const loadData = async () => {
-  //     try {
-  //       const siteList = await axiosInstance.get("sites/simple-list");
-  //       setSimpleSiteList(siteList.data);
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   };
-  //   loadData();
-  // }, []);
 
   const handleOpen = (year) => {
     setOpen(
@@ -135,39 +113,51 @@ function FoContract() {
       return acc;
     },
     {}
-  );  
+  );
   const contractArrayByYearWithSearch = Object.entries(
     contractByYearWithSearch
   ).map(([year, count]) => ({
     year: parseInt(year),
     count,
   }));
-  // Xử lý thêm mới
+  // Xử lý mở modal thêm mới hợp đồng
   const handleOpenCreate = () => {
+    if (openCreate) {
+      // Reset state của hợp đồng
+      setNewContract({
+        contractNumber: null,
+        contractName: null,
+        signedDate: null,
+        endDate: null,
+        contractUrl: null,
+        transmissionOwner: { id: 1 }, // hoặc id mặc định ban đầu
+        note: "",
+      });
+      setUploadFile(null);
+      // Reset active step về 0
+      setActiveStep(0);
+      // Reset các state khác nếu cần
+      // Ví dụ: setError(null);
+    }
     setOpenCreate(!openCreate);
   };
+
+  // Xử lý thêm mới hợp đồng
   const handleCreateContract = async (contract) => {
-    console.log(contract);
-    setNewContract((prev) => {
-      return { ...prev, ...contract };
-    });
-    handleNext();
-    // try {
-    //   await axiosInstance.post("contract", contract);
-    //   toast.success("Đã thêm mới hợp đồng thành công.");
-    // } catch (error) {
-    //   toast.error(error.response.data.message, {
-    //     zIndex: 9999,
-    //   });
-    // } finally {
-    //   setOpenCreate(!openCreate);
-    // }
+    console.log("Đã gọi tạo contract" + contract);
+    try {
+      const response = await createContract(contract);
+      await fetchContracts(); // Cập nhật lại danh sách hợp đồng sau khi tạo mới
+      setActiveStep(1); // Chuyển sang bước 2
+    } catch (error) {
+      console.error("Lỗi tạo mới hợp đồng:", error);
+    }
   };
   const handleUploadList = async (file) => {
     console.log(file);
   };
 
-  const validateStep1 = Yup.object({
+  const contractValidate = Yup.object({
     contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
     contractName: Yup.string().required("Yêu cầu nhập tên hợp đồng"),
     signedDate: Yup.date().required("Yêu cầu nhập ngày ký"),
@@ -175,38 +165,42 @@ function FoContract() {
     transmissionOwner: Yup.object({
       id: Yup.string().required("Yêu cầu nhập nhà cung cấp"),
     }),
-    contractUrl: Yup.mixed()
-      .required("Yêu cầu tải lên văn bản pdf")
-      .test("fileFormat", "Yêu cầu định dạng pdf", (value) => {
-        console.log(value);
-        if (value && typeof value === "object" && value.name) {
-          const supportedFormats = ["pdf"];
-          return supportedFormats.includes(
-            value.name.split(".").pop()
-          );
-        }
-        return true;
-      }),
-  })
+    // contractUrl: Yup.mixed()
+    //   .required("Yêu cầu tải lên văn bản pdf")
+    //   .test("fileFormat", "Yêu cầu định dạng pdf", (value) => {
+    //     console.log(value);
+    //     if (value && typeof value === "object" && value.name) {
+    //       const supportedFormats = ["pdf"];
+    //       return supportedFormats.includes(
+    //         value.name.split(".").pop()
+    //       );
+    //     }
+    //     return true;
+    //   }),
+  });
   // const handleNext = () => !isLastStep && setActiveStep((cur) => cur + 1);
   const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
-  const handleNext = async (values, {validateForm, setErrors, setTouched}) => {
-    console.log(values);
-    const errors = await validateForm();    
-    console.log(errors);    
-    if (Object.keys(errors).length === 0) {      
-      !isLastStep && setActiveStep((cur) => cur + 1);
-    }
-    else {
-      setTouched( {contractNumber: true,
+  const handleNext = async (
+    values,
+    { validateForm, setErrors, setTouched }
+  ) => {
+    // console.log("Lỗi validate contract" + values);
+    const errors = await validateForm();
+    if (Object.keys(errors).length > 0) {
+      // Nếu có lỗi, hiển thị lỗi
+      setTouched({
+        contractNumber: true,
         contractName: true,
         signedDate: true,
         endDate: true,
-        contractUrl: true,
-        transmissionOwner: { id: true }
-        });
-      setErrors(errors)
+        transmissionOwner: { id: true },
+      });
+      setErrors(errors);
+      return;
     }
+    // Bước 2: Gọi API để tạo hợp đồng
+    await handleCreateContract(values);
+
   };
   // if (isLoading) return <Spinner />;
   return (
@@ -249,6 +243,7 @@ function FoContract() {
               value={searchTerm}
             />
           </div>
+          {/* Danh sách hợp đồng theo năm */}
           <List className="p-0">
             {contractArrayByYearWithSearch.map((item) => {
               return (
@@ -362,7 +357,7 @@ function FoContract() {
                     variant="h6"
                     color={activeStep === 0 ? "blue-gray" : "gray"}
                   >
-                    Thông tin cơ bản
+                    Tạo hợp đồng
                   </Typography>
                 </div>
               </Step>
@@ -394,9 +389,16 @@ function FoContract() {
                 <Formik
                   onSubmit={handleCreateContract}
                   initialValues={newContract}
-                  validationSchema={validateStep1}
+                  validationSchema={contractValidate}
                 >
-                  {({ setFieldValue,  values, setErrors, isSubmitting, validateForm,setTouched }) => (
+                  {({
+                    setFieldValue,
+                    values,
+                    setErrors,
+                    isSubmitting,
+                    validateForm,
+                    setTouched,
+                  }) => (
                     <Form className="flex flex-initial flex-shrink flex-col">
                       <DialogBody className="space-y-4 pb-6">
                         {activeStep === 0 && (
@@ -530,7 +532,15 @@ function FoContract() {
                             <div className="grid grid-cols-12 gap-3 p-2">
                               <div className="col-span-full flex flex-col gap-2">
                                 <label className="text-slate-400 font-semibold">
-                                  Tải lên file excel theo mẫu (<a className="text-blue-500 italic" href="/template/Danh sach FO trien khai v2.xlsx"> File mẫu </a>)
+                                  Tải lên file excel theo mẫu (
+                                  <a
+                                    className="text-blue-500 italic"
+                                    href="/template/Danh sach FO trien khai v2.xlsx"
+                                  >
+                                    {" "}
+                                    File mẫu{" "}
+                                  </a>
+                                  )
                                 </label>
                                 <input
                                   type="file"
@@ -565,29 +575,36 @@ function FoContract() {
                           Quay lại
                         </Button>
 
-                        {!isLastStep ?
+                        {!isLastStep ? (
                           <Button
-                          size="md"
-                          color="blue"
-                          onClick={() => handleNext(values, {validateForm, setErrors, setTouched})}
-                          // onClick={() => setErrors({contractNumber: 'Looix'})}
-                          disabled={isLastStep}
+                            size="md"
+                            color="blue"
+                            onClick={() => {
+                              if (activeStep === 0) {
+                                handleNext(values, {
+                                  validateForm,
+                                  setErrors,
+                                  setTouched,
+                                });
+                              } else if (activeStep === 1) {
+                                handleUploadList();
+                              }
+                            }}
+                            // onClick={() => setErrors({contractNumber: 'Looix'})}
+                            disabled={isLastStep}
                           >
-                            Tiếp theo
+                            {activeStep == 0
+                              ? "Tạo hợp đồng"
+                              : "Thêm tuyến cáp"}
                           </Button>
-                        : <Button
-                          size="md"
-                          type="submit"
-                          color="red"
-                          
-                        >
-                          Hoàn thành
-                        </Button>
-                        
-                        }
+                        ) : (
+                          <Button size="md" type="submit" color="red">
+                            Hoàn thành
+                          </Button>
+                        )}
                       </div>
                     </Form>
-                  )}                  
+                  )}
                 </Formik>
               </div>
             </div>
