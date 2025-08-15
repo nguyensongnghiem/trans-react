@@ -59,14 +59,14 @@ function FoContract() {
   });
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [open, setOpen] = React.useState({});
+  const [open, setOpen] = useState({});
   const [openAlert, setOpenAlert] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState();
   const [openCreate, setOpenCreate] = useState(false);
-  const [activeStep, setActiveStep] = React.useState(0);
-  const [isLastStep, setIsLastStep] = React.useState(false);
-  const [isFirstStep, setIsFirstStep] = React.useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const [isLastStep, setIsLastStep] = useState(false);
+  const [isFirstStep, setIsFirstStep] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const axiosInstance = useAxiosPrivate();
   useEffect(() => {
@@ -200,7 +200,6 @@ function FoContract() {
     }
     // Bước 2: Gọi API để tạo hợp đồng
     await handleCreateContract(values);
-
   };
   // if (isLoading) return <Spinner />;
   return (
@@ -385,23 +384,23 @@ function FoContract() {
               </Step>
             </Stepper>
             <div className="mt-4">
-              <div>
-                <Formik
-                  onSubmit={handleCreateContract}
-                  initialValues={newContract}
-                  validationSchema={contractValidate}
-                >
-                  {({
-                    setFieldValue,
-                    values,
-                    setErrors,
-                    isSubmitting,
-                    validateForm,
-                    setTouched,
-                  }) => (
-                    <Form className="flex flex-initial flex-shrink flex-col">
-                      <DialogBody className="space-y-4 pb-6">
-                        {activeStep === 0 && (
+              {activeStep == 0 && (
+                <div>
+                  <Formik
+                    onSubmit={handleCreateContract}
+                    initialValues={newContract}
+                    validationSchema={contractValidate}
+                  >
+                    {({
+                      setFieldValue,
+                      values,
+                      setErrors,
+                      isSubmitting,
+                      validateForm,
+                      setTouched,
+                    }) => (
+                      <Form className="flex flex-initial flex-shrink flex-col">
+                        <DialogBody className="space-y-4 pb-6">
                           <Card className="shadow-none">
                             <div className="grid grid-cols-12 gap-3 p-2">
                               <div className="col-span-full flex flex-col gap-2">
@@ -526,87 +525,88 @@ function FoContract() {
                               </div>
                             </div>
                           </Card>
-                        )}
-                        {activeStep === 1 && (
-                          <Card className="shadow-none">
-                            <div className="grid grid-cols-12 gap-3 p-2">
-                              <div className="col-span-full flex flex-col gap-2">
-                                <label className="text-slate-400 font-semibold">
-                                  Tải lên file excel theo mẫu (
-                                  <a
-                                    className="text-blue-500 italic"
-                                    href="/template/Danh sach FO trien khai v2.xlsx"
-                                  >
-                                    {" "}
-                                    File mẫu{" "}
-                                  </a>
-                                  )
-                                </label>
-                                <input
-                                  type="file"
-                                  name="uploadList"
-                                  accept=".pdf"
-                                  className="w-full cursor-pointer rounded border bg-white text-sm font-semibold text-gray-400 file:mr-4 file:cursor-pointer file:border-0 file:bg-gray-100 file:px-4 file:py-3 file:text-gray-500 file:hover:bg-gray-200"
-                                  onChange={(e) => {
-                                    // Object is possibly null error w/o check
-                                    const file = e.currentTarget.files[0];
-                                    if (e.currentTarget.files) {
-                                      setFieldValue(
-                                        "uploadList",
-                                        file || currentContractPdf
-                                      );
-                                    }
-                                  }}
-                                ></input>
-                                <ErrorMessage
-                                  className="justify-items-end text-sm font-light italic text-red-500"
-                                  name="uploadList"
-                                  component="span"
-                                ></ErrorMessage>
-                              </div>
-                            </div>
-                          </Card>
-                        )}
-                      </DialogBody>
+                        </DialogBody>
 
-                      {/* <DialogBody className="space-y-4 pb-6"></DialogBody> */}
-                      <div className="flex justify-between">
-                        <Button onClick={handlePrev} disabled={isFirstStep}>
-                          Quay lại
-                        </Button>
+                        {/* <DialogBody className="space-y-4 pb-6"></DialogBody> */}
+                        <div className="flex justify-between">
+                          <Button onClick={handlePrev} disabled={isFirstStep}>
+                            Quay lại
+                          </Button>
 
-                        {!isLastStep ? (
-                          <Button
-                            size="md"
-                            color="blue"
-                            onClick={() => {
-                              if (activeStep === 0) {
-                                handleNext(values, {
-                                  validateForm,
-                                  setErrors,
-                                  setTouched,
-                                });
-                              } else if (activeStep === 1) {
-                                handleUploadList();
-                              }
-                            }}
-                            // onClick={() => setErrors({contractNumber: 'Looix'})}
-                            disabled={isLastStep}
-                          >
-                            {activeStep == 0
-                              ? "Tạo hợp đồng"
-                              : "Thêm tuyến cáp"}
-                          </Button>
-                        ) : (
-                          <Button size="md" type="submit" color="red">
-                            Hoàn thành
-                          </Button>
-                        )}
-                      </div>
-                    </Form>
-                  )}
-                </Formik>
-              </div>
+                          {!isLastStep ? (
+                            <Button
+                              size="md"
+                              color="blue"
+                              onClick={() => {
+                                if (activeStep === 0) {
+                                  handleNext(values, {
+                                    validateForm,
+                                    setErrors,
+                                    setTouched,
+                                  });
+                                } else if (activeStep === 1) {
+                                  handleUploadList();
+                                }
+                              }}
+                              // onClick={() => setErrors({contractNumber: 'Looix'})}
+                              disabled={isLastStep}
+                            >
+                              {activeStep == 0
+                                ? "Tạo hợp đồng"
+                                : "Thêm tuyến cáp"}
+                            </Button>
+                          ) : (
+                            <Button size="md" type="submit" color="red">
+                              Hoàn thành
+                            </Button>
+                          )}
+                        </div>
+                      </Form>
+                    )}
+                    
+                  </Formik>
+                </div>
+              )}
+              {activeStep === 1 && (
+                      <Card className="shadow-none">
+                        <div className="grid grid-cols-12 gap-3 p-2">
+                          <div className="col-span-full flex flex-col gap-2">
+                            <label className="text-slate-400 font-semibold">
+                              Tải lên file excel theo mẫu (
+                              <a
+                                className="text-blue-500 italic"
+                                href="/template/Danh sach FO trien khai v2.xlsx"
+                              >
+                                {" "}
+                                File mẫu{" "}
+                              </a>
+                              )
+                            </label>
+                            {/* <input
+                              type="file"
+                              name="uploadList"
+                              accept=".pdf"
+                              className="w-full cursor-pointer rounded border bg-white text-sm font-semibold text-gray-400 file:mr-4 file:cursor-pointer file:border-0 file:bg-gray-100 file:px-4 file:py-3 file:text-gray-500 file:hover:bg-gray-200"
+                              onChange={(e) => {
+                                // Object is possibly null error w/o check
+                                const file = e.currentTarget.files[0];
+                                if (e.currentTarget.files) {
+                                  setFieldValue(
+                                    "uploadList",
+                                    file || currentContractPdf
+                                  );
+                                }
+                              }}
+                            ></input> 
+                            <ErrorMessage
+                              className="justify-items-end text-sm font-light italic text-red-500"
+                              name="uploadList"
+                              component="span"
+                            ></ErrorMessage>*/}
+                          </div>
+                        </div>
+                      </Card>
+                    )}
             </div>
           </div>
 
