@@ -21,7 +21,7 @@ import Unauthorized from "./pages/Unauthorized.jsx";
 import LeaselineList from "./pages/LeaselineList.jsx";
 import HiredFoList from "./pages/HiredFoList.jsx";
 import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
-
+import FoReportBySupplier from "./pages/foContract/FoReportBySupplier.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -48,6 +48,10 @@ const router = createBrowserRouter([
                 element: <FoConTractDetail />,
               },
             ],
+          },
+           {
+            path: "/fo-cost-by-supplier",
+            element: <FoReportBySupplier />,            
           },
           {
             path: "/fo-create",

@@ -93,10 +93,7 @@ function NewFoContract() {
     <div className="p-5">
       <Typography variant="h4" color="blue">
         Thêm mới hợp đồng thuê FO
-      </Typography>
-      <Typography className="mt-1 font-normal text-gray-600">
-        Đảm bảo dữ liệu đồng bộ
-      </Typography>
+      </Typography>    
       <div className="w-full px-24 py-4">
         <Stepper
           activeStep={activeStep}
