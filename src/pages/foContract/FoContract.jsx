@@ -121,26 +121,26 @@ function FoContract() {
     count,
   }));
   // Xử lý mở modal thêm mới hợp đồng
-  const handleOpenCreate = () => {
-    if (openCreate) {
-      // Reset state của hợp đồng
-      setNewContract({
-        contractNumber: null,
-        contractName: null,
-        signedDate: null,
-        endDate: null,
-        contractUrl: null,
-        transmissionOwner: { id: 1 }, // hoặc id mặc định ban đầu
-        note: "",
-      });
-      setUploadFile(null);
-      // Reset active step về 0
-      setActiveStep(0);
-      // Reset các state khác nếu cần
-      // Ví dụ: setError(null);
-    }
-    setOpenCreate(!openCreate);
-  };
+  // const handleOpenCreate = () => {
+  //   if (openCreate) {
+  //     // Reset state của hợp đồng
+  //     setNewContract({
+  //       contractNumber: null,
+  //       contractName: null,
+  //       signedDate: null,
+  //       endDate: null,
+  //       contractUrl: null,
+  //       transmissionOwner: { id: 1 }, // hoặc id mặc định ban đầu
+  //       note: "",
+  //     });
+  //     setUploadFile(null);
+  //     // Reset active step về 0
+  //     setActiveStep(0);
+  //     // Reset các state khác nếu cần
+  //     // Ví dụ: setError(null);
+  //   }
+  //   setOpenCreate(!openCreate);
+  // };
 
   // Xử lý thêm mới hợp đồng
   const handleCreateContract = async (contract) => {
@@ -210,12 +210,13 @@ function FoContract() {
             <Typography variant="h5" color="blue-gray">
               Danh mục hợp đồng
             </Typography>
+            <Link to="/fo-create">
             <Button
               variant="gradient"
               size="sm"
               className="mb-3 flex items-center gap-3"
-              onClick={handleOpenCreate}
-            >
+              // onClick={handleOpenCreate}
+              >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -223,7 +224,7 @@ function FoContract() {
                 strokeWidth={1.5}
                 stroke="currentColor"
                 className="size-6"
-              >
+                >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -232,6 +233,7 @@ function FoContract() {
               </svg>
               Thêm mới
             </Button>
+                  </Link>
           </div>
           <div className="p-0">
             <Input
@@ -619,7 +621,7 @@ function FoContract() {
             </Button>
           </div> */}
         </div>
-      </Dialog>
+      </Dialog> 
     </div>
   );
 }

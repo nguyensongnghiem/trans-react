@@ -21,7 +21,7 @@ import {
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
 
-function FoContractCreate() {
+function NewFoContract() {
   const navigate = useNavigate();
   const { createContract } = useContracts();
   const [newContract, setNewContract] = useState({
@@ -279,4 +279,4 @@ function FoContractCreate() {
   );
 }
 
-export default FoContractCreate;
+export default NewFoContract;
