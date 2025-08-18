@@ -22,6 +22,7 @@ import LeaselineList from "./pages/LeaselineList.jsx";
 import HiredFoList from "./pages/HiredFoList.jsx";
 import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
 import FoReportBySupplier from "./pages/foContract/FoReportBySupplier.jsx";
+import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
            {
             path: "/fo-cost-by-supplier",
             element: <FoReportBySupplier />,            
+          },
+           {
+            path: "/fo-cost-by-contracts",
+            element: <FoReportByContracts />,            
           },
           {
             path: "/fo-create",

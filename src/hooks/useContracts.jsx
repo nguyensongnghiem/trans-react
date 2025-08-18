@@ -12,6 +12,7 @@ function useContracts() {
     setIsLoading(true);
     try {
       const response = await axiosPrivate.get(`${BASE_URL}/contracts`);
+      console.log("Fetched contracts:", response.data);
       setContracts(response.data);
       setError(null);
     } catch (err) {
