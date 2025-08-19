@@ -51,6 +51,10 @@ function HiredFoList() {
         valueGetter: (p) => p.data.coreQuantity,
       },
       {
+        headerName: "Đơn giá/km",
+        valueGetter: (p) => p.data.cost,
+      },
+      {
         headerName: "Số hợp đồng",
         valueGetter: (p) => p.data.foContract.contractNumber,
         // cellRenderer: (p) => p.data.foContract.contractNumber,

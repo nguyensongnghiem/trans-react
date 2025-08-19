@@ -22,7 +22,7 @@ import Unauthorized from "./pages/Unauthorized.jsx";
 import LeaselineList from "./pages/LeaselineList.jsx";
 import HiredFoList from "./pages/HiredFoList.jsx";
 import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
-import FoReportBySupplier from "./pages/foContract/FoReportBySupplier.jsx";
+import FoReportBySupplierWithContracts from "./pages/foContract/FoReportBySupplierWithContracts.jsx";
 import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
 const router = createBrowserRouter([
   {
@@ -53,7 +53,7 @@ const router = createBrowserRouter([
           },
            {
             path: "/fo-cost-by-supplier",
-            element: <FoReportBySupplier />,            
+            element: <FoReportBySupplierWithContracts />,            
           },
            {
             path: "/fo-cost-by-contracts",
