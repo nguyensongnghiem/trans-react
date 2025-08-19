@@ -4,10 +4,10 @@ import {
   Card,
   CardBody,
   Typography,
-  Select,
   Option,
   Button,
 } from "@material-tailwind/react";
+import Select from 'react-select';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -261,56 +261,38 @@ const FoReportBySupplier = () => {
 
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="w-48">
-              <Select label="Chọn năm"
-                size="sm"
-                value={String(selectedYear)}
-                onChange={(val) => setSelectedYear(Number(val))}
-              >
-                {years.map((year) => (
-                  <Option key={year} value={String(year)}>
-                    {year}
-                  </Option>
-                ))}
-              </Select>
+              <Select
+                options={years.map(year => ({ value: String(year), label: String(year) }))}
+                value={{ value: String(selectedYear), label: String(selectedYear) }}
+                onChange={(selectedOption) => setSelectedYear(Number(selectedOption.value))}
+                placeholder="Chọn năm"
+                classNamePrefix="react-select"
+              />
             </div>
             <div className="w-48">
               <Select
-                label="Chọn tháng"
-                size="sm"
-                value={String(selectedMonth)}
-                onChange={(val) => setSelectedMonth(val)}
-              >
-                <Option value="all">Tất cả các tháng</Option>
-                {months.map((month) => (
-                  <Option key={month} value={String(month)}>
-                    Tháng {month}
-                  </Option>
-                ))}
-              </Select>
+                options={[{ value: 'all', label: 'Tất cả các tháng' }, ...months.map(month => ({ value: String(month), label: `Tháng ${month}` }))]}
+                value={selectedMonth === 'all' ? { value: 'all', label: 'Tất cả các tháng' } : { value: String(selectedMonth), label: `Tháng ${selectedMonth}` }}
+                onChange={(selectedOption) => setSelectedMonth(selectedOption ? selectedOption.value : 'all')}
+                placeholder="Chọn tháng"
+                classNamePrefix="react-select"
+              />
             </div>
             <div className="w-48">
-              <Select 
-                label="Chọn nhà cung cấp"
-                size="sm"
-                value={selectedSupplier}
-                onChange={(val) => setSelectedSupplier(val)}
-              >
-                {suppliers.map((supplier) => (
-                  <Option
-                    key={supplier}
-                    value={supplier === "Tất cả" ? "all" : supplier}
-                  >
-                    {supplier}
-                  </Option>
-                ))}
-              </Select>
+              <Select
+                options={[{ value: 'all', label: 'Tất cả' }, ...suppliers.filter(s => s !== 'Tất cả').map(supplier => ({ value: supplier, label: supplier }))]}
+                value={selectedSupplier === 'all' ? { value: 'all', label: 'Tất cả' } : { value: selectedSupplier, label: selectedSupplier }}
+                onChange={(selectedOption) => setSelectedSupplier(selectedOption ? selectedOption.value : 'all')}
+                placeholder="Chọn nhà cung cấp"
+                classNamePrefix="react-select"
+              />
             </div>
           </div>
 
           <div className="h-[60vh] overflow-y-auto">
             <div className="min-w-full table-container">
               <table className="w-full text-left border-collapse border border-slate-400 text-sm">
-                <thead className="bg-white shadow sticky top-0 z-10">
+                <thead className="bg-white shadow sticky top-0 z-1">
                   <tr>
                     <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">STT</Typography></th>
                     <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
