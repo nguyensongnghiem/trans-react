@@ -97,8 +97,28 @@ const FoReportByContracts = () => {
         selectedSupplier.includes(row.supplierName)
       );
     }
+
+    // Adjust monthlyCosts and recalculate totalYearlyCost based on selectedMonth
+    if (!selectedMonth.includes("all")) {
+      filteredData = filteredData.map(row => {
+        const newMonthlyCosts = Array(12).fill(0);
+        selectedMonth.forEach(month => {
+          const monthIndex = Number(month) - 1;
+          if (row.monthlyCosts[monthIndex] !== undefined) {
+            newMonthlyCosts[monthIndex] = row.monthlyCosts[monthIndex];
+          }
+        });
+        return {
+          ...row,
+          monthlyCosts: newMonthlyCosts,
+          // Recalculate totalYearlyCost based on filtered months
+          totalYearlyCost: newMonthlyCosts.reduce((sum, cost) => sum + cost, 0)
+        };
+      });
+    }
+
     return filteredData;
-  }, [reportData, selectedSupplier]);
+  }, [reportData, selectedSupplier, selectedMonth]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();

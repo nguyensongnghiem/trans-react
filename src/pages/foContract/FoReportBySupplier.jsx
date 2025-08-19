@@ -14,8 +14,8 @@ import { saveAs } from "file-saver";
 const FoReportBySupplier = () => {
   const { contracts } = useContracts();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState("all");
-  const [selectedSupplier, setSelectedSupplier] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState(["all"]);
+  const [selectedSupplier, setSelectedSupplier] = useState(["all"]);
 
   const formatVND = (value) => {
     if (typeof value !== "number" || isNaN(value)) {
@@ -83,13 +83,33 @@ const FoReportBySupplier = () => {
   const filteredReportData = useMemo(() => {
     let filteredData = reportData;
 
-    if (selectedSupplier !== "all") {
+    if (!selectedSupplier.includes("all")) {
       filteredData = filteredData.filter(
-        (row) => row.supplierName === selectedSupplier
+        (row) => selectedSupplier.includes(row.supplierName)
       );
     }
+
+    // Adjust monthlyCosts based on selectedMonth
+    if (!selectedMonth.includes("all")) {
+      filteredData = filteredData.map(row => {
+        const newMonthlyCosts = Array(12).fill(0);
+        selectedMonth.forEach(month => {
+          const monthIndex = Number(month) - 1;
+          if (row.monthlyCosts[monthIndex] !== undefined) {
+            newMonthlyCosts[monthIndex] = row.monthlyCosts[monthIndex];
+          }
+        });
+        return {
+          ...row,
+          monthlyCosts: newMonthlyCosts,
+          // Recalculate totalYearlyCost based on filtered months
+          totalYearlyCost: newMonthlyCosts.reduce((sum, cost) => sum + cost, 0)
+        };
+      });
+    }
+
     return filteredData;
-  }, [reportData, selectedSupplier]);
+  }, [reportData, selectedSupplier, selectedMonth]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -138,7 +158,7 @@ const FoReportBySupplier = () => {
     let dataToExport;
     let fileNameMonth;
 
-    if (selectedMonth === "all") {
+    if (selectedMonth.includes("all")) {
       const headers = [
         "Nhà Cung cấp",
         ...months.map((m) => `Tháng ${m}`),
@@ -187,31 +207,41 @@ const FoReportBySupplier = () => {
       });
       saveAs(dataBlob, `BaoCaoChiPhiFO_${fileNameMonth}_${selectedYear}.xlsx`);
     } else {
+      const selectedMonthsSorted = selectedMonth.sort((a, b) => Number(a) - Number(b));
+      const headers = [
+        "Nhà Cung cấp",
+        ...selectedMonthsSorted.map((m) => `Tháng ${m}`),
+        "Tổng Năm",
+      ];
       dataToExport = filteredReportData.map((row) => {
-        const monthlyCost = row.monthlyCosts[selectedMonth - 1];
-        return {
+        const rowData = {
           "Nhà Cung cấp": row.supplierName,
-          "Chi phí tháng": monthlyCost,
-          "Tổng năm": row.totalYearlyCost,
         };
+        selectedMonthsSorted.forEach(month => {
+          rowData[`Tháng ${month}`] = row.monthlyCosts[Number(month) - 1];
+        });
+        rowData["Tổng năm"] = row.totalYearlyCost;
+        return rowData;
       });
-      
-      // Add total row to data to be exported for a single month
+
+      // Add total row to data to be exported for selected months
       const totalRow = {
         "Nhà Cung cấp": "Tổng cộng",
-        "Chi phí tháng": monthlyTotals[selectedMonth - 1],
-        "Tổng năm": totalYearlyCost,
       };
+      selectedMonthsSorted.forEach(month => {
+        totalRow[`Tháng ${month}`] = monthlyTotals[Number(month) - 1];
+      });
+      totalRow["Tổng năm"] = totalYearlyCost;
       dataToExport.push(totalRow);
 
-      fileNameMonth = `Thang${selectedMonth}`;
+      fileNameMonth = `Thang${selectedMonthsSorted.join('_')}`;
 
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(
         workbook,
         worksheet,
-        `BaoCaoThang${selectedMonth}`
+        `BaoCaoThang${selectedMonthsSorted.join('_')}`
       );
       const excelBuffer = XLSX.write(workbook, {
         bookType: "xlsx",
@@ -260,32 +290,57 @@ const FoReportBySupplier = () => {
           </div>
 
           <div className="flex flex-wrap gap-4 mb-6">
-            <div className="w-48">
-              <Select
-                options={years.map(year => ({ value: String(year), label: String(year) }))}
-                value={{ value: String(selectedYear), label: String(selectedYear) }}
-                onChange={(selectedOption) => setSelectedYear(Number(selectedOption.value))}
-                placeholder="Chọn năm"
-                classNamePrefix="react-select"
-              />
+            <div className="flex-1">
+              <div className="flex flex-col">
+                <label className="mb-2 font-bold text-gray-700">Chọn năm</label>
+                <Select
+                  options={years.map(year => ({ value: String(year), label: String(year) }))}
+                  value={{ value: String(selectedYear), label: String(selectedYear) }}
+                  onChange={(selectedOption) => setSelectedYear(Number(selectedOption.value))}
+                  placeholder="Chọn năm"
+                  classNamePrefix="react-select"
+                />
+              </div>
             </div>
-            <div className="w-48">
-              <Select
-                options={[{ value: 'all', label: 'Tất cả các tháng' }, ...months.map(month => ({ value: String(month), label: `Tháng ${month}` }))]}
-                value={selectedMonth === 'all' ? { value: 'all', label: 'Tất cả các tháng' } : { value: String(selectedMonth), label: `Tháng ${selectedMonth}` }}
-                onChange={(selectedOption) => setSelectedMonth(selectedOption ? selectedOption.value : 'all')}
-                placeholder="Chọn tháng"
-                classNamePrefix="react-select"
-              />
+            <div className="flex-1">
+              <div className="flex flex-col">
+                <label className="mb-2 font-bold text-gray-700">Chọn tháng</label>
+                <Select
+                  isMulti
+                  closeMenuOnSelect={false}
+                  options={[{ value: 'all', label: 'Tất cả các tháng' }, ...months.map(month => ({ value: String(month), label: `Tháng ${month}` }))]}
+                  value={selectedMonth.map(month => (month === 'all' ? { value: 'all', label: 'Tất cả các tháng' } : { value: String(month), label: `Tháng ${month}` }))}
+                  onChange={(selectedOptions) => {
+                    if (selectedOptions && selectedOptions.some(option => option.value === 'all')) {
+                      setSelectedMonth(['all']);
+                    } else {
+                      setSelectedMonth(selectedOptions ? selectedOptions.map(option => option.value) : []);
+                    }
+                  }}
+                  placeholder="Chọn tháng"
+                  classNamePrefix="react-select"
+                />
+              </div>
             </div>
-            <div className="w-48">
-              <Select
-                options={[{ value: 'all', label: 'Tất cả' }, ...suppliers.filter(s => s !== 'Tất cả').map(supplier => ({ value: supplier, label: supplier }))]}
-                value={selectedSupplier === 'all' ? { value: 'all', label: 'Tất cả' } : { value: selectedSupplier, label: selectedSupplier }}
-                onChange={(selectedOption) => setSelectedSupplier(selectedOption ? selectedOption.value : 'all')}
-                placeholder="Chọn nhà cung cấp"
-                classNamePrefix="react-select"
-              />
+            <div className="flex-1">
+              <div className="flex flex-col">
+                <label className="mb-2 font-bold text-gray-700">Chọn nhà cung cấp</label>
+                <Select
+                  isMulti
+                  closeMenuOnSelect={false}
+                  options={[{ value: 'all', label: 'Tất cả' }, ...suppliers.filter(s => s !== 'Tất cả').map(supplier => ({ value: supplier, label: supplier }))]}
+                  value={selectedSupplier.map(supplier => (supplier === 'all' ? { value: 'all', label: 'Tất cả' } : { value: supplier, label: supplier }))}
+                  onChange={(selectedOptions) => {
+                    if (selectedOptions && selectedOptions.some(option => option.value === 'all')) {
+                      setSelectedSupplier(['all']);
+                    } else {
+                      setSelectedSupplier(selectedOptions ? selectedOptions.map(option => option.value) : []);
+                    }
+                  }}
+                  placeholder="Chọn nhà cung cấp"
+                  classNamePrefix="react-select"
+                />
+              </div>
             </div>
           </div>
 
@@ -296,7 +351,7 @@ const FoReportBySupplier = () => {
                   <tr>
                     <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">STT</Typography></th>
                     <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
-                    {selectedMonth === "all" ? (
+                    {selectedMonth.includes("all") ? (
                       <>
                         {months.map((month) => (
                           <th key={month} className="p-2 border border-slate-300 text-center">
@@ -307,11 +362,13 @@ const FoReportBySupplier = () => {
                         ))}
                       </>
                     ) : (
-                      <th className="p-2 border border-slate-300 text-center">
-                        <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
-                          {`Tháng ${selectedMonth}`}
-                        </Typography>
-                      </th>
+                      selectedMonth.sort((a, b) => Number(a) - Number(b)).map((month) => (
+                        <th key={month} className="p-2 border border-slate-300 text-center">
+                          <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
+                            {`Tháng ${month}`}
+                          </Typography>
+                        </th>
+                      ))
                     )}
                     <th className="p-2 border border-slate-300 text-center"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Tổng Năm</Typography></th>
                   </tr>
@@ -323,7 +380,7 @@ const FoReportBySupplier = () => {
                         <tr key={index} className="even:bg-blue-gray-50/50">
                           <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{index + 1}</Typography></td>
                           <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.supplierName}</Typography></td>
-                          {selectedMonth === "all" ? (
+                          {selectedMonth.includes("all") ? (
                             <>
                               {row.monthlyCosts.map((cost, monthIndex) => (
                                 <td key={monthIndex} className="p-2 border border-slate-300 text-center">
@@ -332,9 +389,11 @@ const FoReportBySupplier = () => {
                               ))}
                             </>
                           ) : (
-                            <td className="p-2 border border-slate-300 text-center">
-                              <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(row.monthlyCosts[selectedMonth - 1])}</Typography>
-                            </td>
+                            selectedMonth.sort((a, b) => Number(a) - Number(b)).map((month) => (
+                              <td key={month} className="p-2 border border-slate-300 text-center">
+                                <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(row.monthlyCosts[Number(month) - 1])}</Typography>
+                              </td>
+                            ))
                           )}
                           <td className="p-2 border border-slate-300 text-center">
                             <Typography variant="small" color="blue" className="font-semibold">{formatVND(row.totalYearlyCost)}</Typography>
@@ -344,7 +403,7 @@ const FoReportBySupplier = () => {
                       {/* Total row */}
                       <tr className="border-t border-blue-gray-200 bg-blue-gray-50">
                         <td className="p-2 border border-slate-300 font-bold text-black" colSpan={2}><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
-                        {selectedMonth === "all" ? (
+                        {selectedMonth.includes("all") ? (
                           <>
                             {monthlyTotals.map((total, index) => (
                               <td key={index} className="p-2 border border-slate-300 text-center font-bold text-black">
@@ -353,9 +412,11 @@ const FoReportBySupplier = () => {
                             ))}
                           </>
                         ) : (
-                          <td className="p-2 border border-slate-300 text-center font-bold text-black">
-                            <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(monthlyTotals[selectedMonth - 1])}</Typography>
-                          </td>
+                          selectedMonth.sort((a, b) => Number(a) - Number(b)).map((month) => (
+                            <td key={month} className="p-2 border border-slate-300 text-center font-bold text-black">
+                              <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(monthlyTotals[Number(month) - 1])}</Typography>
+                            </td>
+                          ))
                         )}
                         <td className="p-2 border border-slate-300 text-center font-bold text-black">
                           <Typography variant="small" color="blue" className="font-bold">{formatVND(totalYearlyCost)}</Typography>
@@ -365,7 +426,7 @@ const FoReportBySupplier = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={selectedMonth === "all" ? 15 : 4}
+                        colSpan={selectedMonth.includes("all") ? 15 : selectedMonth.length + 3}
                         className="p-2 border border-slate-300 text-center"
                       >
                         <Typography variant="small" color="blue-gray" className="font-normal">
