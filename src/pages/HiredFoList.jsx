@@ -52,8 +52,8 @@ function HiredFoList() {
       },
       {
         headerName: "Số hợp đồng",
-        valueGetter: (p) => p.data.cost,
-        cellRenderer: (p) => p.data.foContract.contractNumber,
+        valueGetter: (p) => p.data.foContract.contractNumber,
+        // cellRenderer: (p) => p.data.foContract.contractNumber,
       },
       // {
       //   headerName: "Tên hợp đồng",
@@ -67,7 +67,7 @@ function HiredFoList() {
           return (
             <span className={`inline-flex items-center ${p.data.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}>
               <span className={`w-2 h-2 me-1 ${p.data.active ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></span>
-              {p.data.active ? 'Hoạt động' : 'Không hoạt động'}
+              {p.data.active ? 'ON' : 'OFF'}
             </span>
           );
         },
