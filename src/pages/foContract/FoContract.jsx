@@ -292,7 +292,7 @@ function FoContract() {
                       </ListItemPrefix>
                       <Typography
                         color="blue"
-                        className="mr-auto font-normal text-sm"
+                        className="mr-auto font-semibold text-sm"
                       >
                         {item.year}
                       </Typography>
