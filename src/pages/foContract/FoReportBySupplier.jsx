@@ -262,6 +262,7 @@ const FoReportBySupplier = () => {
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="w-48">
               <Select label="Chọn năm"
+                size="sm"
                 value={String(selectedYear)}
                 onChange={(val) => setSelectedYear(Number(val))}
               >
@@ -275,8 +276,9 @@ const FoReportBySupplier = () => {
             <div className="w-48">
               <Select
                 label="Chọn tháng"
+                size="sm"
                 value={String(selectedMonth)}
-                onChange={(val) => setSelectedMonth(val === "all" ? "all" : Number(val))}
+                onChange={(val) => setSelectedMonth(val)}
               >
                 <Option value="all">Tất cả các tháng</Option>
                 {months.map((month) => (
@@ -289,12 +291,13 @@ const FoReportBySupplier = () => {
             <div className="w-48">
               <Select 
                 label="Chọn nhà cung cấp"
+                size="sm"
                 value={selectedSupplier}
                 onChange={(val) => setSelectedSupplier(val)}
               >
-                {suppliers.map((supplier, index) => (
+                {suppliers.map((supplier) => (
                   <Option
-                    key={index}
+                    key={supplier}
                     value={supplier === "Tất cả" ? "all" : supplier}
                   >
                     {supplier}
@@ -304,92 +307,94 @@ const FoReportBySupplier = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse border border-slate-400">
-              <thead className="bg-blue-gray-50/50">
-                <tr>
-                  <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">STT</Typography></th>
-                  <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
-                  {selectedMonth === "all" ? (
+          <div className="h-[60vh] overflow-y-auto">
+            <div className="min-w-full table-container">
+              <table className="w-full text-left border-collapse border border-slate-400 text-sm">
+                <thead className="bg-white shadow sticky top-0 z-10">
+                  <tr>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">STT</Typography></th>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
+                    {selectedMonth === "all" ? (
+                      <>
+                        {months.map((month) => (
+                          <th key={month} className="p-2 border border-slate-300 text-center">
+                            <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
+                              {`Tháng ${month}`}
+                            </Typography>
+                          </th>
+                        ))}
+                      </>
+                    ) : (
+                      <th className="p-2 border border-slate-300 text-center">
+                        <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
+                          {`Tháng ${selectedMonth}`}
+                        </Typography>
+                      </th>
+                    )}
+                    <th className="p-2 border border-slate-300 text-center"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Tổng Năm</Typography></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReportData.length > 0 ? (
                     <>
-                      {months.map((month) => (
-                        <th key={month} className="p-2 border border-slate-300 text-center">
-                          <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
-                            {`Tháng ${month}`}
-                          </Typography>
-                        </th>
+                      {filteredReportData.map((row, index) => (
+                        <tr key={index} className="even:bg-blue-gray-50/50">
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{index + 1}</Typography></td>
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.supplierName}</Typography></td>
+                          {selectedMonth === "all" ? (
+                            <>
+                              {row.monthlyCosts.map((cost, monthIndex) => (
+                                <td key={monthIndex} className="p-2 border border-slate-300 text-center">
+                                  <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(cost)}</Typography>
+                                </td>
+                              ))}
+                            </>
+                          ) : (
+                            <td className="p-2 border border-slate-300 text-center">
+                              <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(row.monthlyCosts[selectedMonth - 1])}</Typography>
+                            </td>
+                          )}
+                          <td className="p-2 border border-slate-300 text-center">
+                            <Typography variant="small" color="blue" className="font-semibold">{formatVND(row.totalYearlyCost)}</Typography>
+                          </td>
+                        </tr>
                       ))}
-                    </>
-                  ) : (
-                    <th className="p-2 border border-slate-300 text-center">
-                      <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
-                        {`Tháng ${selectedMonth}`}
-                      </Typography>
-                    </th>
-                  )}
-                  <th className="p-2 border border-slate-300 text-center"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Tổng Năm</Typography></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReportData.length > 0 ? (
-                  <>
-                    {filteredReportData.map((row, index) => (
-                      <tr key={index} className="even:bg-blue-gray-50/50">
-                        <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{index + 1}</Typography></td>
-                        <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.supplierName}</Typography></td>
+                      {/* Total row */}
+                      <tr className="border-t border-blue-gray-200 bg-blue-gray-50">
+                        <td className="p-2 border border-slate-300 font-bold text-black" colSpan={2}><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
                         {selectedMonth === "all" ? (
                           <>
-                            {row.monthlyCosts.map((cost, monthIndex) => (
-                              <td key={monthIndex} className="p-2 border border-slate-300 text-center">
-                                <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(cost)}</Typography>
+                            {monthlyTotals.map((total, index) => (
+                              <td key={index} className="p-2 border border-slate-300 text-center font-bold text-black">
+                                <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(total)}</Typography>
                               </td>
                             ))}
                           </>
                         ) : (
-                          <td className="p-2 border border-slate-300 text-center">
-                            <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(row.monthlyCosts[selectedMonth - 1])}</Typography>
+                          <td className="p-2 border border-slate-300 text-center font-bold text-black">
+                            <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(monthlyTotals[selectedMonth - 1])}</Typography>
                           </td>
                         )}
-                        <td className="p-2 border border-slate-300 text-center">
-                          <Typography variant="small" color="blue" className="font-semibold">{formatVND(row.totalYearlyCost)}</Typography>
+                        <td className="p-2 border border-slate-300 text-center font-bold text-black">
+                          <Typography variant="small" color="blue" className="font-bold">{formatVND(totalYearlyCost)}</Typography>
                         </td>
                       </tr>
-                    ))}
-                    {/* Total row */}
-                    <tr className="border-t border-blue-gray-200">
-                      <td className="p-2 border border-slate-300 font-bold text-black" colSpan={2}><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
-                      {selectedMonth === "all" ? (
-                        <>
-                          {monthlyTotals.map((total, index) => (
-                            <td key={index} className="p-2 border border-slate-300 text-center font-bold text-black">
-                              <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(total)}</Typography>
-                            </td>
-                          ))}
-                        </>
-                      ) : (
-                        <td className="p-2 border border-slate-300 text-center font-bold text-black">
-                          <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(monthlyTotals[selectedMonth - 1])}</Typography>
-                        </td>
-                      )}
-                      <td className="p-2 border border-slate-300 text-center font-bold text-black">
-                        <Typography variant="small" color="blue" className="font-bold">{formatVND(totalYearlyCost)}</Typography>
+                    </>
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={selectedMonth === "all" ? 15 : 4}
+                        className="p-2 border border-slate-300 text-center"
+                      >
+                        <Typography variant="small" color="blue-gray" className="font-normal">
+                          Không có dữ liệu chi phí cho lựa chọn này.
+                        </Typography>
                       </td>
                     </tr>
-                  </>
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={selectedMonth === "all" ? 15 : 4}
-                      className="p-2 border border-slate-300 text-center"
-                    >
-                      <Typography variant="small" color="blue-gray" className="font-normal">
-                        Không có dữ liệu chi phí cho lựa chọn này.
-                      </Typography>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
     </div>
   );

@@ -150,12 +150,15 @@ const FoReportByContracts = () => {
     }
 
     let dataToExport;
+    let headers;
     let fileNameMonth;
 
     if (selectedMonth === "all") {
-      const headers = [
+      headers = [
         "Mã Hợp đồng",
         "Nhà Cung cấp",
+        "Số tuyến",
+        "Số km",
         ...months.map((m) => `Tháng ${m}`),
         "Tổng Năm",
       ];
@@ -163,6 +166,8 @@ const FoReportByContracts = () => {
         return {
           "Mã Hợp đồng": row.contractId,
           "Nhà Cung cấp": row.supplierName,
+          "Số tuyến": row.totalFo,
+          "Số km": row.totalDistance,
           ...months.reduce((acc, month, index) => {
             acc[`Tháng ${month}`] = row.monthlyCosts[index];
             return acc;
@@ -174,6 +179,8 @@ const FoReportByContracts = () => {
       const totalRow = {
         "Mã Hợp đồng": "Tổng cộng",
         "Nhà Cung cấp": "",
+        "Số tuyến": monthlyTotals.totalFo, // Assuming you have this in monthlyTotals
+        "Số km": monthlyTotals.totalDistance, // Assuming you have this in monthlyTotals
         ...months.reduce((acc, month, index) => {
           acc[`Tháng ${month}`] = monthlyTotals[index];
           return acc;
@@ -183,21 +190,22 @@ const FoReportByContracts = () => {
       dataToExport.push(totalRow);
 
       fileNameMonth = "TatCaCacThang";
-
-      const worksheet = XLSX.utils.json_to_sheet(dataToExport, {
-        header: headers,
-      });
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, `BaoCaoNam${selectedYear}`);
-      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-      const dataBlob = new Blob([excelBuffer], { type: "application/octet-stream" });
-      saveAs(dataBlob, `BaoCaoChiPhiFO_HopDong_${fileNameMonth}_${selectedYear}.xlsx`);
     } else {
+      headers = [
+        "Mã Hợp đồng",
+        "Nhà Cung cấp",
+        "Số tuyến",
+        "Số km",
+        "Chi phí tháng",
+        "Tổng năm",
+      ];
       dataToExport = filteredReportData.map((row) => {
         const monthlyCost = row.monthlyCosts[selectedMonth - 1];
         return {
           "Mã Hợp đồng": row.contractId,
           "Nhà Cung cấp": row.supplierName,
+          "Số tuyến": row.totalFo,
+          "Số km": row.totalDistance,
           "Chi phí tháng": monthlyCost,
           "Tổng năm": row.totalYearlyCost,
         };
@@ -206,20 +214,80 @@ const FoReportByContracts = () => {
       const totalRow = {
         "Mã Hợp đồng": "Tổng cộng",
         "Nhà Cung cấp": "",
+        "Số tuyến": monthlyTotals.totalFo, // Assuming you have this in monthlyTotals
+        "Số km": monthlyTotals.totalDistance, // Assuming you have this in monthlyTotals
         "Chi phí tháng": monthlyTotals[selectedMonth - 1],
         "Tổng năm": totalYearlyCost,
       };
       dataToExport.push(totalRow);
 
       fileNameMonth = `Thang${selectedMonth}`;
-
-      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, `BaoCaoThang${selectedMonth}`);
-      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-      const dataBlob = new Blob([excelBuffer], { type: "application/octet-stream" });
-      saveAs(dataBlob, `BaoCaoChiPhiFO_HopDong_${fileNameMonth}_${selectedYear}.xlsx`);
     }
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, {
+      header: headers,
+    });
+
+    // Calculate column widths
+    const columnWidths = headers.map((header) => ({
+      wch: header.length + 2, // Start with header length + some padding
+    }));
+
+    dataToExport.forEach((row) => {
+      Object.values(row).forEach((cellValue, colIndex) => {
+        const value = String(cellValue || "");
+        if (value.length > columnWidths[colIndex].wch) {
+          columnWidths[colIndex].wch = value.length + 2; // Add padding
+        }
+      });
+    });
+
+    worksheet["!cols"] = columnWidths;
+
+    // Iterate through all cells to apply styles
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    const totalRowIndex = dataToExport.length - 1;
+
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = worksheet[cellAddress];
+
+        if (!cell) continue;
+
+        // Initialize style object if it doesn't exist
+        if (!cell.s) cell.s = {};
+
+        // Apply bolding
+        if (R === 0 || R === totalRowIndex + 1) { // Header row (R=0) or total row (R=totalRowIndex + 1)
+          cell.s.font = { bold: true };
+        }
+
+        // Apply currency format (only if it's a number and a currency column)
+        const headerName = headers[C];
+        const isMonthlyCostColumn = headerName && headerName.startsWith('Tháng');
+        const isTotalYearColumn = headerName === 'Tổng Năm' || headerName === 'Tổng năm';
+        const isChiPhiThangColumn = headerName === 'Chi phí tháng';
+
+        if (typeof cell.v === 'number' && (isMonthlyCostColumn || isTotalYearColumn || isChiPhiThangColumn)) {
+          cell.z = '#,##0 "₫"';
+        }
+
+        // Apply borders
+        cell.s.border = {
+          top: { style: "thin", color: { auto: 1 } },
+          bottom: { style: "thin", color: { auto: 1 } },
+          left: { style: "thin", color: { auto: 1 } },
+          right: { style: "thin", color: { auto: 1 } }
+        };
+      }
+    }
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, `BaoCaoNam${selectedYear}`);
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const dataBlob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(dataBlob, `BaoCaoChiPhiFO_HopDong_${fileNameMonth}_${selectedYear}.xlsx`);
   };
 
   return (
@@ -254,6 +322,7 @@ const FoReportByContracts = () => {
             <div className="w-48">
               <Select
                 label="Chọn năm"
+                size="sm"
                 value={String(selectedYear)}
                 onChange={(val) => setSelectedYear(Number(val))}
               >
@@ -265,9 +334,10 @@ const FoReportByContracts = () => {
             <div className="w-48">
               <Select
                 label="Chọn tháng"
+                size="sm"
                 value={String(selectedMonth)}
                 onChange={(val) =>
-                  setSelectedMonth(val === "all" ? "all" : Number(val))
+                  setSelectedMonth(val)
                 }
               >
                 <Option value="all">Tất cả các tháng</Option>
@@ -281,12 +351,13 @@ const FoReportByContracts = () => {
             <div className="w-48">
               <Select
                 label="Chọn nhà cung cấp"
+                size="sm"
                 value={selectedSupplier}
                 onChange={(val) => setSelectedSupplier(val)}
               >
-                {suppliers.map((supplier, index) => (
+                {suppliers.map((supplier) => (
                   <Option
-                    key={index}
+                    key={supplier}
                     value={supplier === "Tất cả" ? "all" : supplier}
                   >
                     {supplier}
@@ -299,26 +370,30 @@ const FoReportByContracts = () => {
           {/* Wrapper cho phép cuộn độc lập */}
           <div className="h-[60vh] overflow-y-auto">
             <div className="min-w-full table-container">
-              <table className="w-full text-left border-collapse border border-slate-400">
+              <table className="w-full text-left border-collapse border border-slate-400 text-sm">
                 <thead className="bg-white shadow sticky top-0 z-10">
                   <tr>
-                    <th className="p-2 border border-slate-300">STT</th>
-                    <th className="p-2 border border-slate-300">Mã Hợp đồng</th>
-                    <th className="p-2 border border-slate-300">Nhà Cung cấp</th>
-                    <th className="p-2 border border-slate-300">Số tuyến</th>
-                    <th className="p-2 border border-slate-300">Số km</th>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">STT</Typography></th>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Mã Hợp đồng</Typography></th>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Số tuyến</Typography></th>
+                    <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Số km</Typography></th>
                     {selectedMonth === "all" ? (
                       months.map((m) => (
                         <th key={m} className="p-2 border border-slate-300 text-center">
-                          Tháng {m}
+                          <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
+                            Tháng {m}
+                          </Typography>
                         </th>
                       ))
                     ) : (
                       <th className="p-2 border border-slate-300 text-center">
-                        Tháng {selectedMonth}
+                        <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
+                          Tháng {selectedMonth}
+                        </Typography>
                       </th>
                     )}
-                    <th className="p-2 border border-slate-300 text-center">Tổng Năm</th>
+                    <th className="p-2 border border-slate-300 text-center"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Tổng Năm</Typography></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,41 +401,51 @@ const FoReportByContracts = () => {
                     <>
                       {filteredReportData.map((row, index) => (
                         <tr key={index} className="even:bg-blue-gray-50/50">
-                          <td className="p-2 border border-slate-300">{index + 1}</td>
-                          <td className="p-2 border border-slate-300">{row.contractId}</td>
-                          <td className="p-2 border border-slate-300">{row.supplierName}</td>
-                          <td className="p-2 border border-slate-300">{row.totalFo}</td>
-                          <td className="p-2 border border-slate-300">{row.totalDistance}</td>  
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{index + 1}</Typography></td>
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.contractId}</Typography></td>
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.supplierName}</Typography></td>
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.totalFo}</Typography></td>
+                          <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.totalDistance}</Typography></td>  
                           {selectedMonth === "all" ? (
                             row.monthlyCosts.map((cost, i) => (
-                              <td key={i} className="p-2 border border-slate-300 text-center">{formatVND(cost)}</td>
+                              <td key={i} className="p-2 border border-slate-300 text-center">
+                                <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(cost)}</Typography>
+                              </td>
                             ))
                           ) : (
                             <td className="p-2 border border-slate-300 text-center">
-                              {formatVND(row.monthlyCosts[selectedMonth - 1])}
+                              <Typography variant="small" color="blue-gray" className="font-normal">
+                                {formatVND(row.monthlyCosts[selectedMonth - 1])}
+                              </Typography>
                             </td>
                           )}
-                          <td className="p-2 border border-slate-300 text-center font-semibold text-blue-600">
-                            {formatVND(row.totalYearlyCost)}
+                          <td className="p-2 border border-slate-300 text-center">
+                            <Typography variant="small" color="blue" className="font-semibold">
+                              {formatVND(row.totalYearlyCost)}
+                            </Typography>
                           </td>
                         </tr>
                       ))}
                       {/* Tổng cộng */}
-                      <tr className="border-t border-blue-gray-200">
-                        <td colSpan={5} className="p-2 border border-slate-300 font-bold"><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
+                      <tr className="border-t border-blue-gray-200 bg-blue-gray-50">
+                        <td colSpan={5} className="p-2 border border-slate-300 font-bold text-black"><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
                         {selectedMonth === "all" ? (
                           monthlyTotals.map((t, i) => (
-                            <td key={i} className="p-2 border border-slate-300 text-center font-bold">
-                              {formatVND(t)}
+                            <td key={i} className="p-2 border border-slate-300 text-center font-bold text-black">
+                              <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(t)}</Typography>
                             </td>
                           ))
                         ) : (
-                          <td className="p-2 border border-slate-300 text-center font-bold">
-                            {formatVND(monthlyTotals[selectedMonth - 1])}
+                          <td className="p-2 border border-slate-300 text-center font-bold text-black">
+                            <Typography variant="small" color="blue-gray" className="font-bold">
+                              {formatVND(monthlyTotals[selectedMonth - 1])}
+                            </Typography>
                           </td>
                         )}
-                        <td className="p-2 border border-slate-300 text-center font-bold text-blue-600">
-                          {formatVND(totalYearlyCost)}
+                        <td className="p-2 border border-slate-300 text-center font-bold text-black">
+                          <Typography variant="small" color="blue" className="font-bold">
+                            {formatVND(totalYearlyCost)}
+                          </Typography>
                         </td>
                       </tr>
                     </>
@@ -370,7 +455,9 @@ const FoReportByContracts = () => {
                         colSpan={selectedMonth === "all" ? 18 : 7}
                         className="p-2 border border-slate-300 text-center"
                       >
-                        Không có dữ liệu chi phí cho lựa chọn này.
+                        <Typography variant="small" color="blue-gray" className="font-normal">
+                          Không có dữ liệu chi phí cho lựa chọn này.
+                        </Typography>
                       </td>
                     </tr>
                   )}

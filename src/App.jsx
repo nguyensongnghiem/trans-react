@@ -22,9 +22,9 @@ function App() {
 
   return (
     <>
-      <div className="flex flex-col">
+      <div className="flex flex-col h-screen">
         <Header toggleSidebar={toggleSidebar}></Header>
-        <div className="flex flex-1 flex-col overflow-y-hidden sm:flex-row h-screen">
+        <div className="flex flex-1 overflow-y-hidden">
           <nav
             className={`flex overflow-y-auto ${
               sidebarOpen ? "sm:min-w-64" : "sm:w-0"

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import Select from "react-select";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from 'xlsx';
 
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
@@ -26,7 +27,7 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import OwnerChip from "../components/OwnerChip";
 function LeaselineList() {
   // const navigate = useNavigate();
-
+  const gridRef = useRef();
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [leaselineList, setLeaselineList] = useState([]);
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
@@ -264,38 +265,76 @@ function LeaselineList() {
   }
 
   // if (isLoading) return <Spinner />;
+  const onBtnExport = () => {
+    const columnDefs = gridRef.current.api.getColumnDefs();
+    const rowData = [];
+    gridRef.current.api.forEachNode(node => rowData.push(node.data));
+
+    const dataToExport = rowData.map(node => {
+      const row = {};
+      columnDefs.forEach(colDef => {
+        if (colDef.headerName && colDef.valueGetter) {
+          let value = colDef.valueGetter({ data: node });
+          if (colDef.valueFormatter) {
+            value = colDef.valueFormatter({ value: value });
+          }
+          row[colDef.headerName] = value;
+        }
+      });
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Leaselines");
+    XLSX.writeFile(workbook, "LeaselineList.xlsx");
+  };
   return (
     <div className="p-5">
-      <Typography variant="h4" color="blue-gray" className="mb-3">
-        Danh sách kênh thuê
-      </Typography>
-      <Button
-        variant="gradient"
-        size="sm"
-        className="mb-3 flex items-center gap-3"
-        onClick={handleOpenCreate}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="size-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15"
-          />
-        </svg>
-        Thêm mới
-      </Button>
+      <div className="flex items-center justify-between">
+        <Typography variant="h4" color="blue-gray" className="mb-3">
+          Danh sách kênh thuê
+        </Typography>
+        <div className="flex gap-2">
+          <Button
+            variant="gradient"
+            size="sm"
+            className="mb-3 flex items-center gap-3"
+            onClick={handleOpenCreate}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            Thêm mới
+          </Button>
+          <Button
+            variant="gradient"
+            size="sm"
+            color="green"
+            className="mb-3 flex items-center gap-3"
+            onClick={onBtnExport}
+          >
+            Xuất Excel
+          </Button>
+        </div>
+      </div>
       <div
         className="ag-theme-quartz" // applying the Data Grid theme
         style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
       >
         <AgGridReact
+          ref={gridRef}
           rowData={leaselineList}
           columnDefs={colDefs}
           defaultColDef={defaultColDef}

@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 import * as siteService from "../services/SiteService";
-import { deleteData, fetchData, postData, putData } from "../services/apiService";
+import {
+  deleteData,
+  fetchData,
+  postData,
+  putData,
+} from "../services/apiService";
 import * as transOwnerService from "../services/TransmissionOwnerService";
 import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeService";
 import * as provinceService from "../services/ProvinceService";
@@ -11,60 +16,83 @@ import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
 import OwnerChip from "../components/OwnerChip";
-import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
+import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
-import { Button, Card, Dialog, Textarea, IconButton, Typography, DialogBody, DialogHeader, DialogFooter, Spinner } from "@material-tailwind/react";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import {
+  Button,
+  Card,
+  Dialog,
+  Textarea,
+  IconButton,
+  Typography,
+  DialogBody,
+  DialogHeader,
+  DialogFooter,
+  Spinner,
+} from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 
-
 function SiteList2() {
-
   const [colDefs, setColDefs] = useState([
-    { headerName: "Tỉnh", valueGetter: site => site.data.province?.name },
-    { headerName: "Site ID", valueGetter: site => site.data.siteId },
+    { headerName: "Tỉnh", valueGetter: (site) => site.data.province?.name },
+    { headerName: "Site ID", valueGetter: (site) => site.data.siteId },
     {
       headerName: "Truyền dẫn trạm",
-      valueGetter: site => site.data.siteTransmissionType?.name,
-      cellRenderer: site => {
+      valueGetter: (site) => site.data.siteTransmissionType?.name,
+      cellRenderer: (site) => {
         return (
           <div className="flex items-center justify-start gap-2">
-            <span className="flex-1">{site.data.siteTransmissionType?.name}</span>
-            <OwnerChip name={site.data.transmissionOwner?.name} className="flex-1"></OwnerChip>
+            <span className="flex-1">
+              {site.data.siteTransmissionType?.name}
+            </span>
+            <OwnerChip
+              name={site.data.transmissionOwner?.name}
+              className="flex-1"
+            ></OwnerChip>
           </div>
-        )
-      }
+        );
+      },
     },
-    { headerName: "Site ID khác", valueGetter: site => site.data.siteId2 },
+    { headerName: "Site ID khác", valueGetter: (site) => site.data.siteId2 },
     // { headerName: "Tên trạm", valueGetter: site => site.data.siteName },
-    { headerName: "Vĩ độ", valueGetter: site => site.data.latitude, valueFormatter: p => p.value.toFixed(3) },
-    { headerName: "Kinh độ", valueGetter: site => site.data.longitude, valueFormatter: p => p.value.toFixed(3) },
-    { headerName: "Ghi chú", valueGetter: site => site.data.note },
+    {
+      headerName: "Vĩ độ",
+      valueGetter: (site) => site.data.latitude,
+      valueFormatter: (p) => p.value.toFixed(3),
+    },
+    {
+      headerName: "Kinh độ",
+      valueGetter: (site) => site.data.longitude,
+      valueFormatter: (p) => p.value.toFixed(3),
+    },
+    { headerName: "Ghi chú", valueGetter: (site) => site.data.note },
 
     {
       headerName: "Tác động",
-      cellRenderer: (p) => <div className="flex items-center justify-center">
-        <IconButton
-          variant="text"
-          size="sm"
-          onClick={() => handleEdit(p.data.id)}
-        >
-          <PencilIcon className="h-4 w-4 text-gray-900" />
-        </IconButton>
-        <IconButton
-          variant="text"
-          size="sm"
-          onClick={() => handleDeleteSite(p.data.id)}
-        >
-          <TrashIcon
-            strokeWidth={3}
-            className="h-4 w-4 text-gray-900"
-          />
-        </IconButton>
-      </div>
+      cellRenderer: (p) => (
+        <div className="flex items-center justify-center">
+          <IconButton
+            variant="text"
+            size="sm"
+            onClick={() => handleEdit(p.data.id)}
+          >
+            <PencilIcon className="h-4 w-4 text-gray-900" />
+          </IconButton>
+          <IconButton
+            variant="text"
+            size="sm"
+            onClick={() => handleDeleteSite(p.data.id)}
+          >
+            <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
+          </IconButton>
+        </div>
+      ),
     },
   ]);
   const defaultColDef = useMemo(() => {
@@ -74,7 +102,7 @@ function SiteList2() {
       filter: true,
       floatingFilter: true,
     };
-  })
+  });
   const navigate = useNavigate();
   const [siteListFull, setSiteListFull] = useState([]);
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
@@ -88,16 +116,41 @@ function SiteList2() {
   const [isLoading, setIsLoading] = useState(true);
   const [editSite, setEditSite] = useState({});
   const [editId, setEditId] = useState(null);
+  const gridRef = useRef();
+
+  const onBtnExport = () => {
+    const columnDefs = gridRef.current.api.getColumnDefs();
+    const rowData = [];
+    gridRef.current.api.forEachNode(node => rowData.push(node));
+
+    const dataToExport = rowData.map(node => {
+      const row = {};
+      columnDefs.forEach(colDef => {
+        if (colDef.headerName && colDef.valueGetter) {
+          let value = colDef.valueGetter({ data: node.data });
+          if (colDef.valueFormatter) {
+            value = colDef.valueFormatter({ value: value });
+          }
+          row[colDef.headerName] = value;
+        }
+      });
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sites");
+    XLSX.writeFile(workbook, "SiteList.xlsx");
+  };
   const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const getAllSiteFull = async () => {
       try {
-        const sites = await axiosInstance.get('sites')
+        const sites = await axiosInstance.get("sites");
         setSiteListFull(sites.data || []);
       } catch (error) {
         console.log(error);
-      }
-      finally {
+      } finally {
         setIsLoading(false);
       }
     };
@@ -108,13 +161,11 @@ function SiteList2() {
     const getAllSiteOwner = async () => {
       setIsLoading(true);
       try {
-        const siteOwnerList = await axiosInstance.get('siteOwners')
+        const siteOwnerList = await axiosInstance.get("siteOwners");
         setSiteOwnerList(siteOwnerList.data || []);
-      }
-      catch (error) {
+      } catch (error) {
         console.log(error);
-      }
-      finally {
+      } finally {
         setIsLoading(false);
       }
     };
@@ -125,56 +176,48 @@ function SiteList2() {
     const getAllTransmissionOwner = async () => {
       setIsLoading(true);
       try {
-        const transOwnerList = await axiosInstance.get('transmissionOwners')
-        setTransmissionOwnerList(transOwnerList.data || [])
-      }
-      catch (error) {
+        const transOwnerList = await axiosInstance.get("transmissionOwners");
+        setTransmissionOwnerList(transOwnerList.data || []);
+      } catch (error) {
         console.log(error);
-      }
-      finally {
+      } finally {
         setIsLoading(false);
       }
-
     };
     getAllTransmissionOwner();
   }, []);
 
   useEffect(() => {
-
-
     const getAllProvince = async () => {
       setIsLoading(true);
       try {
-        const provinces = await axiosInstance.get('provinces');       
-        setProvinces(provinces.data || [])
+        const provinces = await axiosInstance.get("provinces");
+        setProvinces(provinces.data || []);
       } catch (error) {
-        console.log(error)
-      }
-      finally {
-        setIsLoading(false)
+        console.log(error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    getAllProvince()
+    getAllProvince();
   }, []);
 
   useEffect(() => {
     const getAllSiteTransmissionType = async () => {
       setIsLoading(true);
       try {
-        const siteTransTypeList = await axiosInstance.get('site-transmission-types')
+        const siteTransTypeList = await axiosInstance.get(
+          "site-transmission-types"
+        );
         setSiteTransmissionTypeList(siteTransTypeList.data || []);
       } catch (error) {
-        console.log(error)
-      }
-      finally {
-        setIsLoading(false)
+        console.log(error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    getAllSiteTransmissionType()
+    getAllSiteTransmissionType();
   }, []);
-
-
-
 
   // Xử lý thêm mới
   const handleOpenCreate = () => {
@@ -188,14 +231,12 @@ function SiteList2() {
 
     try {
       await postData("sites", site);
-      toast.success("Đã thêm mới trạm thành công.")
-    }
-    catch (error) {
+      toast.success("Đã thêm mới trạm thành công.");
+    } catch (error) {
       toast.error(error.response.data.message, {
-        zIndex: 9999
+        zIndex: 9999,
       });
-    }
-    finally {
+    } finally {
       setOpenCreate(!openCreate);
     }
   };
@@ -205,18 +246,16 @@ function SiteList2() {
   const handleEdit = async (editId) => {
     const getSiteById = async (editId) => {
       try {
-        const site = await axiosInstance.get(`sites/${editId}`)
-        setEditSite({ ...site.data })
-        handleOpenEdit()
-        console.log(site.data)
+        const site = await axiosInstance.get(`sites/${editId}`);
+        setEditSite({ ...site.data });
+        handleOpenEdit();
+        console.log(site.data);
+      } catch (error) {
+        console.log("Lỗi api:");
+        console.log(error);
       }
-      catch (error) {
-        console.log('Lỗi api:');
-        console.log(error)
-      }
-
     };
-    getSiteById(editId)
+    getSiteById(editId);
   };
 
   const handleOpenEdit = () => {
@@ -227,18 +266,18 @@ function SiteList2() {
     site.longitude = +site.longitude;
     try {
       await axiosInstance.put(`sites/${site.id}`, site);
-      setSiteListFull(prevState => prevState.map(s => s.id === site.id ? site : s))
-      toast.success('Đã cập nhật thành công trạm')
-    }
-    catch (error) {
-      console.log(error)
+      setSiteListFull((prevState) =>
+        prevState.map((s) => (s.id === site.id ? site : s))
+      );
+      toast.success("Đã cập nhật thành công trạm");
+    } catch (error) {
+      console.log(error);
       if (error.response && error.response.status === 400) {
         toast.error(error.data.message);
       } else {
-        toast.error('Có lỗi bất thường xảy ra');
+        toast.error("Có lỗi bất thường xảy ra");
       }
-    }
-    finally {
+    } finally {
       setOpenEdit(!openEdit);
     }
     // await getAllSites();
@@ -247,7 +286,7 @@ function SiteList2() {
   // Xử lý Xóa
 
   const handleDeleteSite = async (deleteId) => {
-    setDeleteId(deleteId)
+    setDeleteId(deleteId);
     handleOpenDelete();
   };
   const handleOpenDelete = () => {
@@ -255,19 +294,18 @@ function SiteList2() {
   };
   const handleDeleteSubmit = async () => {
     try {
-      await deleteData('sites/' + deleteId);
-      toast.success('Đã xóa thành công trạm')
-      setSiteListFull(prevState => prevState.filter(site => site.id !== deleteId))
-    }
-    catch (e) {
-      console.log(e)
-      toast.error('Có lỗi xảy ra khi xóa trạm')
-    }
-    finally {
+      await deleteData("sites/" + deleteId);
+      toast.success("Đã xóa thành công trạm");
+      setSiteListFull((prevState) =>
+        prevState.filter((site) => site.id !== deleteId)
+      );
+    } catch (e) {
+      console.log(e);
+      toast.error("Có lỗi xảy ra khi xóa trạm");
+    } finally {
       handleOpenDelete();
     }
-  }
-
+  };
 
   let deleteSiteId;
   if (deleteId != null) {
@@ -288,37 +326,51 @@ function SiteList2() {
   // if (isLoading) return <Spinner />;
   return (
     <div className="p-5">
+      <div className="flex items-center justify-between">
+        <Typography variant="h4" color="blue-gray" className="mb-3">
+          Danh sách trạm
+        </Typography>
+        <div className="flex gap-2">
+          <Button
+            variant="gradient"
+            size="sm"
+            className="mb-3 flex items-center gap-3"
+            onClick={handleOpenCreate}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            Thêm mới
+          </Button>
+          <Button
+            variant="gradient"
+            size="sm"
+            color="green"
+            className="mb-3 flex items-center gap-3"
+            onClick={onBtnExport}
+          >
+            Xuất Excel
+          </Button>
+        </div>
+      </div>
 
-      <Typography variant="h4" color="blue-gray" className="mb-3">
-        Danh sách trạm
-      </Typography>
-      <Button
-        variant="gradient"
-        size="sm"
-        className="mb-3 flex items-center gap-3"
-        onClick={handleOpenCreate}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="size-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15"
-          />
-        </svg>
-        Thêm mới
-      </Button>
       <div
         className="ag-theme-quartz" // applying the Data Grid theme
-        style={{ height: '100vh', width: "100%" }} // the Data Grid will fill the size of the parent container
+        style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
       >
         <AgGridReact
+          ref={gridRef}
           rowData={siteListFull}
           columnDefs={colDefs}
           defaultColDef={defaultColDef}
@@ -806,9 +858,8 @@ function SiteList2() {
         </div>
       </Dialog>
 
-
       {/*Modal confirm xóa site*/}
-      <Dialog open={openDelete} handler={handleOpenDelete} size='md'>
+      <Dialog open={openDelete} handler={handleOpenDelete} size="md">
         <DialogHeader>Xác nhận xóa trạm khỏi cơ sở dữ liệu</DialogHeader>
         <DialogBody>
           Bạn muốn xóa thông tin trạm <span>{deleteSiteId}</span> ?

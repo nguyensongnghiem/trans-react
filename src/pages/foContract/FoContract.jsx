@@ -4,11 +4,12 @@ import useSites from "../../hooks/useSites.jsx";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
-import { ArrowRightCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowRightCircleIcon, PlusCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 import React from "react";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import * as Yup from "yup";
+import * as XLSX from 'xlsx';
 import useContracts from "../../hooks/useContracts.jsx";
 import {
   Stepper,
@@ -29,7 +30,7 @@ import {
   DialogBody,
   DialogHeader,
 } from "@material-tailwind/react";
-import { HashtagIcon } from "@heroicons/react/24/solid";
+import { HashtagIcon, PlusIcon } from "@heroicons/react/24/solid";
 import {
   MagnifyingGlassIcon,
   CogIcon,
@@ -205,36 +206,55 @@ function FoContract() {
     await handleCreateContract(values);
   };
   // if (isLoading) return <Spinner />;
+  const onBtnExport = () => {
+    const headers = ["Số hợp đồng", "Tên hợp đồng", "Ngày ký", "Ngày hết hạn", "Nhà cung cấp", "Ghi chú"];
+    const dataToExport = contractList.map(contract => {
+      return {
+        "Số hợp đồng": contract.contractNumber,
+        "Tên hợp đồng": contract.contractName,
+        "Ngày ký": contract.signedDate,
+        "Ngày hết hạn": contract.endDate,
+        "Nhà cung cấp": contract.transmissionOwner?.name,
+        "Ghi chú": contract.note
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Contracts");
+    XLSX.writeFile(workbook, "ContractList.xlsx");
+  };
   return (
-    <div className={`grid grid-cols-12 gap-2 p-3`}>
-      <div className="col-span-4">
-        <div className="h-[calc(100vh-2rem)] w-full overflow-y-auto border-r-2 border-r-gray-300 p-1">
-          <div className="mb-1 flex items-center gap-2">
+    <div className={`flex gap-2 p-3`}>
+      <div className="flex-shrink-0">
+        <div
+          className="h-[calc(100vh-2rem)] max-w-max overflow-y-auto border-r-2 border-r-gray-300 p-1"
+        >
+          <div className="mb-1 flex items-center gap-2 justify-between">
             <Typography variant="h6" color="blue-gray">
               Danh mục hợp đồng
             </Typography>
-            <Link to="/fo-create">
-            <IconButton
-              variant="gradient"
-              size="xs"
-              className="mb-1"
-              >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="size-4"
+            <div className="flex gap-2">
+              <Link to="/fo-create">
+                <Button
+                  variant="gradient"
+                  size="sm"
+                  className="flex items-center gap-2"
                 >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.5v15m7.5-7.5h-15"
-                />
-              </svg>
-            </IconButton>
-            </Link>
+                  <PlusIcon className="h-4 w-4" />
+                 
+                </Button>
+              </Link>
+              <Button
+                variant="gradient"
+                size="sm"
+                color="green"
+                className="flex items-center gap-2"
+                onClick={onBtnExport}
+              >
+                Xuất Excel
+              </Button>
+            </div>
           </div>
           <div className="p-0">
             <Input
@@ -251,7 +271,7 @@ function FoContract() {
               return (
                 <Accordion
                   key={item.year}
-                  open={open[item.year]}
+                  open={open[item.year]}                 
                   icon={
                     <Chip
                       value={item.count}
@@ -299,7 +319,10 @@ function FoContract() {
                                   className="h-2 w-2"
                                 />
                               </ListItemPrefix>
-                              <Typography color="blue-gray" className="text-sm">
+                              <Typography
+                                color="blue-gray"
+                                className="text-sm"
+                              >
                                 {contract.contractNumber}
                               </Typography>
                               {/* <ListItemSuffix>
@@ -318,11 +341,9 @@ function FoContract() {
           </List>
         </div>
       </div>
-      <div className="col-span-8">
+      <div className="flex-grow">
         {selectedId && <FoConTractDetail id={selectedId} />}
-      </div>  
-
-   
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import * as transOwnerService from "../services/TransmissionOwnerService";
 import * as siteTransmissionTypeService from "../services/SiteTransmissionTypeService";
 import * as provinceService from "../services/ProvinceService";
 import * as Yup from "yup";
+import * as XLSX from 'xlsx';
 import * as siteOwnerService from "../services/SiteOwnerService";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -181,34 +182,66 @@ function SiteList() {
   };
 
   if (isLoading) return <Spinner />;
+  const onBtnExport = () => {
+    const headers = ["Tỉnh", "Site ID", "Tên trạm", "Vĩ độ", "Kinh độ", "Truyền dẫn trạm", "Ghi chú"];
+    const dataToExport = siteList.content.map(site => {
+      return {
+        "Tỉnh": site.province.name,
+        "Site ID": site.siteId,
+        "Tên trạm": site.siteName,
+        "Vĩ độ": site.latitude,
+        "Kinh độ": site.longitude,
+        "Truyền dẫn trạm": site.siteTransmissionType?.name,
+        "Ghi chú": site.note
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sites");
+    XLSX.writeFile(workbook, "SiteList.xlsx");
+  };
   return (
     <div className="px-3">
 
-      <Typography variant="h4" color="blue-gray" className="mb-3">
-        Danh sách trạm
-      </Typography>
-      <Button
-        variant="gradient"
-        size="sm"
-        className="mb-3 flex items-center gap-3"
-        onClick={handleOpenCreate}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="size-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15"
-          />
-        </svg>
-        Thêm mới
-      </Button>
+      <div className="flex items-center justify-between">
+        <Typography variant="h4" color="blue-gray" className="mb-3">
+          Danh sách trạm
+        </Typography>
+        <div className="flex gap-2">
+          <Button
+            variant="gradient"
+            size="sm"
+            className="mb-3 flex items-center gap-3"
+            onClick={handleOpenCreate}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            Thêm mới
+          </Button>
+          <Button
+            variant="gradient"
+            size="sm"
+            color="green"
+            className="mb-3 flex items-center gap-3"
+            onClick={onBtnExport}
+          >
+            Xuất Excel
+          </Button>
+        </div>
+      </div>
 
 
       <div className="container max-w-full">

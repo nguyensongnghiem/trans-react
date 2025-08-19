@@ -44,7 +44,7 @@ const Sidebar2 = ({ sidebarOpen }) => {
           <span className={`${sidebarOpen ? "" : "hidden"}`}>Quản lý truyền dẫn</span>
         </Typography>
       </div>
-      <List>
+      <List className="overflow-y-auto">
         <Accordion
           open={open === 1}
           icon={
