@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSidebar } from "./contexts/SidebarContext.jsx";
 
 import "./App.css";
 import Header from "./components/Header";
@@ -18,14 +18,19 @@ import { useAuth } from "./contexts/authContext.jsx";
 
 function App() {
   const { user } = useAuth();
+  const { sidebarOpen, toggleSidebar } = useSidebar();
+
   return (
     <>
-
-      <div className="flex h-screen min-h-screen flex-col">
-        <Header></Header>
-        <div className="flex flex-1 flex-col overflow-y-hidden sm:flex-row">
-          <nav className="flex overflow-y-auto sm:min-w-64">
-            <SideBar2></SideBar2>
+      <div className="flex flex-col">
+        <Header toggleSidebar={toggleSidebar}></Header>
+        <div className="flex flex-1 flex-col overflow-y-hidden sm:flex-row h-screen">
+          <nav
+            className={`flex overflow-y-auto ${
+              sidebarOpen ? "sm:min-w-64" : "sm:w-0"
+            } transition-all duration-300`}
+          >
+            <SideBar2 sidebarOpen={sidebarOpen} />
           </nav>
           <main className="flex-1 overflow-y-auto">
             <Outlet />
@@ -33,8 +38,7 @@ function App() {
         </div>
         {/* <footer className="bg-gray-100 p-2">Footer</footer> */}
       </div>
-      <ToastContainer className="custom-z-index"/>
-
+      <ToastContainer className="custom-z-index" />
     </>
   );
 }

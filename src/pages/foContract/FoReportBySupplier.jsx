@@ -226,8 +226,6 @@ const FoReportBySupplier = () => {
 
   return (
     <div className="p-5">
-      <Card>
-        <CardBody>
           <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <Typography
               variant="h5"
@@ -239,6 +237,7 @@ const FoReportBySupplier = () => {
             <Button
               variant="filled"
               color="green"
+              size="sm"
               className="flex items-center gap-2"
               onClick={handleExport}
             >
@@ -306,14 +305,15 @@ const FoReportBySupplier = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full table-auto text-left">
+            <table className="w-full text-left border-collapse border border-slate-400">
               <thead className="bg-blue-gray-50/50">
                 <tr>
-                  <th className="p-4 border-b border-blue-gray-100"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
+                  <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">STT</Typography></th>
+                  <th className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Nhà Cung cấp</Typography></th>
                   {selectedMonth === "all" ? (
                     <>
                       {months.map((month) => (
-                        <th key={month} className="p-4 border-b border-blue-gray-100 text-center">
+                        <th key={month} className="p-2 border border-slate-300 text-center">
                           <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
                             {`Tháng ${month}`}
                           </Typography>
@@ -321,13 +321,13 @@ const FoReportBySupplier = () => {
                       ))}
                     </>
                   ) : (
-                    <th className="p-4 border-b border-blue-gray-100 text-center">
+                    <th className="p-2 border border-slate-300 text-center">
                       <Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">
                         {`Tháng ${selectedMonth}`}
                       </Typography>
                     </th>
                   )}
-                  <th className="p-4 border-b border-blue-gray-100 text-center"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Tổng Năm</Typography></th>
+                  <th className="p-2 border border-slate-300 text-center"><Typography variant="small" color="blue-gray" className="font-semibold leading-none opacity-70">Tổng Năm</Typography></th>
                 </tr>
               </thead>
               <tbody>
@@ -335,42 +335,43 @@ const FoReportBySupplier = () => {
                   <>
                     {filteredReportData.map((row, index) => (
                       <tr key={index} className="even:bg-blue-gray-50/50">
-                        <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{row.supplierName}</Typography></td>
+                        <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{index + 1}</Typography></td>
+                        <td className="p-2 border border-slate-300"><Typography variant="small" color="blue-gray" className="font-normal">{row.supplierName}</Typography></td>
                         {selectedMonth === "all" ? (
                           <>
                             {row.monthlyCosts.map((cost, monthIndex) => (
-                              <td key={monthIndex} className="p-4 text-center">
+                              <td key={monthIndex} className="p-2 border border-slate-300 text-center">
                                 <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(cost)}</Typography>
                               </td>
                             ))}
                           </>
                         ) : (
-                          <td className="p-4 text-center">
+                          <td className="p-2 border border-slate-300 text-center">
                             <Typography variant="small" color="blue-gray" className="font-normal">{formatVND(row.monthlyCosts[selectedMonth - 1])}</Typography>
                           </td>
                         )}
-                        <td className="p-4 text-center">
+                        <td className="p-2 border border-slate-300 text-center">
                           <Typography variant="small" color="blue" className="font-semibold">{formatVND(row.totalYearlyCost)}</Typography>
                         </td>
                       </tr>
                     ))}
                     {/* Total row */}
                     <tr className="border-t border-blue-gray-200">
-                      <td className="p-4 font-bold text-black"><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
+                      <td className="p-2 border border-slate-300 font-bold text-black" colSpan={2}><Typography variant="small" color="blue-gray" className="font-bold">Tổng cộng</Typography></td>
                       {selectedMonth === "all" ? (
                         <>
                           {monthlyTotals.map((total, index) => (
-                            <td key={index} className="p-4 text-center font-bold text-black">
+                            <td key={index} className="p-2 border border-slate-300 text-center font-bold text-black">
                               <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(total)}</Typography>
                             </td>
                           ))}
                         </>
                       ) : (
-                        <td className="p-4 text-center font-bold text-black">
+                        <td className="p-2 border border-slate-300 text-center font-bold text-black">
                           <Typography variant="small" color="blue-gray" className="font-bold">{formatVND(monthlyTotals[selectedMonth - 1])}</Typography>
                         </td>
                       )}
-                      <td className="p-4 text-center font-bold text-black">
+                      <td className="p-2 border border-slate-300 text-center font-bold text-black">
                         <Typography variant="small" color="blue" className="font-bold">{formatVND(totalYearlyCost)}</Typography>
                       </td>
                     </tr>
@@ -378,8 +379,8 @@ const FoReportBySupplier = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan={selectedMonth === "all" ? 14 : 3}
-                      className="p-4 text-center"
+                      colSpan={selectedMonth === "all" ? 15 : 4}
+                      className="p-2 border border-slate-300 text-center"
                     >
                       <Typography variant="small" color="blue-gray" className="font-normal">
                         Không có dữ liệu chi phí cho lựa chọn này.
@@ -390,8 +391,6 @@ const FoReportBySupplier = () => {
               </tbody>
             </table>
           </div>
-        </CardBody>
-      </Card>
     </div>
   );
 };

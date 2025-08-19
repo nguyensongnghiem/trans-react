@@ -38,7 +38,10 @@ import {
 } from "@heroicons/react/24/outline";
 import FoConTractDetail from "./FoConTractDetail.jsx";
 
+import { useSidebar } from "../../contexts/SidebarContext.jsx";
+
 function FoContract() {
+  const { sidebarOpen } = useSidebar();
   const navigate = useNavigate();
   const {
     contracts: contractList,
@@ -203,19 +206,18 @@ function FoContract() {
   };
   // if (isLoading) return <Spinner />;
   return (
-    <div className="grid grid-cols-12 gap-3 p-5">
-      <div className="col-span-3">
-        <div className="h-[calc(100vh-2rem)] w-full overflow-y-auto border-r-2 border-r-gray-300 p-2">
-          <div className="mb-2 flex items-center gap-4">
-            <Typography variant="h5" color="blue-gray">
+    <div className={`grid grid-cols-12 gap-2 p-3`}>
+      <div className="col-span-4">
+        <div className="h-[calc(100vh-2rem)] w-full overflow-y-auto border-r-2 border-r-gray-300 p-1">
+          <div className="mb-1 flex items-center gap-2">
+            <Typography variant="h6" color="blue-gray">
               Danh mục hợp đồng
             </Typography>
             <Link to="/fo-create">
-            <Button
+            <IconButton
               variant="gradient"
-              size="sm"
-              className="mb-3 flex items-center gap-3"
-              // onClick={handleOpenCreate}
+              size="xs"
+              className="mb-1"
               >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -223,7 +225,7 @@ function FoContract() {
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="size-6"
+                className="size-4"
                 >
                 <path
                   strokeLinecap="round"
@@ -231,13 +233,12 @@ function FoContract() {
                   d="M12 4.5v15m7.5-7.5h-15"
                 />
               </svg>
-              Thêm mới
-            </Button>
+            </IconButton>
             </Link>
           </div>
           <div className="p-0">
             <Input
-              icon={<MagnifyingGlassIcon className="h-5 w-5" />}
+              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
               variant="standard"
               label="Tìm theo tên hợp đồng"
               onChange={handleContractSearch}
@@ -264,20 +265,20 @@ function FoContract() {
                   <ListItem className="p-0" selected={open === item.year}>
                     <AccordionHeader
                       onClick={() => handleOpen(item.year)}
-                      className="border-b-0 p-3"
+                      className="border-b-0 p-2"
                     >
                       <ListItemPrefix>
-                        <HashtagIcon className="h-4 w-4" />
+                        <HashtagIcon className="h-3 w-3" />
                       </ListItemPrefix>
                       <Typography
                         color="blue"
-                        className="mr-auto font-semibold"
+                        className="mr-auto font-normal text-sm"
                       >
                         {item.year}
                       </Typography>
                     </AccordionHeader>
                   </ListItem>
-                  <AccordionBody className="py-1">
+                  <AccordionBody className="py-0.5">
                     <List className="p-0">
                       {contractListWithSearch
                         .filter((contract) => {
@@ -295,10 +296,10 @@ function FoContract() {
                               <ListItemPrefix>
                                 <ArrowRightCircleIcon
                                   strokeWidth={2}
-                                  className="h-3 w-3"
+                                  className="h-2 w-2"
                                 />
                               </ListItemPrefix>
-                              <Typography color="blue-gray" className="text-md">
+                              <Typography color="blue-gray" className="text-sm">
                                 {contract.contractNumber}
                               </Typography>
                               {/* <ListItemSuffix>
@@ -317,7 +318,7 @@ function FoContract() {
           </List>
         </div>
       </div>
-      <div className="col-span-9">
+      <div className="col-span-8">
         {selectedId && <FoConTractDetail id={selectedId} />}
       </div>  
 

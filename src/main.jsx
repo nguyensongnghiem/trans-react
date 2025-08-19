@@ -1,3 +1,4 @@
+import { SidebarProvider } from "./contexts/SidebarContext.jsx";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
@@ -100,14 +101,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <SidebarProvider>
+          <RouterProvider router={router} />
+        </SidebarProvider>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>
-
-  /* <React.StrictMode>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </React.StrictMode> */
 );

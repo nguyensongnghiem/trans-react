@@ -1,10 +1,10 @@
 function InfoCard(props) {
   const { header, content } = props;
   return (
-    <div className="relative pl-9 py-2">
-      <div className="font-semibold text-gray-900">
+    <div className="relative pl-7 py-1">
+      <div className="font-normal text-gray-900">
         <svg
-          className="absolute top-2 left-1 h-5 w-5 text-green-500"
+          className="absolute top-1 left-1 h-4 w-4 text-green-500"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -18,7 +18,7 @@ function InfoCard(props) {
         </svg>
         {header}
       </div>
-      <dd className="mt-2">{content}</dd>
+      <dd className="mt-1 text-sm">{content}</dd>
     </div>
   );
 }

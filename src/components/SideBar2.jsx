@@ -26,7 +26,7 @@ import {
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
 
-const Sidebar2 = () => {
+const Sidebar2 = ({ sidebarOpen }) => {
   const [open, setOpen] = React.useState(0);
 
   const handleOpen = (value) => {
@@ -34,10 +34,14 @@ const Sidebar2 = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] w-full max-w-[20rem] p-4 shadow-xl bg-blue-gray-900 shadow-blue-gray-900/5">
-      <div className="my-2 flex items-center gap-4 p-4">
-        <Typography variant="h5" color="white">
-          Quản lý truyền dẫn
+    <div
+      className={`h-full w-full p-2 shadow-xl bg-blue-gray-900 shadow-blue-gray-900/5 ${
+        sidebarOpen ? "max-w-[16rem]" : "max-w-[4rem]"
+      } transition-all duration-300`}
+    >
+      <div className="my-1 flex items-center gap-2 p-2">
+        <Typography variant="h6" color="white">
+          <span className={`${sidebarOpen ? "" : "hidden"}`}>Quản lý truyền dẫn</span>
         </Typography>
       </div>
       <List>
@@ -53,37 +57,37 @@ const Sidebar2 = () => {
           <ListItem className="p-0" selected={open === 1}>
             <AccordionHeader
               onClick={() => handleOpen(1)}
-              className="border-b-0 p-3 text-white opacity-70"
+              className="border-b-0 p-2 text-white opacity-70"
             >
               <ListItemPrefix>
-                <PresentationChartBarIcon className="h-5 w-5 " />
+                <PresentationChartBarIcon className="h-4 w-4 " />
               </ListItemPrefix>
-              <Typography color="white" className="mr-auto font-normal">
-                Hệ thống
+              <Typography color="white" className="mr-auto font-light text-sm">
+                <span className={`${sidebarOpen ? "" : "hidden"}`}>Hệ thống</span>
               </Typography>
             </AccordionHeader>
           </ListItem>
-          <AccordionBody className="py-1">
+          <AccordionBody className="py-0.5">
             <List className="p-0 text-white opacity-70">
               <NavLink to="/">
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5 " />
                   </ListItemPrefix>
-                  Tổng quan
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Tổng quan</Typography></span>
                 </ListItem>
               </NavLink>
-              <ListItem>
+              <ListItem className="p-1">
                 <ListItemPrefix>
                   <ChevronRightIcon strokeWidth={3} className="h-3 w-5 " />
                 </ListItemPrefix>
-                Báo cáo
+                <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Báo cáo</Typography></span>
               </ListItem>
-              <ListItem>
+              <ListItem className="p-1">
                 <ListItemPrefix>
                   <ChevronRightIcon strokeWidth={3} className="h-3 w-5 " />
                 </ListItemPrefix>
-                Projects
+                <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Projects</Typography></span>
               </ListItem>
             </List>
           </AccordionBody>
@@ -100,17 +104,17 @@ const Sidebar2 = () => {
           <ListItem className="p-0" selected={open === 2}>
             <AccordionHeader
               onClick={() => handleOpen(2)}
-              className="border-b-0 p-3 text-white opacity-70 "
+              className="border-b-0 p-2 text-white opacity-70 "
             >
               <ListItemPrefix>
-                <HomeIcon className="h-5 w-5 " />
+                <HomeIcon className="h-4 w-4 " />
               </ListItemPrefix>
-              <Typography color="white" className="mr-auto font-normal">
-                Quản lý trạm
+              <Typography color="white" className="mr-auto font-light text-sm">
+                <span className={`${sidebarOpen ? "" : "hidden"}`}>Quản lý trạm</span>
               </Typography>
             </AccordionHeader>
           </ListItem>
-          <AccordionBody className="py-1">
+          <AccordionBody className="py-0.5">
             <List className="p-0 text-white opacity-70">
               <NavLink
                 to="/site"
@@ -118,11 +122,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Danh sách trạm
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Danh sách trạm</Typography></span>
                 </ListItem>
               </NavLink>
               <NavLink
@@ -131,11 +135,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Tra cứu thông tin trạm
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Tra cứu thông tin trạm</Typography></span>
                 </ListItem>
               </NavLink>
             </List>
@@ -153,16 +157,16 @@ const Sidebar2 = () => {
           <ListItem className="p-0" selected={open === 3}>
             <AccordionHeader
               onClick={() => handleOpen(3)}
-              className="border-b-0 p-3 "
+              className="border-b-0 p-2 "
             >
               <ListItemPrefix>
-                <ServerIcon className="h-5 w-5 text-white opacity-70" />
+                <ServerIcon className="h-4 w-4 text-white opacity-70" />
               </ListItemPrefix>
               <Typography
                 color="blue-gray"
-                className="mr-auto font-normal text-white opacity-70"
+                className="mr-auto font-light text-sm text-white opacity-70"
               >
-                Quản lý thiết bị
+                <span className={`${sidebarOpen ? "" : "hidden"}`}>Quản lý thiết bị</span>
               </Typography>
             </AccordionHeader>
           </ListItem>
@@ -174,18 +178,18 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Tra cứu
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Tra cứu</Typography></span>
                 </ListItem>
               </NavLink>
-              <ListItem>
+              <ListItem className="p-1">
                 <ListItemPrefix>
                   <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                 </ListItemPrefix>
-                Comming soon
+                <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Comming soon</Typography></span>
               </ListItem>
             </List>
           </AccordionBody>
@@ -203,16 +207,16 @@ const Sidebar2 = () => {
           <ListItem className="p-0" selected={open === 4}>
             <AccordionHeader
               onClick={() => handleOpen(4)}
-              className="border-b-0 p-3 "
+              className="border-b-0 p-2 "
             >
               <ListItemPrefix>
-                <BoltIcon className="h-5 w-5 text-white opacity-70" />
+                <BoltIcon className="h-4 w-4 text-white opacity-70" />
               </ListItemPrefix>
               <Typography
                 color="blue-gray"
-                className="mr-auto font-normal text-white opacity-70"
+                className="mr-auto font-light text-sm text-white opacity-70"
               >
-                Quản lý cáp quang
+                <span className={`${sidebarOpen ? "" : "hidden"}`}>Quản lý cáp quang</span>
               </Typography>
             </AccordionHeader>
           </ListItem>
@@ -224,11 +228,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Cáp quang đầu tư
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Cáp quang đầu tư</Typography></span>
                 </ListItem>
               </NavLink>
             </List>
@@ -248,16 +252,16 @@ const Sidebar2 = () => {
           <ListItem className="p-0" selected={open === 5}>
             <AccordionHeader
               onClick={() => handleOpen(5)}
-              className="border-b-0 p-3 "
+              className="border-b-0 p-2 "
             >
               <ListItemPrefix>
-                <BuildingLibraryIcon className="h-5 w-5 text-white opacity-70" />
+                <BuildingLibraryIcon className="h-4 w-4 text-white opacity-70" />
               </ListItemPrefix>
               <Typography
                 color="blue-gray"
-                className="mr-auto font-normal text-white opacity-70"
+                className="mr-auto font-light text-sm text-white opacity-70"
               >
-                Hợp đồng thuê FO
+                <span className={`${sidebarOpen ? "" : "hidden"}`}>Hợp đồng thuê FO</span>
               </Typography>
             </AccordionHeader>
           </ListItem>
@@ -269,11 +273,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Danh sách hợp đồng
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Danh sách hợp đồng</Typography></span>
                 </ListItem>
               </NavLink>
               {/* Menu item đã được di chuyển */}
@@ -283,11 +287,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Danh sách tuyến thuê FO
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Danh sách tuyến thuê FO</Typography></span>
                 </ListItem>
               </NavLink>
               <NavLink
@@ -296,11 +300,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Báo cáo chi phí theo nhà cung cấp
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Báo cáo chi phí theo nhà cung cấp</Typography></span>
                 </ListItem>
               </NavLink>
                <NavLink
@@ -309,11 +313,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Báo cáo chi phí theo hợp đồng
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Báo cáo chi phí theo hợp đồng</Typography></span>
                 </ListItem>
               </NavLink>
             </List>
@@ -333,16 +337,16 @@ const Sidebar2 = () => {
           <ListItem className="p-0" selected={open === 6}>
             <AccordionHeader
               onClick={() => handleOpen(6)}
-              className="border-b-0 p-3 "
+              className="border-b-0 p-2 "
             >
               <ListItemPrefix>
-                <RssIcon className="h-5 w-5 text-white opacity-70" />
+                <RssIcon className="h-4 w-4 text-white opacity-70" />
               </ListItemPrefix>
               <Typography
                 color="blue-gray"
-                className="mr-auto font-normal text-white opacity-70"
+                className="mr-auto font-light text-sm text-white opacity-70"
               >
-                Quản lý kênh thuê
+                <span className={`${sidebarOpen ? "" : "hidden"}`}>Quản lý kênh thuê</span>
               </Typography>
             </AccordionHeader>
           </ListItem>
@@ -354,11 +358,11 @@ const Sidebar2 = () => {
                   [isActive ? "text-blue-400" : undefined].join(" ")
                 }
               >
-                <ListItem>
+                <ListItem className="p-1">
                   <ListItemPrefix>
                     <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
                   </ListItemPrefix>
-                  Danh sách kênh
+                  <span className={`${sidebarOpen ? "" : "hidden"}`}><Typography variant="small">Danh sách kênh</Typography></span>
                 </ListItem>
               </NavLink>
             </List>

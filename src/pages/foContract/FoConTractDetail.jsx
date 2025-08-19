@@ -187,14 +187,14 @@ function FoConTractDetail(props) {
 
   return (
     <>
-      <Card className="mt-6 rounded-none p-4 text-blue-gray-600 shadow-lg">
-        <div className="mb-5 flex items-center justify-start gap-5 border-b">
-          <div className="flex items-center gap-2 border-b-2 border-blue-600 pb-2 pr-2 uppercase text-blue-gray-600">
+      <div className="mt-6 rounded-none text-blue-gray-600">
+        <div className="mb-3 flex items-center justify-start gap-2 border-b">
+          <div className="flex items-center gap-1 border-b-2 border-blue-600 pb-1 pr-1 uppercase text-blue-gray-600">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="size-6"
+              className="size-4"
             >
               <path
                 fillRule="evenodd"
@@ -203,12 +203,12 @@ function FoConTractDetail(props) {
               />
               <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
             </svg>
-            <Typography variant="h5" className="font-semibold">
+            <Typography variant="h6" className="font-semibold">
               {contractDetail.contractNumber}
             </Typography>
           </div>
           <Button
-            className="flex gap-2 p-2.5 transition-all duration-200"
+            className="flex gap-1 p-1.5 transition-all duration-200"
             onClick={() => {
               window.open(contractDetail.contractUrl, "_blank");
             }}
@@ -230,7 +230,7 @@ function FoConTractDetail(props) {
             Văn bản
           </Button>
           <Button
-            className="flex gap-2 p-2.5 transition-all duration-300"
+            className="flex gap-1 p-1.5 transition-all duration-300"
             onClick={handleOpenEditDrawer}
             variant="text"
             color="blue"
@@ -267,9 +267,8 @@ function FoConTractDetail(props) {
             }
           />
         </div>
-        <Typography variant="h6">{contractDetail.contractName}</Typography>
-        <CardBody>
-          <div className="mb-5 grid grid-cols-4 gap-2">
+        <Typography variant="small">{contractDetail.contractName}</Typography>
+        <div className="mb-3 grid grid-cols-4 gap-1">
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
               <InfoCard
                 header="Số tuyến cáp"
@@ -301,7 +300,7 @@ function FoConTractDetail(props) {
           </div>
 
           <div
-            className="ag-theme-quartz h-[500px] w-full" // applying the Data Grid theme
+            className="ag-theme-quartz h-[400px] w-full" // applying the Data Grid theme
           // style={{ height: "400px", width: "100%" }} // the Data Grid will fill the size of the parent container
           >
             <AgGridReact
@@ -311,8 +310,7 @@ function FoConTractDetail(props) {
               className="overflow-x-auto"
             />
           </div>
-        </CardBody>
-      </Card>
+      </div>
 
       {/*   Drawer edit hợp đồng */}
 
