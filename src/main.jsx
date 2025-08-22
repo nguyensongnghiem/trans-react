@@ -24,6 +24,7 @@ import HiredFoList from "./pages/HiredFoList.jsx";
 import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
 import FoReportBySupplierWithContracts from "./pages/foContract/FoReportBySupplierWithContracts.jsx";
 import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
+import UnderConstructionPage from "./pages/UnderConstruction.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
       {
         path: "/unauthorized",
         element: <Unauthorized />,
+      },
+      {
+        path: "/under-construction",
+        element: <UnderConstructionPage />,
       },
       {
         element: <PrivateRoutes allowedRoles={["ROLE_ADMIN"]} />,
