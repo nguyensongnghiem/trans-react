@@ -219,7 +219,7 @@ const BackupDashboard = () => {
 
           {/* Cột 2: Lịch sử hoạt động gần đây (Chiếm 1 phần) */}
           <div className="bg-white rounded-lg shadow overflow-hidden h-fit">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="px-6 py-4 border-b border-gray-200 bg-yellow-50">
               <h2 className="text-lg font-semibold text-gray-700">
                 🕒 Hoạt động gần đây
               </h2>

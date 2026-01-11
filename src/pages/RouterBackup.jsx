@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import { toast } from "react-toastify";
 
 const RouterBackup = () => {
   const [routers, setRouters] = useState([]);
   const [filteredRouters, setFilteredRouters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState({}); // Theo dõi trạng thái backup của từng thiết bị
-  const [message, setMessage] = useState(null);
   const [provinceFilter, setProvinceFilter] = useState("");
   const [vendorFilter, setVendorFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -23,10 +23,9 @@ const RouterBackup = () => {
       setRouters(response.data);
     } catch (error) {
       console.error(error);
-      setMessage({
-        type: "error",
-        text: "Không thể tải danh sách thiết bị. Vui lòng kiểm tra kết nối Backend.",
-      });
+      toast.error(
+        "Không thể tải danh sách thiết bị. Vui lòng kiểm tra kết nối Backend."
+      );
     } finally {
       setLoading(false);
     }
@@ -75,7 +74,6 @@ const RouterBackup = () => {
   const handleBackup = async (routerName) => {
     // Đánh dấu thiết bị này đang xử lý
     setProcessing((prev) => ({ ...prev, [routerName]: true }));
-    setMessage(null);
 
     try {
       // Gọi API Java (Java sẽ gọi tiếp sang Python Service)
@@ -83,21 +81,14 @@ const RouterBackup = () => {
       const result = response.data;
 
       if (result.success) {
-        setMessage({
-          type: "success",
-          text: `Backup thành công: ${routerName}. ${result.message}`,
-        });
+        toast.success(`Backup thành công: ${routerName}`);
       } else {
-        setMessage({
-          type: "error",
-          text: `Lỗi backup ${routerName}: ${result.message || "Lỗi không xác định"}`,
-        });
+        toast.error(
+          `Lỗi backup ${routerName}: ${result.message || "Lỗi không xác định"}`
+        );
       }
     } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Lỗi kết nối khi backup ${routerName}`,
-      });
+      toast.error(`Lỗi kết nối khi backup ${routerName}`);
     } finally {
       // Tắt trạng thái xử lý
       setProcessing((prev) => ({ ...prev, [routerName]: false }));
@@ -115,12 +106,11 @@ const RouterBackup = () => {
     try {
       const response = await axiosInstance.get("/routers/backup/all");
       const result = response.data;
-      setMessage({
-        type: "info",
-        text: result.message || "Đã kích hoạt backup nền cho tất cả thiết bị.",
-      });
+      toast.info(
+        result.message || "Đã kích hoạt backup nền cho tất cả thiết bị."
+      );
     } catch (error) {
-      setMessage({ type: "error", text: "Lỗi khi kích hoạt backup tất cả." });
+      toast.error("Lỗi khi kích hoạt backup tất cả.");
     }
   };
 
@@ -137,20 +127,6 @@ const RouterBackup = () => {
           🔄 Backup Tất Cả (Async)
         </button>
       </div>
-
-      {message && (
-        <div
-          className={`p-4 mb-6 rounded shadow-sm flex justify-between items-center ${message.type === "error" ? "bg-red-100 text-red-700 border border-red-200" : message.type === "info" ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-green-100 text-green-700 border border-green-200"}`}
-        >
-          <span>{message.text}</span>
-          <button
-            onClick={() => setMessage(null)}
-            className="font-bold text-xl leading-none"
-          >
-            &times;
-          </button>
-        </div>
-      )}
 
       <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
         <div className="flex flex-col">
