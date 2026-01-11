@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  Button,
+  IconButton,
+  Tooltip,
+} from "@material-tailwind/react";
+import { XMarkIcon, ArrowDownTrayIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 const BackupDashboard = () => {
   const [summary, setSummary] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [selectedRouter, setSelectedRouter] = useState(null);
+  const [deviceBackups, setDeviceBackups] = useState([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const API_URL =
     import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
@@ -49,6 +63,44 @@ const BackupDashboard = () => {
   const formatDate = (timestamp) => {
     if (!timestamp) return "Chưa có";
     return new Date(timestamp * 1000).toLocaleString("vi-VN");
+  };
+
+  const handleOpenDetail = async (routerName) => {
+    setSelectedRouter(routerName);
+    setOpenDetail(true);
+    setLoadingDetail(true);
+    setDeviceBackups([]); // Reset data cũ
+    try {
+      const response = await fetch(`${API_URL}/routers/backups/${routerName}`);
+      if (!response.ok) throw new Error("Failed to fetch backups");
+      const data = await response.json();
+      setDeviceBackups(data);
+    } catch (err) {
+      console.error(err);
+      // Có thể hiển thị thông báo lỗi nếu cần
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const handleDownload = async (filename) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/routers/backups/${selectedRouter}/${filename}`
+      );
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      alert("Lỗi tải file: " + error.message);
+    }
   };
 
   return (
@@ -100,6 +152,9 @@ const BackupDashboard = () => {
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Trạng thái
                     </th>
+                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Hành động
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -133,6 +188,19 @@ const BackupDashboard = () => {
                             </span>
                           ) : (
                             <span className="text-red-500">● Trống</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 border-b border-gray-200 text-sm text-center">
+                          {item.backup_count > 0 && (
+                            <Tooltip content="Xem chi tiết & Tải xuống">
+                              <IconButton
+                                variant="text"
+                                color="blue"
+                                onClick={() => handleOpenDetail(item.router_name)}
+                              >
+                                <EyeIcon className="h-5 w-5" />
+                              </IconButton>
+                            </Tooltip>
                           )}
                         </td>
                       </tr>
@@ -176,6 +244,66 @@ const BackupDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Chi tiết Backup */}
+      <Dialog open={openDetail} handler={() => setOpenDetail(!openDetail)} size="lg">
+        <DialogHeader className="justify-between border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            Lịch sử Backup: <span className="text-blue-600">{selectedRouter}</span>
+          </div>
+          <IconButton
+            color="blue-gray"
+            size="sm"
+            variant="text"
+            onClick={() => setOpenDetail(false)}
+          >
+            <XMarkIcon strokeWidth={2.5} className="h-5 w-5" />
+          </IconButton>
+        </DialogHeader>
+        <DialogBody className="overflow-y-auto max-h-[60vh] p-0">
+          {loadingDetail ? (
+            <div className="text-center py-10">Đang tải danh sách...</div>
+          ) : deviceBackups.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">Không có file backup nào.</div>
+          ) : (
+            <table className="w-full min-w-max table-auto text-left">
+              <thead>
+                <tr>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">Tên File</th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">Ngày tạo</th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">Kích thước</th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900 text-center">Tải xuống</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deviceBackups.map((file, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="p-4 border-b border-blue-gray-50 text-sm font-medium text-gray-900">
+                      {file.filename}
+                    </td>
+                    <td className="p-4 border-b border-blue-gray-50 text-sm text-gray-600">
+                      {file.created_at}
+                    </td>
+                    <td className="p-4 border-b border-blue-gray-50 text-sm text-gray-600">
+                      {(file.size_bytes / 1024).toFixed(2)} KB
+                    </td>
+                    <td className="p-4 border-b border-blue-gray-50 text-center">
+                      <IconButton variant="text" color="green" onClick={() => handleDownload(file.filename)}>
+                        <ArrowDownTrayIcon className="h-5 w-5" />
+                      </IconButton>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="gradient" color="blue" onClick={() => setOpenDetail(false)}>
+            Đóng
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 };
