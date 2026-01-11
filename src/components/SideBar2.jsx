@@ -41,7 +41,10 @@ const menuConfig = [
     id: 3,
     title: "Quản lý thiết bị",
     icon: ServerIcon,
-    children: [{ title: "Danh sách thiết bị", path: "/router" }],
+    children: [
+      { title: "Danh sách thiết bị", path: "/router" },
+      { title: "Backup thiết bị", path: "/backup-routers" }
+    ],
   },
   {
     id: 4,

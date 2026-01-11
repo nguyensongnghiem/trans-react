@@ -25,6 +25,7 @@ import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
 import FoReportBySupplierWithContracts from "./pages/foContract/FoReportBySupplierWithContracts.jsx";
 import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
 import UnderConstructionPage from "./pages/UnderConstruction.jsx";
+import RouterBackup from "./pages/RouterBackup.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -87,6 +88,10 @@ const router = createBrowserRouter([
           {
             path: "/leaseline",
             element: <LeaselineList />,
+          },
+          {
+            path: "/backup-routers",
+            element: <RouterBackup />,
           },
         ],
       },
