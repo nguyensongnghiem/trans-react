@@ -8,7 +8,11 @@ import {
   IconButton,
   Tooltip,
 } from "@material-tailwind/react";
-import { XMarkIcon, ArrowDownTrayIcon, EyeIcon } from "@heroicons/react/24/outline";
+import {
+  XMarkIcon,
+  ArrowDownTrayIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
 
 const BackupDashboard = () => {
   const [summary, setSummary] = useState([]);
@@ -196,7 +200,9 @@ const BackupDashboard = () => {
                               <IconButton
                                 variant="text"
                                 color="blue"
-                                onClick={() => handleOpenDetail(item.router_name)}
+                                onClick={() =>
+                                  handleOpenDetail(item.router_name)
+                                }
                               >
                                 <EyeIcon className="h-5 w-5" />
                               </IconButton>
@@ -221,11 +227,19 @@ const BackupDashboard = () => {
             <ul className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
               {history.slice(0, 15).map((log, index) => (
                 <li key={index} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="text-sm font-medium text-gray-900">
-                    {log.router_name}
+                  <div className="flex justify-between items-start">
+                    <div className="text-sm font-medium text-gray-900">
+                      {log.router_name}
+                    </div>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                      {log.province || "N/A"}
+                    </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {formatDate(log.timestamp)}
+                    {formatDate(log.timestamp)} •{" "}
+                    <span className="font-semibold text-blue-600">
+                      {log.username || "system"}
+                    </span>
                   </div>
                   <div
                     className="text-xs text-gray-400 mt-1 truncate"
@@ -246,10 +260,15 @@ const BackupDashboard = () => {
       )}
 
       {/* Modal Chi tiết Backup */}
-      <Dialog open={openDetail} handler={() => setOpenDetail(!openDetail)} size="lg">
+      <Dialog
+        open={openDetail}
+        handler={() => setOpenDetail(!openDetail)}
+        size="lg"
+      >
         <DialogHeader className="justify-between border-b border-gray-200">
           <div className="flex items-center gap-2">
-            Lịch sử Backup: <span className="text-blue-600">{selectedRouter}</span>
+            Lịch sử Backup:{" "}
+            <span className="text-blue-600">{selectedRouter}</span>
           </div>
           <IconButton
             color="blue-gray"
@@ -264,15 +283,25 @@ const BackupDashboard = () => {
           {loadingDetail ? (
             <div className="text-center py-10">Đang tải danh sách...</div>
           ) : deviceBackups.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">Không có file backup nào.</div>
+            <div className="text-center py-10 text-gray-500">
+              Không có file backup nào.
+            </div>
           ) : (
             <table className="w-full min-w-max table-auto text-left">
               <thead>
                 <tr>
-                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">Tên File</th>
-                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">Ngày tạo</th>
-                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">Kích thước</th>
-                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900 text-center">Tải xuống</th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">
+                    Tên File
+                  </th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">
+                    Ngày tạo
+                  </th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">
+                    Kích thước
+                  </th>
+                  <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900 text-center">
+                    Tải xuống
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +317,11 @@ const BackupDashboard = () => {
                       {(file.size_bytes / 1024).toFixed(2)} KB
                     </td>
                     <td className="p-4 border-b border-blue-gray-50 text-center">
-                      <IconButton variant="text" color="green" onClick={() => handleDownload(file.filename)}>
+                      <IconButton
+                        variant="text"
+                        color="green"
+                        onClick={() => handleDownload(file.filename)}
+                      >
                         <ArrowDownTrayIcon className="h-5 w-5" />
                       </IconButton>
                     </td>
@@ -299,7 +332,11 @@ const BackupDashboard = () => {
           )}
         </DialogBody>
         <DialogFooter>
-          <Button variant="gradient" color="blue" onClick={() => setOpenDetail(false)}>
+          <Button
+            variant="gradient"
+            color="blue"
+            onClick={() => setOpenDetail(false)}
+          >
             Đóng
           </Button>
         </DialogFooter>
