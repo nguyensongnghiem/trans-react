@@ -26,6 +26,7 @@ import FoReportBySupplierWithContracts from "./pages/foContract/FoReportBySuppli
 import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
 import UnderConstructionPage from "./pages/UnderConstruction.jsx";
 import RouterBackup from "./pages/RouterBackup.jsx";
+import BackupDashboard from "./pages/BackupDashboard.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -93,7 +94,11 @@ const router = createBrowserRouter([
             path: "/backup-routers",
             element: <RouterBackup />,
           },
-        ],
+          {
+            path: "/backup-dashboard",
+            element: <BackupDashboard />
+          }
+        ],        
       },
       {
         element: <PrivateRoutes allowedRoles={["ROLE_USER"]} />,
