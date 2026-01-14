@@ -27,6 +27,7 @@ import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
 import UnderConstructionPage from "./pages/UnderConstruction.jsx";
 import RouterBackup from "./pages/RouterBackup.jsx";
 import BackupDashboard from "./pages/BackupDashboard.jsx";
+import UserManagement from "./pages/UserManagement.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -97,6 +98,10 @@ const router = createBrowserRouter([
           {
             path: "/backup-dashboard",
             element: <BackupDashboard />
+          },
+           {
+            path: "/admin/users",
+            element: <UserManagement />
           }
         ],        
       },

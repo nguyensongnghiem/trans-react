@@ -29,9 +29,11 @@ const Header = ({ toggleSidebar }) => {
   const token = auth?.accessToken;
   const handleOpenLogout = () => setOpenLogout(!openLogout);
   let username;
+  let roles;
   if (token) {
     const decoded = jwtDecode(token);
     username = decoded.sub;
+    roles = decoded.roles;  
   }
 
   const handleLogin = () => {
