@@ -28,6 +28,8 @@ import UnderConstructionPage from "./pages/UnderConstruction.jsx";
 import RouterBackup from "./pages/RouterBackup.jsx";
 import BackupDashboard from "./pages/BackupDashboard.jsx";
 import UserManagement from "./pages/UserManagement.jsx";
+import BackupScheduleManagement from "./pages/BackupScheduleManagement.jsx";
+import ScheduleManagement from "./pages/ScheduleManagement.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -92,17 +94,21 @@ const router = createBrowserRouter([
             element: <LeaselineList />,
           },
           {
-            path: "/backup-routers",
+            path: "/router/backup-routers",
             element: <RouterBackup />,
           },
           {
-            path: "/backup-dashboard",
+            path: "/router/backup-dashboard",
             element: <BackupDashboard />
           },
            {
             path: "/admin/users",
             element: <UserManagement />
-          }
+          },
+          {
+            path: "/router/backup-scheduler",
+            element: <ScheduleManagement />,
+          }          
         ],        
       },
       {
