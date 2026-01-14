@@ -43,8 +43,7 @@ const ScheduleManagement = () => {
     month_day: 1,
   });
 
-  const axiosInstance = useAxiosPrivate();
-
+  const axiosInstance = useAxiosPrivate();  
   const resetFormData = () => {
     setFormData({
       id: null,
@@ -57,7 +56,7 @@ const ScheduleManagement = () => {
       month_day: 1,
     });
   };
-
+  
   const fetchSchedules = async () => {
     setLoading(true);
     try {

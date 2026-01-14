@@ -75,7 +75,7 @@ const BackupDashboard = () => {
     setLoadingDetail(true);
     setDeviceBackups([]); // Reset data cũ
     try {
-      const response = await fetch(`${API_URL}/routers/backups/${routerName}`);
+      const response = await fetch(`${API_URL}/routers/backups/files/${routerName}`);
       if (!response.ok) throw new Error("Failed to fetch backups");
       const data = await response.json();
       setDeviceBackups(data);
@@ -90,7 +90,7 @@ const BackupDashboard = () => {
   const handleDownload = async (filename) => {
     try {
       const response = await fetch(
-        `${API_URL}/routers/backups/${selectedRouter}/${filename}`
+        `${API_URL}/routers/backups/files/${selectedRouter}/${filename}`
       );
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
