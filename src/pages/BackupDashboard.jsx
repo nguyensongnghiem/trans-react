@@ -7,11 +7,25 @@ import {
   Button,
   IconButton,
   Tooltip,
+  Timeline,
+  TimelineItem,
+  TimelineConnector,
+  TimelineHeader,
+  TimelineIcon,
+  TimelineBody,
+  Typography,
+  Input,
 } from "@material-tailwind/react";
 import {
   XMarkIcon,
   ArrowDownTrayIcon,
   EyeIcon,
+  ClockIcon,
+  CalendarDaysIcon,
+  QueueListIcon,
+  MagnifyingGlassIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 
 const BackupDashboard = () => {
@@ -23,6 +37,8 @@ const BackupDashboard = () => {
   const [selectedRouter, setSelectedRouter] = useState(null);
   const [deviceBackups, setDeviceBackups] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [filterName, setFilterName] = useState("");
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
 
   const API_URL =
     import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
@@ -75,7 +91,9 @@ const BackupDashboard = () => {
     setLoadingDetail(true);
     setDeviceBackups([]); // Reset data cũ
     try {
-      const response = await fetch(`${API_URL}/routers/backups/files/${routerName}`);
+      const response = await fetch(
+        `${API_URL}/routers/backups/files/${routerName}`
+      );
       if (!response.ok) throw new Error("Failed to fetch backups");
       const data = await response.json();
       setDeviceBackups(data);
@@ -107,6 +125,38 @@ const BackupDashboard = () => {
     }
   };
 
+  const filteredSummary = summary.filter((item) => {
+    const matchName = item.router_name
+      .toLowerCase()
+      .includes(filterName.toLowerCase());
+    let matchDate = true;
+    if (dateRange.start) {
+      const start = new Date(dateRange.start).setHours(0, 0, 0, 0) / 1000;
+      matchDate = matchDate && item.timestamp >= start;
+    }
+    if (dateRange.end) {
+      const end = new Date(dateRange.end).setHours(23, 59, 59, 999) / 1000;
+      matchDate = matchDate && item.timestamp <= end;
+    }
+    return matchName && matchDate;
+  });
+
+  const filteredHistory = history.filter((log) => {
+    const matchName = log.router_name
+      .toLowerCase()
+      .includes(filterName.toLowerCase());
+    let matchDate = true;
+    if (dateRange.start) {
+      const start = new Date(dateRange.start).setHours(0, 0, 0, 0) / 1000;
+      matchDate = matchDate && log.timestamp >= start;
+    }
+    if (dateRange.end) {
+      const end = new Date(dateRange.end).setHours(23, 59, 59, 999) / 1000;
+      matchDate = matchDate && log.timestamp <= end;
+    }
+    return matchName && matchDate;
+  });
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
@@ -127,6 +177,48 @@ const BackupDashboard = () => {
         </div>
       )}
 
+      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
+        <div className="w-full md:w-72">
+          <Input
+            label="Tìm kiếm thiết bị"
+            icon={<MagnifyingGlassIcon className="h-5 w-5" />}
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2 items-center">
+          <Input
+            type="date"
+            label="Từ ngày"
+            value={dateRange.start}
+            onChange={(e) =>
+              setDateRange({ ...dateRange, start: e.target.value })
+            }
+            containerProps={{ className: "min-w-[150px]" }}
+          />
+          <span className="text-gray-500">-</span>
+          <Input
+            type="date"
+            label="Đến ngày"
+            value={dateRange.end}
+            onChange={(e) =>
+              setDateRange({ ...dateRange, end: e.target.value })
+            }
+            containerProps={{ className: "min-w-[150px]" }}
+          />
+        </div>
+        <Button
+          variant="text"
+          color="blue-gray"
+          onClick={() => {
+            setFilterName("");
+            setDateRange({ start: "", end: "" });
+          }}
+        >
+          Xóa lọc
+        </Button>
+      </div>
+
       {loading ? (
         <div className="text-center py-10 text-gray-500">
           Đang tải dữ liệu...
@@ -136,8 +228,9 @@ const BackupDashboard = () => {
           {/* Cột 1: Thống kê theo thiết bị (Chiếm 2 phần) */}
           <div className="lg:col-span-2 bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-700">
-                📊 Trạng thái Backup Thiết bị
+              <h2 className="text-lg font-semibold text-gray-700 flex">              
+                  <QueueListIcon className="h-5 w-5 mr-2" />
+                  Thống kê Backup Thiết bị             
               </h2>
             </div>
             <div className="overflow-x-auto">
@@ -162,7 +255,7 @@ const BackupDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {summary.length === 0 ? (
+                  {filteredSummary.length === 0 ? (
                     <tr>
                       <td
                         colSpan="4"
@@ -172,7 +265,7 @@ const BackupDashboard = () => {
                       </td>
                     </tr>
                   ) : (
-                    summary.map((item) => (
+                    filteredSummary.map((item) => (
                       <tr key={item.router_name} className="hover:bg-gray-50">
                         <td className="px-5 py-4 border-b border-gray-200 text-sm font-medium text-gray-900">
                           {item.router_name}
@@ -219,42 +312,74 @@ const BackupDashboard = () => {
 
           {/* Cột 2: Lịch sử hoạt động gần đây (Chiếm 1 phần) */}
           <div className="bg-white rounded-lg shadow overflow-hidden h-fit">
-            <div className="px-6 py-4 border-b border-gray-200 bg-yellow-50">
-              <h2 className="text-lg font-semibold text-gray-700">
-                🕒 Hoạt động gần đây
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-lg font-semibold text-gray-700 flex">
+                <CalendarDaysIcon className="h-5 w-5 mr-2" />
+                Hoạt động gần đây
               </h2>
             </div>
-            <ul className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
-              {history.slice(0, 15).map((log, index) => (
-                <li key={index} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div className="text-sm font-medium text-gray-900">
-                      {log.router_name}
-                    </div>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                      {log.province || "N/A"}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatDate(log.timestamp)} •{" "}
-                    <span className="font-semibold text-blue-600">
-                      {log.username || "system"}
-                    </span>
-                  </div>
-                  <div
-                    className="text-xs text-gray-400 mt-1 truncate"
-                    title={log.filename}
-                  >
-                    {log.filename}
-                  </div>
-                </li>
-              ))}
-              {history.length === 0 && (
-                <li className="px-6 py-4 text-gray-500 text-sm text-center">
+            <div className="p-4 max-h-[600px] overflow-y-auto">
+              {filteredHistory.length === 0 ? (
+                <div className="text-center text-gray-500 text-sm py-4">
                   Chưa có lịch sử.
-                </li>
+                </div>
+              ) : (
+                <Timeline>
+                  {filteredHistory.slice(0, 15).map((log, index) => {
+                    const isLast = index === filteredHistory.slice(0, 15).length - 1;
+                    return (
+                      <TimelineItem key={index}>
+                        {!isLast && <TimelineConnector />}
+                        <TimelineHeader className="items-center">
+                          <TimelineIcon className="p-2 bg-blue-50 text-blue-500">
+                            <ClockIcon className="h-4 w-4" />
+                          </TimelineIcon>
+                          <div className="flex flex-col">
+                            <Typography
+                              variant="h6"
+                              color="blue-gray"
+                              className="text-sm font-bold"
+                            >
+                              {log.router_name}
+                            </Typography>
+                            <Typography
+                              variant="small"
+                              color="gray"
+                              className="text-xs font-normal"
+                            >
+                              {formatDate(log.timestamp)}
+                            </Typography>
+                          </div>
+                        </TimelineHeader>
+                        <TimelineBody className="pb-8">
+                          <Typography
+                            color="gray"
+                            className="font-normal text-xs"
+                          >
+                            Người thực hiện:{" "}
+                            <span className="font-semibold text-blue-600">
+                              {log.username || "system"}
+                            </span>
+                          </Typography>
+                          <Typography
+                            color="gray"
+                            className="font-normal text-xs truncate w-full"
+                            title={log.filename}
+                          >
+                            File: {log.filename}
+                          </Typography>
+                          <div className="mt-2">
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
+                              {log.province || "N/A"}
+                            </span>
+                          </div>
+                        </TimelineBody>
+                      </TimelineItem>
+                    );
+                  })}
+                </Timeline>
               )}
-            </ul>
+            </div>
           </div>
         </div>
       )}
