@@ -61,7 +61,7 @@ const ScheduleManagement = () => {
     setLoading(true);
     try {
       // Giả định backend Java đã proxy request này tới service backup
-      const response = await axiosInstance.get("/routers/backup/schedules");
+      const response = await axiosInstance.get("/routers/backups/schedules");
       setSchedules(response.data);
     } catch (error) {
       console.error("Failed to fetch schedules:", error);
@@ -74,7 +74,7 @@ const ScheduleManagement = () => {
   const fetchRegions = async () => {
     try {
       // Giả định backend Java đã proxy request này tới service backup
-      const response = await axiosInstance.get("/routers/backup/regions");
+      const response = await axiosInstance.get("/routers/backups/regions");
       setAvailableRegions(response.data);
     } catch (error) {
       console.error("Failed to fetch regions:", error);
@@ -111,7 +111,7 @@ const ScheduleManagement = () => {
   const handleDelete = async (scheduleId) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa lịch backup này?")) return;
     try {
-      await axiosInstance.delete(`/routers/backup/schedules/${scheduleId}`);
+      await axiosInstance.delete(`/routers/backups/schedules/${scheduleId}`);
       toast.success("Xóa lịch backup thành công!");
       fetchSchedules(); // Tải lại danh sách
     } catch (error) {
@@ -132,12 +132,12 @@ const ScheduleManagement = () => {
     try {
       if (isEdit) {
         await axiosInstance.put(
-          `/routers/backup/schedules/${currentScheduleId}`,
+          `/routers/backups/schedules/${currentScheduleId}`,
           payload
         );
         toast.success("Cập nhật lịch backup thành công!");
       } else {
-        await axiosInstance.post("/routers/backup/schedules", payload);
+        await axiosInstance.post("/routers/backups/schedules", payload);
         toast.success("Tạo mới lịch backup thành công!");
       }
       fetchSchedules(); // Tải lại danh sách

@@ -6,9 +6,6 @@ import { ThemeProvider } from "@material-tailwind/react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import ErrorPage from "./pages/ErrorPage.jsx";
-import SiteList from "./pages/SiteList.jsx";
-import SiteEdit from "./pages/SiteEdit.jsx";
-import SiteCreate from "./pages/SiteCreate.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import SiteList2 from "./pages/SiteList2.jsx";
 import RouterList from "./pages/RouterList.jsx";
@@ -28,7 +25,6 @@ import UnderConstructionPage from "./pages/UnderConstruction.jsx";
 import RouterBackup from "./pages/RouterBackup.jsx";
 import BackupDashboard from "./pages/BackupDashboard.jsx";
 import UserManagement from "./pages/UserManagement.jsx";
-import BackupScheduleManagement from "./pages/BackupScheduleManagement.jsx";
 import ScheduleManagement from "./pages/ScheduleManagement.jsx";
 const router = createBrowserRouter([
   {

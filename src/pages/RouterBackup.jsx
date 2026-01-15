@@ -78,7 +78,7 @@ const RouterBackup = () => {
     try {
       // Gọi API Java (Java sẽ gọi tiếp sang Python Service)
       const response = await axiosInstance.post(
-        `/routers/backup/trigger/${routerName}`
+        `/routers/backups/trigger/${routerName}`
       );
       const result = response.data;
 
@@ -106,7 +106,7 @@ const RouterBackup = () => {
       return;
 
     try {
-      const response = await axiosInstance.post("/routers/backup/trigger/all");
+      const response = await axiosInstance.post("/routers/backups/trigger/all");
       const result = response.data;
       toast.info(
         result.message || "Đã kích hoạt backup nền cho tất cả thiết bị."
