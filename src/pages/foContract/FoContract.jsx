@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -14,6 +15,21 @@ import * as Yup from "yup";
 
 import FoConTractDetail from "./FoConTractDetail.jsx";
 import { useSidebar } from "../../contexts/SidebarContext.jsx";
+=======
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import OwnerChip from "../../components/OwnerChip.jsx";
+import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
+import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
+import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+import { ArrowRightCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { toast } from "react-toastify";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+import React from "react";
+import { ErrorMessage, Field, Form, Formik } from "formik";
+import * as Yup from "yup";
+import { checkExcelImport } from "../../services/FoContractService.jsx";
+>>>>>>> Stashed changes
 
 import {
   Stepper,
@@ -74,11 +90,17 @@ function FoContract() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState();
   const [openCreate, setOpenCreate] = useState(false);
+<<<<<<< Updated upstream
 
   const [activeStep, setActiveStep] = useState(0);
   const [isLastStep, setIsLastStep] = useState(false);
   const [isFirstStep, setIsFirstStep] = useState(false);
 
+=======
+  const [activeStep, setActiveStep] = React.useState(0);
+  const [isLastStep, setIsLastStep] = React.useState(false);
+  const [isFirstStep, setIsFirstStep] = React.useState(false);
+>>>>>>> Stashed changes
   const [pdfFiles, setPdfFiles] = useState([]);
 
   // ===== STEP 2 – EXCEL =====
@@ -93,7 +115,10 @@ function FoContract() {
 
 
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
   const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const getAllTransmissionOwner = async () => {
@@ -108,7 +133,10 @@ function FoContract() {
     getAllTransmissionOwner();
   }, []);
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
   
   const loadContractList = async () => {
   setIsLoading(true);
@@ -218,13 +246,18 @@ useEffect(() => {
     setOpenCreate(!openCreate);
     if (openCreate) {
       setActiveStep(0);
+<<<<<<< Updated upstream
       setPdfFiles([]);
+=======
+      setPdfFile(null);
+>>>>>>> Stashed changes
       setExcelFile(null);
       setExcelRows([]);
       setExcelErrors({});
       setExcelChecked(false);
       setExcelSuccess(false);
     }
+<<<<<<< Updated upstream
   };
 
 
@@ -327,6 +360,107 @@ useEffect(() => {
 
 
 
+=======
+  };
+
+
+  // ----- Hàm Check File Excel -----
+  const handleCheckExcel = async (contractNumber) => {
+    if (!excelFile) {
+      toast.warning("Vui lòng chọn file Excel");
+      return;
+    }
+
+    try {
+      const res = await checkExcelImport(excelFile, contractNumber);
+
+      setExcelErrors({});
+      setExcelSuccess(true);
+      setExcelChecked(true);
+      setExcelRows(res.rows || []);
+
+      toast.success("✔ File Excel hợp lệ");
+    } catch (err) {
+      if (err.response?.status === 400) {
+        setExcelErrors(err.response.data || {});
+        setExcelSuccess(false);
+        setExcelChecked(true);
+      } else {
+        toast.error("Lỗi hệ thống khi kiểm tra Excel");
+      }
+    }
+  };
+
+
+  const handleFinish = async (values) => {
+    try {
+      setSaving(true);
+      const formData = new FormData();
+
+      // JSON
+      formData.append(
+        "data",
+        JSON.stringify({
+          contractNumber: values.contractNumber,
+          contractName: values.contractName,
+          signedDate: values.signedDate,
+          endDate: values.endDate,
+          note: values.note,
+          transmissionOwner: {
+            id: values.transmissionOwner.id
+          }
+        })
+      );
+
+      // PDF
+      pdfFiles.forEach((file) => {
+        formData.append("pdfFiles", file);
+      });
+
+
+
+      // EXCEL (file gốc đã upload ở step 2)
+      formData.append("excelFile", excelFile);
+
+      // 🚫 KHÔNG headers
+      const res = await axiosInstance.post(
+        "/contract/full-create",
+        formData
+      );
+      console.log(res.data)
+
+      toast.success("🎉 Tạo hợp đồng thành công");
+      await loadContractList();
+
+      // ✅ TỰ ĐỘNG MỞ HỢP ĐỒNG VỪA TẠO
+      setSelectedId(res.data.id);
+  
+      // Đợi render list xong
+      setTimeout(() => {
+        setSelectedId(res.data.id);
+      }, 0);
+
+      // ✅ MỞ ĐÚNG NĂM
+      const year = new Date(res.data.signedDate).getFullYear();
+      setOpen((prev) => ({
+        ...prev,
+        [year]: true,
+      }));
+      setOpenCreate(false);
+      setActiveStep(0);
+
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.message || "❌ Lỗi khi lưu hợp đồng"
+      );
+    }finally {
+    setSaving(false);  // ✅ ADD
+  }
+  };
+
+
+>>>>>>> Stashed changes
 
   const validateStep1 = Yup.object({
 
@@ -337,6 +471,7 @@ useEffect(() => {
     transmissionOwner: Yup.object({
       id: Yup.string().required("Yêu cầu nhập nhà cung cấp"),
     }),
+<<<<<<< Updated upstream
 
     // contractUrl: Yup.mixed()
     //   .required("Yêu cầu tải lên văn bản pdf")
@@ -354,6 +489,10 @@ useEffect(() => {
 
 
 
+=======
+  });
+
+>>>>>>> Stashed changes
   // const handleNext = () => !isLastStep && setActiveStep((cur) => cur + 1);
   const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
   const handleNext = async (
@@ -442,10 +581,15 @@ useEffect(() => {
             {contractArrayByYearWithSearch.map((item) => {
               return (
                 <Accordion
+<<<<<<< Updated upstream
                   key={item.year}            
 
                   open={!!open[item.year]}
 
+=======
+                  key={item.year}
+                  open={!!open[item.year]}
+>>>>>>> Stashed changes
                   icon={
                     <Chip
                       value={item.count}

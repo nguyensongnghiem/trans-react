@@ -36,43 +36,74 @@ function FoConTractDetail(props) {
   const axiosInstance = useAxiosPrivate();
   const [colDefs, setColDefs] = useState([
     {
+<<<<<<< Updated upstream
       headerName: "STT",
       width: 70,
       valueGetter: (params) => params.node.rowIndex + 1,
       sortable: false,
       filter: false,
     },
+=======
+    headerName: "STT",
+    width: 30,
+    valueGetter: (params) => params.node.rowIndex + 1,
+    sortable: false,
+    filter: false,
+    suppressHeaderMenuButton: true,
+    },
+
+>>>>>>> Stashed changes
     {
       headerName: "Tên tuyến",
       valueGetter: (p) =>
         p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
     },
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
     {
       headerName: "Tỉnh",
       valueGetter: (p) => p.data.nearSite?.province?.name || "",
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
+<<<<<<< Updated upstream
     {
       headerName: "Khoảng cách (km)",
       width: 130,
+=======
+
+
+    { headerName: "Khoảng cách",
+      width: 130, 
+>>>>>>> Stashed changes
       valueGetter: (p) => p.data.finalDistance,
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
+<<<<<<< Updated upstream
     {
       headerName: "Số core",
       width: 100,
+=======
+
+    {
+      headerName: "Số core",
+      width: 100, 
+>>>>>>> Stashed changes
       valueGetter: (p) => p.data.coreQuantity,
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
+
     {
       headerName: "Đơn giá/km",
       valueGetter: (p) => p.data.cost,
       cellRenderer: (p) => VND.format(p.data.cost),
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
+<<<<<<< Updated upstream
     },
     {
       headerName: "Thành tiền / Tháng",
@@ -80,7 +111,19 @@ function FoConTractDetail(props) {
       cellRenderer: (p) => VND.format(p.value),
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
+=======
+>>>>>>> Stashed changes
     },
+
+    {
+    headerName: "Thành tiền / Tháng",
+    valueGetter: (p) =>
+    p.data.cost * p.data.finalDistance,
+    cellRenderer: (p) => VND.format(p.value),
+    headerClass: "ag-center-header",
+    cellClass: "ag-center-cell",
+    },
+
     {
       headerName: "Trạng thái",
       cellRenderer: (p) => (
@@ -227,6 +270,10 @@ function FoConTractDetail(props) {
   useEffect(() => {
     loadContract();
   }, [id]);
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 
 
   // const openDrawer = () => setOpen(true);
@@ -253,6 +300,7 @@ function FoConTractDetail(props) {
     setOpen(true);
   }
 
+<<<<<<< Updated upstream
   const handleEdit = (lineId) => {
     // TODO: mở modal/sửa tuyến
     console.log("edit line", lineId);
@@ -262,6 +310,8 @@ function FoConTractDetail(props) {
     // TODO: gọi API xoá tuyến
     console.log("delete line", lineId);
   };
+=======
+>>>>>>> Stashed changes
 
   const handleEditSubmit = async (values) => {
     try {
@@ -408,9 +458,16 @@ function FoConTractDetail(props) {
             }
           />
         </div>
+<<<<<<< Updated upstream
 
         {contractDetail.contractName && (
           <Typography variant="h6">{contractDetail.contractName}</Typography>
+=======
+        {contractDetail.contractName && (
+          <Typography variant="h6">
+            {contractDetail.contractName}
+          </Typography>
+>>>>>>> Stashed changes
         )}
         <CardBody>
           <div className="mb-5 grid grid-cols-4 gap-2">
@@ -428,6 +485,10 @@ function FoConTractDetail(props) {
               <InfoCard
                 header="Nhà cung cấp"
                 content={contractDetail.transmissionOwner?.name || ""}
+              />
+              <InfoCard
+                header="Tổng giá trị hợp đồng (trước thuế)"
+                content={VND.format(totalAmountBeforeTax)}
               />
               <InfoCard
                 header="Tổng giá trị hợp đồng (trước thuế)"
@@ -497,7 +558,11 @@ function FoConTractDetail(props) {
               endDate: contractDetail.endDate,
               active: contractDetail.active,
               contractUrl: null, // 🔥 FILE LUÔN LUÔN NULL
+<<<<<<< Updated upstream
               transmissionOwnerId: contractDetail.transmissionOwner?.id || "",
+=======
+              ransmissionOwnerId: contractDetail.transmissionOwner?.id,
+>>>>>>> Stashed changes
               note: contractDetail.note || "",
             }}
 
@@ -774,7 +839,11 @@ function FoConTractDetail(props) {
 
       </React.Fragment>
 
+<<<<<<< Updated upstream
       </div> 
+=======
+
+>>>>>>> Stashed changes
     </>
   );
 }
