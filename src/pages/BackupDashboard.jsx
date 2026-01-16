@@ -15,6 +15,7 @@ import {
   TimelineBody,
   Typography,
   Input,
+  Chip,
 } from "@material-tailwind/react";
 import {
   XMarkIcon,
@@ -228,9 +229,9 @@ const BackupDashboard = () => {
           {/* Cột 1: Thống kê theo thiết bị (Chiếm 2 phần) */}
           <div className="lg:col-span-2 bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-700 flex">              
-                  <QueueListIcon className="h-5 w-5 mr-2" />
-                  Thống kê Backup Thiết bị             
+              <h2 className="text-lg font-semibold text-gray-700 flex">
+                <QueueListIcon className="h-5 w-5 mr-2" />
+                Thống kê Backup Thiết bị
               </h2>
             </div>
             <div className="overflow-x-auto">
@@ -326,22 +327,41 @@ const BackupDashboard = () => {
               ) : (
                 <Timeline>
                   {filteredHistory.slice(0, 15).map((log, index) => {
-                    const isLast = index === filteredHistory.slice(0, 15).length - 1;
+                    const isLast =
+                      index === filteredHistory.slice(0, 15).length - 1;
+                    const isSuccess =
+                      log.success !== false && log.status !== "failed";
+
                     return (
                       <TimelineItem key={index}>
                         {!isLast && <TimelineConnector />}
                         <TimelineHeader className="items-center">
-                          <TimelineIcon className="p-2 bg-blue-50 text-blue-500">
-                            <ClockIcon className="h-4 w-4" />
+                          <TimelineIcon
+                            className={`p-2 ${isSuccess ? "bg-green-50 text-green-500" : "bg-red-50 text-red-500"}`}
+                          >
+                            {isSuccess ? (
+                              <CheckCircleIcon className="h-4 w-4" />
+                            ) : (
+                              <ExclamationTriangleIcon className="h-4 w-4" />
+                            )}
                           </TimelineIcon>
-                          <div className="flex flex-col">
-                            <Typography
-                              variant="h6"
-                              color="blue-gray"
-                              className="text-sm font-bold"
-                            >
-                              {log.router_name}
-                            </Typography>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Typography
+                                variant="h6"
+                                color="blue-gray"
+                                className="text-sm font-bold"
+                              >
+                                {log.router_name}
+                              </Typography>
+                              <Chip
+                                size="sm"
+                                variant="ghost"
+                                value={isSuccess ? "Thành công" : "Thất bại"}
+                                color={isSuccess ? "green" : "red"}
+                                className="rounded-full px-2 py-0.5 text-[10px]"
+                              />
+                            </div>
                             <Typography
                               variant="small"
                               color="gray"
