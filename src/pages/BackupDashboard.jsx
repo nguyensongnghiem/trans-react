@@ -16,6 +16,11 @@ import {
   Typography,
   Input,
   Chip,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemPrefix,
+  Card
 } from "@material-tailwind/react";
 import {
   XMarkIcon,
@@ -40,6 +45,9 @@ const BackupDashboard = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [filterName, setFilterName] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [openExport, setOpenExport] = useState(false);
+  const [selectedExportProvinces, setSelectedExportProvinces] = useState([]);
+  const [availableProvinces, setAvailableProvinces] = useState([]);
 
   const API_URL =
     import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
@@ -73,6 +81,12 @@ const BackupDashboard = () => {
       setSummary(summaryData);
       // Sắp xếp lịch sử theo thời gian mới nhất -> cũ nhất
       setHistory(historyData.sort((a, b) => b.timestamp - a.timestamp));
+
+      // Extract unique provinces for export
+      const provinces = [
+        ...new Set(historyData.map((h) => h.province).filter((p) => p)),
+      ].sort();
+      setAvailableProvinces(provinces);
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -126,6 +140,40 @@ const BackupDashboard = () => {
     }
   };
 
+  const handleExport = async () => {
+    if (selectedExportProvinces.length === 0) {
+      alert("Vui lòng chọn ít nhất một khu vực.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/routers/backups/export`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ provinces: selectedExportProvinces }),
+      });
+
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backups_export_${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      setOpenExport(false);
+      setSelectedExportProvinces([]);
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi xuất dữ liệu: " + error.message);
+    }
+  };
+
   const filteredSummary = summary.filter((item) => {
     const matchName = item.router_name
       .toLowerCase()
@@ -164,12 +212,21 @@ const BackupDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-800">
           Dashboard Quản Lý Backup
         </h1>
-        <button
-          onClick={fetchData}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition duration-150 flex items-center gap-2"
-        >
-          🔄 Làm mới
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setOpenExport(true)}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition duration-150 flex items-center gap-2"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            Xuất dữ liệu
+          </button>
+          <button
+            onClick={fetchData}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition duration-150 flex items-center gap-2"
+          >
+            🔄 Làm mới
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -483,6 +540,92 @@ const BackupDashboard = () => {
             onClick={() => setOpenDetail(false)}
           >
             Đóng
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Modal Export */}
+      <Dialog
+        open={openExport}
+        handler={() => setOpenExport(!openExport)}
+        size="sm"
+      >
+        <DialogHeader>Xuất dữ liệu cấu hình</DialogHeader>
+        <DialogBody divider className="max-h-[60vh] overflow-y-auto">
+          <Typography className="mb-2 font-normal text-gray-600">
+            Chọn các tỉnh/thành phố muốn tải xuống file cấu hình:
+          </Typography>
+          <Card className="w-full shadow-none border border-gray-200">
+            <List className="p-0">
+              <ListItem className="p-0">
+                <label className="flex w-full cursor-pointer items-center px-3 py-2">
+                  <ListItemPrefix className="mr-3">
+                    <Checkbox
+                      ripple={false}
+                      className="hover:before:opacity-0"
+                      checked={selectedExportProvinces.includes("all")}
+                      onChange={() => {
+                        if (selectedExportProvinces.includes("all")) {
+                          setSelectedExportProvinces([]);
+                        } else {
+                          setSelectedExportProvinces(["all"]);
+                        }
+                      }}
+                    />
+                  </ListItemPrefix>
+                  <Typography color="blue-gray" className="font-medium">
+                    Tất cả
+                  </Typography>
+                </label>
+              </ListItem>
+              {availableProvinces.map((province) => (
+                <ListItem key={province} className="p-0">
+                  <label className="flex w-full cursor-pointer items-center px-3 py-2">
+                    <ListItemPrefix className="mr-3">
+                      <Checkbox
+                        ripple={false}
+                        className="hover:before:opacity-0"
+                        checked={
+                          selectedExportProvinces.includes("all") ||
+                          selectedExportProvinces.includes(province)
+                        }
+                        disabled={selectedExportProvinces.includes("all")}
+                        onChange={() => {
+                          if (selectedExportProvinces.includes(province)) {
+                            setSelectedExportProvinces(
+                              selectedExportProvinces.filter(
+                                (p) => p !== province
+                              )
+                            );
+                          } else {
+                            setSelectedExportProvinces([
+                              ...selectedExportProvinces,
+                              province,
+                            ]);
+                          }
+                        }}
+                      />
+                    </ListItemPrefix>
+                    <Typography color="blue-gray" className="font-medium">
+                      {province}
+                    </Typography>
+                  </label>
+                </ListItem>
+              ))}
+            </List>
+          </Card>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="text"
+            color="red"
+            onClick={() => setOpenExport(false)}
+            className="mr-1"
+          >
+            Hủy
+          </Button>
+          <Button variant="gradient" color="green" onClick={handleExport}>
+            Tải xuống
           </Button>
         </DialogFooter>
       </Dialog>
