@@ -3,44 +3,87 @@ import { toast } from "react-toastify";
 
 const BASE_URL = "http://localhost:8080/api";
 
+/* ======================
+   AXIOS INSTANCE CHUẨN
+====================== */
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+});
+
+/* ======================
+   GET
+====================== */
 export const fetchData = async (endpoint) => {
   try {
-    const response = await axios.get(`${BASE_URL}/${endpoint}`);
-    return response.data; // Trả về dữ liệu
+    const res = await api.get(endpoint);
+    return res.data;
   } catch (error) {
-    console.error("Error fetching data:", error);
-    throw error; // Ném lỗi để xử lý ở nơi gọi
+    console.error("❌ GET ERROR:", error);
+    throw error;
   }
 };
 
+/* ======================
+   POST JSON
+====================== */
 export const postData = async (endpoint, data) => {
   try {
-    const response = await axios.post(`${BASE_URL}/${endpoint}`, data);
-    console.log(response.data);
-
-    return response.data; // Trả về dữ liệu
+    const res = await api.post(endpoint, data);
+    return res.data;
   } catch (error) {
-    console.error("Lỗi khi tạo mới:", error);
-    throw error; // Ném lỗi để xử lý ở nơi gọi
+    console.error("❌ POST ERROR:", error);
+    throw error;
   }
 };
 
+/* ======================
+   POST FILE / EXCEL
+====================== */
+export const postFile = async (endpoint, formData) => {
+  try {
+    const res = await api.post(endpoint, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("❌ POST FILE ERROR:", error);
+    throw error;
+  }
+};
+
+/* ======================
+   PUT
+====================== */
 export const putData = async (endpoint, data) => {
   try {
-    const response = await axios.put(`$${BASE_URL}/${endpoint}`, data);
-    return response.data; // Trả về dữ liệu
+    const res = await api.put(endpoint, data);
+    return res.data;
   } catch (error) {
-    console.error("Lỗi khi cập nhật dữ liệu:", error);
-    throw error; // Ném lỗi để xử lý ở nơi gọi
+    console.error("❌ PUT ERROR:", error);
+    throw error;
   }
 };
 
+/* ======================
+   DELETE
+====================== */
 export const deleteData = async (endpoint) => {
   try {
-    await axios.delete(`${BASE_URL}/${endpoint}`);
-    // Trả về dữ liệu
+    await api.delete(endpoint);
   } catch (error) {
-    console.error("Error deleting data:", error);
-    throw error; // Ném lỗi để xử lý ở nơi gọi
+    console.error("❌ DELETE ERROR:", error);
+    throw error;
   }
 };
+const apiService = {
+  fetchData,
+  postData,
+  putData,
+  deleteData,
+  postFile,
+};
+
+export default apiService;

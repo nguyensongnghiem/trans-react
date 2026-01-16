@@ -96,3 +96,15 @@ export const countByTransmissionType = async (transmissionType) => {
 
     }
 };
+
+export const checkExcelImport = async (excelFile, contractNumber) => {
+  const formData = new FormData();
+  formData.append("excelFile", excelFile);
+  formData.append("contractNumber", contractNumber);
+
+  const res = await axios.post(
+    `http://localhost:8080/api/contract/check-excel`,
+    formData
+  );
+  return res.data;
+};

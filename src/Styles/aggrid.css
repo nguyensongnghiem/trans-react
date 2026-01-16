@@ -1,0 +1,16 @@
+/* HEADER center */
+.ag-center-header .ag-header-cell-label {
+  justify-content: center;
+}
+
+/* FLOATING FILTER center */
+.ag-center-header .ag-floating-filter-input {
+  text-align: center;
+}
+
+/* CELL center */
+.ag-center-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
