@@ -2,11 +2,8 @@ import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { toast } from "react-toastify";
 import {
-  Card,
-  CardHeader,
   Typography,
   Button,
-  CardBody,
   Chip,
   Dialog,
   DialogHeader,
@@ -23,13 +20,20 @@ import {
   ListItemPrefix,
   Tooltip,
 } from "@material-tailwind/react";
-import { PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/solid";
+import {
+  PencilIcon,
+  TrashIcon,
+  PlusIcon,
+  ClockIcon,
+} from "@heroicons/react/24/solid";
 
 const ScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
   const [availableRegions, setAvailableRegions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
   const [currentScheduleId, setCurrentScheduleId] = useState(null);
   const [formData, setFormData] = useState({
@@ -43,7 +47,17 @@ const ScheduleManagement = () => {
     month_day: 1,
   });
 
-  const axiosInstance = useAxiosPrivate();  
+  const weekDayMap = {
+    mon: "Thứ 2",
+    tue: "Thứ 3",
+    wed: "Thứ 4",
+    thu: "Thứ 5",
+    fri: "Thứ 6",
+    sat: "Thứ 7",
+    sun: "Chủ nhật",
+  };
+
+  const axiosInstance = useAxiosPrivate();
   const resetFormData = () => {
     setFormData({
       id: null,
@@ -56,7 +70,7 @@ const ScheduleManagement = () => {
       month_day: 1,
     });
   };
-  
+
   const fetchSchedules = async () => {
     setLoading(true);
     try {
@@ -108,15 +122,41 @@ const ScheduleManagement = () => {
     setOpenDialog(false);
   };
 
-  const handleDelete = async (scheduleId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa lịch backup này?")) return;
+  const handleDelete = (scheduleId) => {
+    setDeleteId(scheduleId);
+    setOpenDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/routers/backups/schedules/${scheduleId}`);
+      await axiosInstance.delete(`/routers/backups/schedules/${deleteId}`);
       toast.success("Xóa lịch backup thành công!");
       fetchSchedules(); // Tải lại danh sách
     } catch (error) {
       console.error("Failed to delete schedule:", error);
       toast.error("Lỗi khi xóa lịch backup.");
+    } finally {
+      setOpenDeleteDialog(false);
+      setDeleteId(null);
+    }
+  };
+
+  const handleToggleStatus = async (schedule) => {
+    try {
+      const updatedSchedule = { ...schedule, is_active: !schedule.is_active };
+      await axiosInstance.put(
+        `/routers/backups/schedules/${schedule.id}`,
+        updatedSchedule
+      );
+      setSchedules((prev) =>
+        prev.map((s) => (s.id === schedule.id ? updatedSchedule : s))
+      );
+      toast.success(
+        `Đã ${updatedSchedule.is_active ? "kích hoạt" : "tạm dừng"} lịch backup.`
+      );
+    } catch (error) {
+      console.error("Failed to toggle status:", error);
+      toast.error("Lỗi khi cập nhật trạng thái.");
     }
   };
 
@@ -183,30 +223,33 @@ const ScheduleManagement = () => {
   const isAllRegions = formData.regions.includes("all");
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <Card className="h-full w-full">
-        <CardHeader floated={false} shadow={false} className="rounded-none">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <Typography variant="h5" color="blue-gray">
-                Quản lý Lịch Backup
-              </Typography>
-              <Typography color="gray" className="mt-1 font-normal">
-                Thiết lập lịch backup tự động cho các thiết bị router.
-              </Typography>
-            </div>
-            <Button
-              className="flex items-center gap-3"
-              size="sm"
-              onClick={() => handleOpenDialog()}
-            >
-              <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm Lịch
-            </Button>
-          </div>
-        </CardHeader>
-        <CardBody className="overflow-scroll px-0">
+    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <Typography
+            variant="h4"
+            color="blue-gray"
+            className="font-bold tracking-tight"
+          >
+            Quản lý Lịch Backup
+          </Typography>
+          <Typography color="gray" className="mt-1 font-normal text-gray-600">
+            Thiết lập và tự động hóa quy trình sao lưu cấu hình thiết bị.
+          </Typography>
+        </div>
+        <Button
+          className="flex items-center gap-3 bg-blue-600 shadow-md hover:shadow-lg"
+          size="md"
+          onClick={() => handleOpenDialog()}
+        >
+          <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm Lịch Mới
+        </Button>
+      </div>
+
+      <div className="w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full min-w-max table-auto text-left">
-            <thead>
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {[
                   "Tên Lịch",
@@ -218,12 +261,12 @@ const ScheduleManagement = () => {
                 ].map((head) => (
                   <th
                     key={head}
-                    className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4"
+                    className="p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center"
                   >
                     <Typography
                       variant="small"
                       color="blue-gray"
-                      className="font-normal leading-none opacity-70"
+                      className="font-bold leading-none opacity-70"
                     >
                       {head}
                     </Typography>
@@ -231,7 +274,7 @@ const ScheduleManagement = () => {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
                   <td colSpan="6" className="p-4 text-center">
@@ -240,8 +283,11 @@ const ScheduleManagement = () => {
                 </tr>
               ) : (
                 schedules.map((schedule) => (
-                  <tr key={schedule.id} className="hover:bg-gray-50">
-                    <td className="p-4 border-b border-blue-gray-50">
+                  <tr
+                    key={schedule.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="p-4">
                       <Typography
                         variant="small"
                         color="blue-gray"
@@ -250,24 +296,33 @@ const ScheduleManagement = () => {
                         {schedule.name}
                       </Typography>
                     </td>
-                    <td className="p-4 border-b border-blue-gray-50">
-                      <Chip
-                        size="sm"
-                        variant="ghost"
-                        value={schedule.is_active ? "Đang chạy" : "Tạm dừng"}
-                        color={schedule.is_active ? "green" : "red"}
-                      />
+                    <td className="p-4 text-center">
+                      <Tooltip content="Nhấn để thay đổi trạng thái">
+                        <div
+                          className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleToggleStatus(schedule)}
+                        >
+                          <Chip
+                            size="sm"
+                            variant="ghost"
+                            value={
+                              schedule.is_active ? "Đang chạy" : "Tạm dừng"
+                            }
+                            color={schedule.is_active ? "green" : "blue-gray"}
+                            className="rounded-full px-3 font-semibold ormal-case"
+                          />
+                        </div>
+                      </Tooltip>
                     </td>
-                    <td className="p-4 border-b border-blue-gray-50">
-                      <Typography
-                        variant="small"
-                        color="blue-gray"
-                        className="font-normal"
-                      >
-                        {schedule.time}
-                      </Typography>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <ClockIcon className="h-4 w-4 text-gray-400" />
+                        <Typography variant="small" className="font-medium">
+                          {schedule.time}
+                        </Typography>
+                      </div>
                     </td>
-                    <td className="p-4 border-b border-blue-gray-50">
+                    <td className="p-4">
                       <Typography
                         variant="small"
                         color="blue-gray"
@@ -275,12 +330,12 @@ const ScheduleManagement = () => {
                       >
                         {schedule.frequency === "daily" && "Hàng ngày"}
                         {schedule.frequency === "weekly" &&
-                          `Hàng tuần (Thứ ${schedule.week_day})`}
+                          `Hàng tuần (${weekDayMap[schedule.week_day] || schedule.week_day})`}
                         {schedule.frequency === "monthly" &&
                           `Hàng tháng (Ngày ${schedule.month_day})`}
                       </Typography>
                     </td>
-                    <td className="p-4 border-b border-blue-gray-50">
+                    <td className="p-4">
                       <div className="flex flex-wrap gap-1 max-w-xs">
                         {schedule.regions.includes("all") ? (
                           <Chip size="sm" value="Tất cả" color="blue" />
@@ -296,7 +351,7 @@ const ScheduleManagement = () => {
                         )}
                       </div>
                     </td>
-                    <td className="p-4 border-b border-blue-gray-50">
+                    <td className="p-4">
                       <Tooltip content="Sửa lịch">
                         <IconButton
                           variant="text"
@@ -320,8 +375,8 @@ const ScheduleManagement = () => {
               )}
             </tbody>
           </table>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
 
       <Dialog open={openDialog} handler={handleCloseDialog} size="md">
         <DialogHeader>
@@ -329,17 +384,141 @@ const ScheduleManagement = () => {
         </DialogHeader>
         <DialogBody
           divider
-          className="flex flex-col gap-6 max-h-[70vh] overflow-y-auto"
+          className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto p-6"
         >
-          <Input
-            label="Tên lịch"
-            name="name"
-            value={formData.name}
-            onChange={handleFormChange}
-            required
-          />
-          <div className="flex items-center justify-between">
-            <Typography>Kích hoạt lịch</Typography>
+          <div>
+            <Typography
+              variant="small"
+              color="blue-gray"
+              className="mb-2 font-medium"
+            >
+              Tên lịch
+            </Typography>
+            <Input
+              name="name"
+              value={formData.name}
+              onChange={handleFormChange}
+              placeholder="Nhập tên lịch"
+              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+              labelProps={{
+                className: "before:content-none after:content-none",
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Thời gian (HH:MM)
+              </Typography>
+              <Input
+                type="time"
+                name="time"
+                value={formData.time}
+                onChange={handleFormChange}
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Tần suất
+              </Typography>
+              <Select
+                name="frequency"
+                value={formData.frequency}
+                onChange={(val) =>
+                  setFormData((prev) => ({ ...prev, frequency: val }))
+                }
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              >
+                <Option value="daily">Hàng ngày</Option>
+                <Option value="weekly">Hàng tuần</Option>
+                <Option value="monthly">Hàng tháng</Option>
+              </Select>
+            </div>
+          </div>
+
+          {formData.frequency === "weekly" && (
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Chọn ngày trong tuần
+              </Typography>
+              <Select
+                name="week_day"
+                value={formData.week_day}
+                onChange={(val) =>
+                  setFormData((prev) => ({ ...prev, week_day: val }))
+                }
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              >
+                <Option value="mon">Thứ 2</Option>
+                <Option value="tue">Thứ 3</Option>
+                <Option value="wed">Thứ 4</Option>
+                <Option value="thu">Thứ 5</Option>
+                <Option value="fri">Thứ 6</Option>
+                <Option value="sat">Thứ 7</Option>
+                <Option value="sun">Chủ nhật</Option>
+              </Select>
+            </div>
+          )}
+          {formData.frequency === "monthly" && (
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Ngày trong tháng (1-31)
+              </Typography>
+              <Input
+                type="number"
+                name="month_day"
+                min="1"
+                max="31"
+                value={formData.month_day}
+                onChange={handleFormChange}
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border p-3 rounded-lg bg-gray-50">
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="font-medium"
+              >
+                Trạng thái hoạt động
+              </Typography>
+              <Typography variant="small" color="gray" className="font-normal">
+                Bật/Tắt lịch backup tự động này
+              </Typography>
+            </div>
             <Switch
               checked={formData.is_active}
               onChange={(e) =>
@@ -348,64 +527,19 @@ const ScheduleManagement = () => {
                   is_active: e.target.checked,
                 }))
               }
+              color="green"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Thời gian (HH:MM)"
-              type="time"
-              name="time"
-              value={formData.time}
-              onChange={handleFormChange}
-              required
-            />
-            <Select
-              label="Tần suất"
-              name="frequency"
-              value={formData.frequency}
-              onChange={(val) =>
-                setFormData((prev) => ({ ...prev, frequency: val }))
-              }
-            >
-              <Option value="daily">Hàng ngày</Option>
-              <Option value="weekly">Hàng tuần</Option>
-              <Option value="monthly">Hàng tháng</Option>
-            </Select>
-          </div>
-          {formData.frequency === "weekly" && (
-            <Select
-              label="Chọn ngày trong tuần"
-              name="week_day"
-              value={formData.week_day}
-              onChange={(val) =>
-                setFormData((prev) => ({ ...prev, week_day: val }))
-              }
-            >
-              <Option value="mon">Thứ 2</Option>
-              <Option value="tue">Thứ 3</Option>
-              <Option value="wed">Thứ 4</Option>
-              <Option value="thu">Thứ 5</Option>
-              <Option value="fri">Thứ 6</Option>
-              <Option value="sat">Thứ 7</Option>
-              <Option value="sun">Chủ nhật</Option>
-            </Select>
-          )}
-          {formData.frequency === "monthly" && (
-            <Input
-              label="Chọn ngày trong tháng (1-31)"
-              type="number"
-              name="month_day"
-              min="1"
-              max="31"
-              value={formData.month_day}
-              onChange={handleFormChange}
-            />
-          )}
+
           <div>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
+            <Typography
+              variant="small"
+              color="blue-gray"
+              className="mb-2 font-medium"
+            >
               Phạm vi Backup
             </Typography>
-            <Card className="w-full border border-gray-200 shadow-none">
+            <div className="w-full border border-gray-200 rounded-lg overflow-hidden">
               <List className="p-0">
                 <ListItem className="p-0">
                   <label className="flex w-full cursor-pointer items-center px-3 py-2">
@@ -447,7 +581,7 @@ const ScheduleManagement = () => {
                   </ListItem>
                 ))}
               </List>
-            </Card>
+            </div>
           </div>
         </DialogBody>
         <DialogFooter>
@@ -461,6 +595,31 @@ const ScheduleManagement = () => {
           </Button>
           <Button variant="gradient" color="green" onClick={handleSubmit}>
             <span>{isEdit ? "Lưu thay đổi" : "Tạo mới"}</span>
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      <Dialog
+        open={openDeleteDialog}
+        handler={() => setOpenDeleteDialog(false)}
+        size="sm"
+      >
+        <DialogHeader>Xác nhận xóa</DialogHeader>
+        <DialogBody>
+          Bạn có chắc chắn muốn xóa lịch backup này không? Hành động này không
+          thể hoàn tác.
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="text"
+            color="blue-gray"
+            onClick={() => setOpenDeleteDialog(false)}
+            className="mr-1"
+          >
+            Hủy
+          </Button>
+          <Button variant="gradient" color="red" onClick={confirmDelete}>
+            Xóa
           </Button>
         </DialogFooter>
       </Dialog>

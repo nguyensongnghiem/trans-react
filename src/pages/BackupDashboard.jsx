@@ -20,7 +20,7 @@ import {
   List,
   ListItem,
   ListItemPrefix,
-  Card
+  Card,
 } from "@material-tailwind/react";
 import {
   XMarkIcon,
@@ -32,7 +32,7 @@ import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 
 const BackupDashboard = () => {
   const [summary, setSummary] = useState([]);
@@ -124,6 +124,26 @@ const BackupDashboard = () => {
     try {
       const response = await fetch(
         `${API_URL}/routers/backups/files/${selectedRouter}/${filename}`
+      );
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      alert("Lỗi tải file: " + error.message);
+    }
+  };
+
+  const handleDownloadFromHistory = async (routerName, filename) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/routers/backups/files/${routerName}/${filename}`
       );
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
@@ -418,6 +438,23 @@ const BackupDashboard = () => {
                                 color={isSuccess ? "green" : "red"}
                                 className="rounded-full px-2 py-0.5 text-[10px]"
                               />
+                              {isSuccess && (
+                              <Tooltip content="Tải file cấu hình" className="ml-auto">
+                                <IconButton
+                                  variant="text"
+                                  color="blue-gray"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDownloadFromHistory(
+                                      log.router_name,
+                                      log.filename
+                                    )
+                                  }
+                                >
+                                  <ArrowDownTrayIcon className="h-5 w-5" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                             </div>
                             <Typography
                               variant="small"
@@ -428,32 +465,33 @@ const BackupDashboard = () => {
                             </Typography>
                           </div>
                         </TimelineHeader>
-                        <TimelineBody className="pb-8">
-                          <Typography
-                            color="gray"
-                            className="font-normal text-xs"
-                          >
-                            Người thực hiện:{" "}
-                            <span className="font-semibold text-blue-600">
-                              {log.username || "system"}
-                            </span>
-                          </Typography>
-                          <Typography
-                            color="gray"
-                            className="font-normal text-xs truncate w-full"
-                            title={log.filename}
-                          >
-                            File: {log.filename}
-                          </Typography>
-                          {!isSuccess && log.message && (
-                            <Typography color="red" className="font-normal text-xs mt-1 break-words">
-                              Lỗi: {log.message}
-                            </Typography>
-                          )}
-                          <div className="mt-2">
-                            <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
-                              {log.province || "N/A"}
-                            </span>
+                        <TimelineBody className="pb-8 -mt-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <Typography
+                                color="gray"
+                                className="font-normal text-xs"
+                              >
+                                Người thực hiện:{" "}
+                                <span className="font-semibold text-blue-600">
+                                  {log.username || "system"}
+                                </span>
+                              </Typography>
+                              {!isSuccess && log.message && (
+                                <Typography
+                                  color="red"
+                                  className="font-normal text-xs mt-1 break-words max-w-[200px]"
+                                >
+                                  Lỗi: {log.message}
+                                </Typography>
+                              )}
+                              <div className="mt-2">
+                                <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
+                                  {log.province || "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                            
                           </div>
                         </TimelineBody>
                       </TimelineItem>
