@@ -445,6 +445,11 @@ const BackupDashboard = () => {
                           >
                             File: {log.filename}
                           </Typography>
+                          {!isSuccess && log.message && (
+                            <Typography color="red" className="font-normal text-xs mt-1 break-words">
+                              Lỗi: {log.message}
+                            </Typography>
+                          )}
                           <div className="mt-2">
                             <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
                               {log.province || "N/A"}
