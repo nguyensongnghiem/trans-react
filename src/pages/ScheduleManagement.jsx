@@ -55,6 +55,7 @@ const ScheduleManagement = () => {
   const [viewLogTaskId, setViewLogTaskId] = useState(null);
   // Sử dụng ref để truy cập giá trị mới nhất trong setTimeout/interval
   const viewLogTaskIdRef = useRef(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const weekDayMap = {
     mon: "Thứ 2",
@@ -105,9 +106,34 @@ const ScheduleManagement = () => {
     }
   };
 
+  const fetchRunningTasks = async () => {
+    try {
+      const res = await axiosInstance.get("/routers/backups/tasks/active");
+      if (Array.isArray(res.data)) {
+        const tasksMap = {};
+        res.data.forEach((task) => {
+          if (task.job_id) {
+            tasksMap[task.job_id] = task;
+          }
+        });
+        // Gộp với state hiện tại (nếu có) để không bị ghi đè
+        setActiveTasks((prev) => ({ ...prev, ...tasksMap }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch running tasks:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSchedules();
     fetchRegions();
+    fetchRunningTasks();
+  }, []);
+
+  // Cập nhật thời gian mỗi phút để tính toán lại countdown
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
   }, []);
 
   // Cập nhật ref mỗi khi state thay đổi
@@ -350,6 +376,53 @@ const ScheduleManagement = () => {
     });
   };
 
+  const getNextRunTime = (schedule) => {
+    if (!schedule.is_active || !schedule.time) return null;
+
+    const now = new Date();
+    const [hours, minutes] = schedule.time.split(":").map(Number);
+    let nextRun = new Date();
+    nextRun.setHours(hours, minutes, 0, 0);
+
+    if (schedule.frequency === "daily") {
+      if (nextRun <= now) {
+        nextRun.setDate(nextRun.getDate() + 1);
+      }
+    } else if (schedule.frequency === "weekly") {
+      const weekDays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+      const targetDay = weekDays.indexOf(schedule.week_day); // 0-6
+      const currentDay = now.getDay(); // 0-6
+
+      let daysToAdd = (targetDay - currentDay + 7) % 7;
+      if (daysToAdd === 0 && nextRun <= now) {
+        daysToAdd = 7;
+      }
+      nextRun.setDate(nextRun.getDate() + daysToAdd);
+    } else if (schedule.frequency === "monthly") {
+      const targetDate = schedule.month_day;
+      nextRun.setDate(targetDate);
+      if (nextRun <= now) {
+        nextRun.setMonth(nextRun.getMonth() + 1);
+      }
+    }
+    return nextRun;
+  };
+
+  const getTimeRemaining = (schedule) => {
+    const nextRun = getNextRunTime(schedule);
+    if (!nextRun) return "";
+    const diffMs = nextRun - new Date();
+    if (diffMs <= 0) return "Sắp chạy...";
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    let result = "Còn ";
+    if (days > 0) result += `${days} ngày `;
+    if (hours > 0) result += `${hours} giờ `;
+    if (days === 0 && hours === 0) result += `${minutes} phút `;
+    return result.trim();
+  };
+
   const isAllRegions = formData.regions.includes("all");
 
   return (
@@ -383,9 +456,11 @@ const ScheduleManagement = () => {
               <tr>
                 {[
                   "Tên Lịch",
+                  "Người tạo",
                   "Trạng thái",
                   "Thời gian",
                   "Tần suất",
+                  "Lần chạy cuối",
                   "Khu vực",
                   "Tiến độ",
                   "Hành động",
@@ -431,6 +506,15 @@ const ScheduleManagement = () => {
                       </Typography>
                     </td>
                     <td className="p-4 text-center">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal text-xs"
+                      >
+                        {schedule.created_by || "system"}
+                      </Typography>
+                    </td>
+                    <td className="p-4 text-center">
                       <Tooltip content="Nhấn để thay đổi trạng thái">
                         <div
                           className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
@@ -467,6 +551,16 @@ const ScheduleManagement = () => {
                           `Hàng tuần (${weekDayMap[schedule.week_day] || schedule.week_day})`}
                         {schedule.frequency === "monthly" &&
                           `Hàng tháng (Ngày ${schedule.month_day})`}
+                      </Typography>
+                      {schedule.is_active && (
+                        <Typography variant="small" color="green" className="text-[10px] font-bold mt-1">
+                          ({getTimeRemaining(schedule)})
+                        </Typography>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      <Typography variant="small" color="blue-gray" className="font-normal text-xs">
+                        {schedule.last_run || "Chưa chạy"}
                       </Typography>
                     </td>
                     <td className="p-4">
