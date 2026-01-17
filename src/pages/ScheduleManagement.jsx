@@ -579,11 +579,11 @@ const ScheduleManagement = () => {
                             <Typography
                               variant="small"
                               color="blue-gray"
-                              className="font-bold"
+                              className="font-bold text-sm"
                             >
                               {schedule.name}
                             </Typography>
-                            <Typography variant="small" color="gray" className="text-[10px]">
+                            <Typography variant="small" color="gray" className="text-xs">
                               {schedule.created_by || "system"}
                             </Typography>
                           </td>
@@ -600,7 +600,7 @@ const ScheduleManagement = () => {
                                     schedule.is_active ? "Đang chạy" : "Tạm dừng"
                                   }
                                   color={schedule.is_active ? "teal" : "blue-gray"}
-                                  className="rounded-md px-2 py-0.5 font-semibold normal-case text-[10px]"
+                                  className="rounded-md px-2 py-0.5 font-semibold normal-case text-[10px] h-5 flex items-center justify-center"
                                 />
                               </div>
                             </Tooltip>
@@ -608,7 +608,7 @@ const ScheduleManagement = () => {
                           <td className="px-5 py-4 border-b border-gray-200 text-sm">
                             <div className="flex items-center gap-2 text-gray-700 justify-center">
                               <ClockIcon className="h-4 w-4 text-gray-400" />
-                              <Typography variant="small" className="font-medium">
+                              <Typography variant="small" className="font-medium text-sm">
                                 {schedule.time}
                               </Typography>
                             </div>
@@ -617,7 +617,7 @@ const ScheduleManagement = () => {
                             <Typography
                               variant="small"
                               color="blue-gray"
-                              className="font-normal capitalize text-xs"
+                              className="font-normal capitalize text-sm"
                             >
                               {schedule.frequency === "daily" && "Hàng ngày"}
                               {schedule.frequency === "weekly" &&
@@ -629,7 +629,7 @@ const ScheduleManagement = () => {
                               <Typography
                                 variant="small"
                                 color="green"
-                                className="text-[10px] font-bold mt-1"
+                                className="text-xs font-bold mt-1"
                               >
                                 ({getTimeRemaining(schedule)})
                               </Typography>
@@ -642,7 +642,7 @@ const ScheduleManagement = () => {
                                   size="sm"
                                   value="Tất cả"
                                   color="blue-gray"
-                                  className="rounded-md text-[10px] px-2 py-0.5"
+                                  className="rounded-md text-[9px] px-1.5 py-0.5 h-5 flex items-center"
                                 />
                               ) : (
                                 schedule.regions.slice(0, 2).map((r) => (
@@ -651,12 +651,12 @@ const ScheduleManagement = () => {
                                     size="sm"
                                     variant="outlined"
                                     value={r}
-                                    className="rounded-md text-[10px] px-2 py-0.5"
+                                    className="rounded-md text-[9px] px-1.5 py-0.5 h-5 flex items-center"
                                   />
                                 ))
                               )}
                               {schedule.regions.length > 2 && !schedule.regions.includes("all") && (
-                                <span className="text-[10px] text-gray-500">+{schedule.regions.length - 2}</span>
+                                <span className="text-[10px] text-gray-500 self-center">+{schedule.regions.length - 2}</span>
                               )}
                             </div>
                           </td>
@@ -666,14 +666,14 @@ const ScheduleManagement = () => {
                                 <div className="flex justify-between mb-1">
                                   <Typography
                                     variant="small"
-                                    className="text-[10px] font-normal text-blue-gray-600 truncate max-w-[80px]"
+                                    className="text-xs font-normal text-blue-gray-600 truncate max-w-[80px]"
                                     title={activeTasks[schedule.id].current_device}
                                   >
                                     {activeTasks[schedule.id].current_device}
                                   </Typography>
                                   <Typography
                                     variant="small"
-                                    className="text-[10px] font-normal text-blue-gray-600"
+                                    className="text-xs font-normal text-blue-gray-600"
                                   >
                                     {activeTasks[schedule.id].processed}/
                                     {activeTasks[schedule.id].total}
@@ -714,7 +714,7 @@ const ScheduleManagement = () => {
                               </div>
                             ) : (
                               <div className="text-center">
-                                <span className="text-gray-400 text-[10px] italic block">
+                                <span className="text-gray-400 text-xs italic block">
                                   {schedule.last_run ? `Last: ${schedule.last_run.split(' ')[1]}` : "Chưa chạy"}
                                 </span>
                               </div>
