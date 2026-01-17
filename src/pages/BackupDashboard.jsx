@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import {
   Dialog,
   DialogHeader,
   DialogBody,
   DialogFooter,
-  Button,
   IconButton,
   Tooltip,
   Timeline,
@@ -16,15 +16,11 @@ import {
   Typography,
   Input,
   Chip,
-  Checkbox,
-  List,
-  ListItem,
-  ListItemPrefix,
-  Card,
 } from "@material-tailwind/react";
 import {
   XMarkIcon,
   ArrowDownTrayIcon,
+  ArrowPathIcon,
   EyeIcon,
   ClockIcon,
   CalendarDaysIcon,
@@ -33,6 +29,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/solid";
+import CustomButton from "../components/CustomButton";
 
 const BackupDashboard = () => {
   const [summary, setSummary] = useState([]);
@@ -107,7 +104,7 @@ const BackupDashboard = () => {
     setDeviceBackups([]); // Reset data cũ
     try {
       const response = await fetch(
-        `${API_URL}/routers/backups/files/${routerName}`
+        `${API_URL}/routers/backups/files/${routerName}`,
       );
       if (!response.ok) throw new Error("Failed to fetch backups");
       const data = await response.json();
@@ -123,7 +120,7 @@ const BackupDashboard = () => {
   const handleDownload = async (filename) => {
     try {
       const response = await fetch(
-        `${API_URL}/routers/backups/files/${selectedRouter}/${filename}`
+        `${API_URL}/routers/backups/files/${selectedRouter}/${filename}`,
       );
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
@@ -143,7 +140,7 @@ const BackupDashboard = () => {
   const handleDownloadFromHistory = async (routerName, filename) => {
     try {
       const response = await fetch(
-        `${API_URL}/routers/backups/files/${routerName}/${filename}`
+        `${API_URL}/routers/backups/files/${routerName}/${filename}`,
       );
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
@@ -158,6 +155,26 @@ const BackupDashboard = () => {
     } catch (error) {
       alert("Lỗi tải file: " + error.message);
     }
+  };
+
+  const handleExportProvinceChange = (selectedOptions) => {
+    const selectedValues = selectedOptions
+      ? selectedOptions.map((opt) => opt.value)
+      : [];
+    const prevSelected = selectedExportProvinces;
+    const hasAll = selectedValues.includes("all");
+    const prevHasAll = prevSelected.includes("all");
+
+    let newSelected = [];
+
+    if (!prevHasAll && hasAll) {
+      newSelected = ["all"];
+    } else if (prevHasAll && hasAll && selectedValues.length > 1) {
+      newSelected = selectedValues.filter((v) => v !== "all");
+    } else {
+      newSelected = selectedValues;
+    }
+    setSelectedExportProvinces(newSelected);
   };
 
   const handleExport = async () => {
@@ -226,6 +243,11 @@ const BackupDashboard = () => {
     return matchName && matchDate;
   });
 
+  const provinceOptions = [
+    { value: "all", label: "Tất cả" },
+    ...availableProvinces.map((p) => ({ value: p, label: p })),
+  ];
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
@@ -233,19 +255,23 @@ const BackupDashboard = () => {
           Dashboard Quản Lý Backup
         </h1>
         <div className="flex gap-2">
-          <button
+          <CustomButton
             onClick={() => setOpenExport(true)}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition duration-150 flex items-center gap-2"
+            className="flex items-center gap-2"
+            size="sm"
           >
-            <ArrowDownTrayIcon className="h-5 w-5" />
+            <ArrowDownTrayIcon className="h-4 w-4" />
             Xuất dữ liệu
-          </button>
-          <button
+          </CustomButton>
+          <CustomButton
             onClick={fetchData}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition duration-150 flex items-center gap-2"
+            className="flex items-center gap-2"
+            size="sm"
+            color="blue-gray"
           >
-            🔄 Làm mới
-          </button>
+            <ArrowPathIcon className="h-4 w-4" />
+            Làm mới
+          </CustomButton>
         </div>
       </div>
 
@@ -255,7 +281,7 @@ const BackupDashboard = () => {
         </div>
       )}
 
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
+      <div className="mb-6 flex flex-wrap gap-4 items-end">
         <div className="w-full md:w-72">
           <Input
             label="Tìm kiếm thiết bị"
@@ -285,16 +311,17 @@ const BackupDashboard = () => {
             containerProps={{ className: "min-w-[150px]" }}
           />
         </div>
-        <Button
+        <CustomButton
           variant="text"
           color="blue-gray"
+          size="sm"
           onClick={() => {
             setFilterName("");
             setDateRange({ start: "", end: "" });
           }}
         >
           Xóa lọc
-        </Button>
+        </CustomButton>
       </div>
 
       {loading ? (
@@ -439,22 +466,25 @@ const BackupDashboard = () => {
                                 className="rounded-full px-2 py-0.5 text-[10px]"
                               />
                               {isSuccess && (
-                              <Tooltip content="Tải file cấu hình" className="ml-auto">
-                                <IconButton
-                                  variant="text"
-                                  color="blue-gray"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDownloadFromHistory(
-                                      log.router_name,
-                                      log.filename
-                                    )
-                                  }
+                                <Tooltip
+                                  content="Tải file cấu hình"
+                                  className="ml-auto"
                                 >
-                                  <ArrowDownTrayIcon className="h-5 w-5" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
+                                  <IconButton
+                                    variant="text"
+                                    color="blue-gray"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDownloadFromHistory(
+                                        log.router_name,
+                                        log.filename,
+                                      )
+                                    }
+                                  >
+                                    <ArrowDownTrayIcon className="h-5 w-5" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </div>
                             <Typography
                               variant="small"
@@ -491,7 +521,6 @@ const BackupDashboard = () => {
                                 </span>
                               </div>
                             </div>
-                            
                           </div>
                         </TimelineBody>
                       </TimelineItem>
@@ -577,13 +606,14 @@ const BackupDashboard = () => {
           )}
         </DialogBody>
         <DialogFooter>
-          <Button
-            variant="gradient"
-            color="blue"
+          <CustomButton
+            variant="filled"
+            color="blue-gray"
+            size="sm"
             onClick={() => setOpenDetail(false)}
           >
             Đóng
-          </Button>
+          </CustomButton>
         </DialogFooter>
       </Dialog>
 
@@ -598,78 +628,38 @@ const BackupDashboard = () => {
           <Typography className="mb-2 font-normal text-gray-600">
             Chọn các tỉnh/thành phố muốn tải xuống file cấu hình:
           </Typography>
-          <Card className="w-full shadow-none border border-gray-200">
-            <List className="p-0">
-              <ListItem className="p-0">
-                <label className="flex w-full cursor-pointer items-center px-3 py-2">
-                  <ListItemPrefix className="mr-3">
-                    <Checkbox
-                      ripple={false}
-                      className="hover:before:opacity-0"
-                      checked={selectedExportProvinces.includes("all")}
-                      onChange={() => {
-                        if (selectedExportProvinces.includes("all")) {
-                          setSelectedExportProvinces([]);
-                        } else {
-                          setSelectedExportProvinces(["all"]);
-                        }
-                      }}
-                    />
-                  </ListItemPrefix>
-                  <Typography color="blue-gray" className="font-medium">
-                    Tất cả
-                  </Typography>
-                </label>
-              </ListItem>
-              {availableProvinces.map((province) => (
-                <ListItem key={province} className="p-0">
-                  <label className="flex w-full cursor-pointer items-center px-3 py-2">
-                    <ListItemPrefix className="mr-3">
-                      <Checkbox
-                        ripple={false}
-                        className="hover:before:opacity-0"
-                        checked={
-                          selectedExportProvinces.includes("all") ||
-                          selectedExportProvinces.includes(province)
-                        }
-                        disabled={selectedExportProvinces.includes("all")}
-                        onChange={() => {
-                          if (selectedExportProvinces.includes(province)) {
-                            setSelectedExportProvinces(
-                              selectedExportProvinces.filter(
-                                (p) => p !== province
-                              )
-                            );
-                          } else {
-                            setSelectedExportProvinces([
-                              ...selectedExportProvinces,
-                              province,
-                            ]);
-                          }
-                        }}
-                      />
-                    </ListItemPrefix>
-                    <Typography color="blue-gray" className="font-medium">
-                      {province}
-                    </Typography>
-                  </label>
-                </ListItem>
-              ))}
-            </List>
-          </Card>
+          <Select
+            isMulti
+            value={provinceOptions.filter((opt) =>
+              selectedExportProvinces.includes(opt.value),
+            )}
+            onChange={handleExportProvinceChange}
+            options={provinceOptions}
+            placeholder="Chọn khu vực..."
+            className="basic-multi-select"
+            classNamePrefix="select"
+            menuPortalTarget={document.body}
+            styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+          />
         </DialogBody>
         <DialogFooter>
-          <Button
+          <CustomButton
             variant="text"
-            color="red"
+            color="gray"
             onClick={() => setOpenExport(false)}
             className="mr-1"
+            size="sm"
           >
             Hủy
-          </Button>
-          <Button variant="gradient" color="green" onClick={handleExport}>
+          </CustomButton>
+          <CustomButton
+            variant="filled"
+            color="green"
+            onClick={handleExport}
+            size="sm"
+          >
             Tải xuống
-          </Button>
+          </CustomButton>
         </DialogFooter>
       </Dialog>
     </div>

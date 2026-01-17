@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { toast } from "react-toastify";
+import Select from "react-select";
 
 const RouterBackup = () => {
   const [routers, setRouters] = useState([]);
@@ -24,7 +25,7 @@ const RouterBackup = () => {
     } catch (error) {
       console.error(error);
       toast.error(
-        "Không thể tải danh sách thiết bị. Vui lòng kiểm tra kết nối Backend."
+        "Không thể tải danh sách thiết bị. Vui lòng kiểm tra kết nối Backend.",
       );
     } finally {
       setLoading(false);
@@ -38,7 +39,7 @@ const RouterBackup = () => {
     }
     if (vendorFilter) {
       result = result.filter(
-        (r) => r.routerType?.vendor?.name === vendorFilter
+        (r) => r.routerType?.vendor?.name === vendorFilter,
       );
     }
     if (typeFilter) {
@@ -47,28 +48,30 @@ const RouterBackup = () => {
     setFilteredRouters(result);
   }, [routers, provinceFilter, vendorFilter, typeFilter]);
 
-  const provinces = useMemo(
+  const provinceOptions = useMemo(
     () =>
-      [
-        ...new Set(routers.map((r) => r.site?.province?.name).filter(Boolean)),
-      ].sort(),
-    [routers]
+      [...new Set(routers.map((r) => r.site?.province?.name).filter(Boolean))]
+        .sort()
+        .map((p) => ({ value: p, label: p })),
+    [routers],
   );
-  const vendors = useMemo(
+  const vendorOptions = useMemo(
     () =>
       [
         ...new Set(
-          routers.map((r) => r.routerType?.vendor?.name).filter(Boolean)
+          routers.map((r) => r.routerType?.vendor?.name).filter(Boolean),
         ),
-      ].sort(),
-    [routers]
+      ]
+        .sort()
+        .map((v) => ({ value: v, label: v })),
+    [routers],
   );
-  const types = useMemo(
+  const typeOptions = useMemo(
     () =>
-      [
-        ...new Set(routers.map((r) => r.routerType?.name).filter(Boolean)),
-      ].sort(),
-    [routers]
+      [...new Set(routers.map((r) => r.routerType?.name).filter(Boolean))]
+        .sort()
+        .map((t) => ({ value: t, label: t })),
+    [routers],
   );
 
   const handleBackup = async (routerName) => {
@@ -78,7 +81,7 @@ const RouterBackup = () => {
     try {
       // Gọi API Java (Java sẽ gọi tiếp sang Python Service)
       const response = await axiosInstance.post(
-        `/routers/backups/trigger/${routerName}`
+        `/routers/backups/trigger/${routerName}`,
       );
       const result = response.data;
 
@@ -86,7 +89,7 @@ const RouterBackup = () => {
         toast.success(`Backup thành công: ${routerName}`);
       } else {
         toast.error(
-          `Lỗi backup ${routerName}: ${result.message || "Lỗi không xác định"}`
+          `Lỗi backup ${routerName}: ${result.message || "Lỗi không xác định"}`,
         );
       }
     } catch (error) {
@@ -100,7 +103,7 @@ const RouterBackup = () => {
   const handleBackupAll = async () => {
     if (
       !window.confirm(
-        "Bạn có chắc muốn chạy backup cho TẤT CẢ thiết bị? Quá trình này sẽ chạy ngầm."
+        "Bạn có chắc muốn chạy backup cho TẤT CẢ thiết bị? Quá trình này sẽ chạy ngầm.",
       )
     )
       return;
@@ -109,7 +112,7 @@ const RouterBackup = () => {
       const response = await axiosInstance.post("/routers/backups/trigger/all");
       const result = response.data;
       toast.info(
-        result.message || "Đã kích hoạt backup nền cho tất cả thiết bị."
+        result.message || "Đã kích hoạt backup nền cho tất cả thiết bị.",
       );
     } catch (error) {
       toast.error("Lỗi khi kích hoạt backup tất cả.");
@@ -130,59 +133,53 @@ const RouterBackup = () => {
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
-        <div className="flex flex-col">
+      <div className="mb-6 flex flex-wrap gap-4 items-end">
+        <div className="flex flex-col w-48">
           <label className="text-xs font-semibold text-gray-500 mb-1">
             Tỉnh / Thành phố
           </label>
-          <select
-            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-w-[150px]"
-            value={provinceFilter}
-            onChange={(e) => setProvinceFilter(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            {provinces.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={provinceOptions}
+            value={
+              provinceFilter
+                ? { value: provinceFilter, label: provinceFilter }
+                : null
+            }
+            onChange={(opt) => setProvinceFilter(opt ? opt.value : "")}
+            placeholder="Tất cả"
+            isClearable
+            className="text-sm"
+          />
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col w-48">
           <label className="text-xs font-semibold text-gray-500 mb-1">
             Hãng sản xuất
           </label>
-          <select
-            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-w-[150px]"
-            value={vendorFilter}
-            onChange={(e) => setVendorFilter(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            {vendors.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={vendorOptions}
+            value={
+              vendorFilter ? { value: vendorFilter, label: vendorFilter } : null
+            }
+            onChange={(opt) => setVendorFilter(opt ? opt.value : "")}
+            placeholder="Tất cả"
+            isClearable
+            className="text-sm"
+          />
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col w-48">
           <label className="text-xs font-semibold text-gray-500 mb-1">
             Loại thiết bị
           </label>
-          <select
-            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 min-w-[150px]"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            {types.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={typeOptions}
+            value={typeFilter ? { value: typeFilter, label: typeFilter } : null}
+            onChange={(opt) => setTypeFilter(opt ? opt.value : "")}
+            placeholder="Tất cả"
+            isClearable
+            className="text-sm"
+          />
         </div>
 
         <button
