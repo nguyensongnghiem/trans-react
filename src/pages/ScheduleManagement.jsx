@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { toast } from "react-toastify";
 import {
@@ -19,12 +19,16 @@ import {
   ListItem,
   ListItemPrefix,
   Tooltip,
+  Progress,
 } from "@material-tailwind/react";
 import {
   PencilIcon,
   TrashIcon,
   PlusIcon,
   ClockIcon,
+  PlayIcon,
+  StopIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/solid";
 
 const ScheduleManagement = () => {
@@ -46,6 +50,11 @@ const ScheduleManagement = () => {
     week_day: "mon",
     month_day: 1,
   });
+  
+  const [activeTasks, setActiveTasks] = useState({});
+  const [viewLogTaskId, setViewLogTaskId] = useState(null);
+  // Sử dụng ref để truy cập giá trị mới nhất trong setTimeout/interval
+  const viewLogTaskIdRef = useRef(null);
 
   const weekDayMap = {
     mon: "Thứ 2",
@@ -100,6 +109,11 @@ const ScheduleManagement = () => {
     fetchSchedules();
     fetchRegions();
   }, []);
+
+  // Cập nhật ref mỗi khi state thay đổi
+  useEffect(() => {
+    viewLogTaskIdRef.current = viewLogTaskId;
+  }, [viewLogTaskId]);
 
   const handleOpenDialog = (schedule = null) => {
     if (schedule) {
@@ -157,6 +171,122 @@ const ScheduleManagement = () => {
     } catch (error) {
       console.error("Failed to toggle status:", error);
       toast.error("Lỗi khi cập nhật trạng thái.");
+    }
+  };
+
+  const handleRunNow = async (schedule) => {
+    try {
+      const res = await axiosInstance.post(`/routers/backups/schedules/${schedule.id}/execute-track`);
+      if (res.data && res.data.task_id) {
+        // Khởi tạo dữ liệu an toàn để tránh lỗi render
+        setActiveTasks((prev) => ({
+          ...prev,
+          [schedule.id]: {
+            task_id: res.data.task_id,
+            processed: 0,
+            total: 0,
+            status: "running",
+            current_device: "Đang khởi tạo...",
+          },
+        }));
+        toast.info(`Đã bắt đầu backup: ${schedule.name}`);
+      } else {
+        toast.info(res.data?.message || "Không tìm thấy thiết bị nào để backup.");
+      }
+    } catch (error) {
+      console.error("Failed to execute schedule:", error);
+      toast.error("Lỗi khi kích hoạt lịch.");
+    }
+  };
+
+  const handleCancelTask = async (scheduleId) => {
+    const task = activeTasks[scheduleId];
+    if (!task?.task_id) return;
+    try {
+      await axiosInstance.post(`/routers/backups/tasks/${task.task_id}/cancel`);
+      toast.info("Đang gửi yêu cầu hủy...");
+      setActiveTasks((prev) => ({
+        ...prev,
+        [scheduleId]: { ...prev[scheduleId], status: "canceling" },
+      }));
+    } catch (error) {
+      console.error("Failed to cancel task:", error);
+      toast.error("Lỗi khi hủy tác vụ.");
+    }
+  };
+
+  // Polling effect for progress
+  useEffect(() => {
+    let interval;
+    const runningIds = Object.keys(activeTasks).filter((id) =>
+      ["running", "canceling"].includes(activeTasks[id]?.status)
+    );
+
+    if (runningIds.length > 0) {
+      interval = setInterval(async () => {
+        const updates = {};
+        let hasUpdates = false;
+
+        await Promise.all(
+          runningIds.map(async (id) => {
+            try {
+              const res = await axiosInstance.get(
+                `/routers/backups/tasks/${activeTasks[id].task_id}`
+              );
+              updates[id] = res.data;
+              hasUpdates = true;
+            } catch (err) {
+              console.error("Polling error", err);
+            }
+          })
+        );
+
+        if (hasUpdates) {
+          setActiveTasks((prev) => {
+            const newState = { ...prev };
+            Object.keys(updates).forEach((id) => {
+              // Nếu đang đợi hủy (canceling) mà API vẫn trả về running thì giữ nguyên trạng thái canceling
+              if (prev[id]?.status === "canceling" && updates[id].status === "running") {
+                return;
+              }
+              newState[id] = { ...newState[id], ...updates[id] };
+            });
+            return newState;
+          });
+
+          // Tự động xóa task khỏi danh sách sau 3 giây nếu đã hoàn thành hoặc hủy
+          Object.keys(updates).forEach((id) => {
+            if (["completed", "canceled"].includes(updates[id].status)) {
+              setTimeout(() => {
+                setActiveTasks((prev) => {
+                  // Nếu đang xem log của task này thì không xóa vội
+                  if (viewLogTaskIdRef.current === id) return prev;
+
+                  const newState = { ...prev };
+                  // Kiểm tra lại trạng thái trước khi xóa để tránh lỗi
+                  if (newState[id] && ["completed", "canceled"].includes(newState[id].status)) {
+                    delete newState[id];
+                  }
+                  return newState;
+                });
+              }, 3000);
+            }
+          });
+        }
+      }, 1000); // Poll mỗi 1 giây
+    }
+    return () => clearInterval(interval);
+  }, [activeTasks]); // viewLogTaskId không cần ở đây vì đã dùng ref
+
+  const handleCloseLogDialog = () => {
+    const taskId = viewLogTaskId;
+    setViewLogTaskId(null);
+    
+    // Nếu task đã xong khi đang xem log, xóa nó khỏi danh sách khi đóng dialog
+    if (activeTasks[taskId] && ["completed", "canceled"].includes(activeTasks[taskId].status)) {
+      const newTasks = { ...activeTasks };
+      delete newTasks[taskId];
+      setActiveTasks(newTasks);
     }
   };
 
@@ -257,6 +387,7 @@ const ScheduleManagement = () => {
                   "Thời gian",
                   "Tần suất",
                   "Khu vực",
+                  "Tiến độ",
                   "Hành động",
                 ].map((head) => (
                   <th
@@ -282,7 +413,10 @@ const ScheduleManagement = () => {
                   </td>
                 </tr>
               ) : (
-                schedules.map((schedule) => (
+                schedules.map((schedule) => {
+                  const isTaskRunning = activeTasks[schedule.id] && ["running", "canceling"].includes(activeTasks[schedule.id].status);
+                  
+                  return (
                   <tr
                     key={schedule.id}
                     className="hover:bg-gray-50 transition-colors"
@@ -352,6 +486,77 @@ const ScheduleManagement = () => {
                       </div>
                     </td>
                     <td className="p-4">
+                      {activeTasks[schedule.id] ? (
+                        <div className="w-48">
+                          <div className="flex justify-between mb-1">
+                            <Typography
+                              variant="small"
+                              className="text-[10px] font-normal text-blue-gray-600 truncate max-w-[120px]"
+                              title={activeTasks[schedule.id].current_device}
+                            >
+                              {activeTasks[schedule.id].current_device}
+                            </Typography>
+                            <Typography
+                              variant="small"
+                              className="text-[10px] font-normal text-blue-gray-600"
+                            >
+                              {activeTasks[schedule.id].processed}/
+                              {activeTasks[schedule.id].total}
+                            </Typography>
+                          </div>
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer"
+                            onClick={() => setViewLogTaskId(activeTasks[schedule.id].task_id)}
+                          >
+                            <Tooltip content="Bấm để xem Log chi tiết">
+                            <Progress
+                              value={
+                                activeTasks[schedule.id].total > 0
+                                  ? (activeTasks[schedule.id].processed /
+                                      activeTasks[schedule.id].total) *
+                                    100
+                                  : 0
+                              }
+                              size="sm"
+                              color={
+                                activeTasks[schedule.id].status === "completed"
+                                  ? "green"
+                                  : activeTasks[schedule.id].status === "canceled"
+                                  ? "red"
+                                  : "blue"
+                              }
+                            />
+                            </Tooltip>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs italic">
+                          Chưa chạy
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {isTaskRunning ? (
+                        <Tooltip content="Dừng chạy">
+                          <IconButton
+                            variant="text"
+                            color="red"
+                            onClick={() => handleCancelTask(schedule.id)}
+                          >
+                            <StopIcon className="h-4 w-4" />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip content="Chạy ngay (Test)">
+                          <IconButton
+                            variant="text"
+                            color="green"
+                            onClick={() => handleRunNow(schedule)}
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip content="Sửa lịch">
                         <IconButton
                           variant="text"
@@ -364,6 +569,8 @@ const ScheduleManagement = () => {
                         <IconButton
                           variant="text"
                           color="red"
+                          disabled={isTaskRunning}
+                          className={isTaskRunning ? "opacity-50 cursor-not-allowed" : ""}
                           onClick={() => handleDelete(schedule.id)}
                         >
                           <TrashIcon className="h-4 w-4" />
@@ -371,7 +578,7 @@ const ScheduleManagement = () => {
                       </Tooltip>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>
@@ -620,6 +827,33 @@ const ScheduleManagement = () => {
           </Button>
           <Button variant="gradient" color="red" onClick={confirmDelete}>
             Xóa
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Log Viewer Dialog */}
+      <Dialog open={!!viewLogTaskId} handler={handleCloseLogDialog} size="lg">
+        <DialogHeader className="flex items-center gap-3">
+          <DocumentTextIcon className="h-6 w-6 text-blue-500" />
+          Chi tiết Tiến trình Backup
+        </DialogHeader>
+        <DialogBody divider className="p-0">
+          <div className="bg-gray-900 text-green-400 font-mono p-4 h-[60vh] overflow-y-auto text-sm rounded-b-lg">
+            {viewLogTaskId && activeTasks[Object.keys(activeTasks).find(key => activeTasks[key].task_id === viewLogTaskId)]?.logs?.length > 0 ? (
+              activeTasks[Object.keys(activeTasks).find(key => activeTasks[key].task_id === viewLogTaskId)].logs.map((log, index) => (
+                <div key={index} className="mb-1 border-b border-gray-800 pb-1 last:border-0">
+                  {log}
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-500 italic">Đang chờ log...</div>
+            )}
+            {/* Tự động cuộn xuống dưới cùng có thể thêm sau */}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="gradient" color="blue" onClick={handleCloseLogDialog}>
+            Đóng
           </Button>
         </DialogFooter>
       </Dialog>
