@@ -47,8 +47,7 @@ const menuConfig = [
     children: [
       { title: "Danh sách thiết bị", path: "/router" },
       { title: "Quản lý backup thiết bị", path: "/router/backup-dashboard" },
-      { title: "Backup cấu hình", path: "/router/backup-routers" },
-      { title: "Lập lịch backup cấu hình", path: "/router/backup-scheduler" }
+      { title: "Lập lịch backup cấu hình", path: "/router/backup-scheduler" },
     ],
   },
   {

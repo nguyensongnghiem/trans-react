@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import { toast } from "react-toastify";
 import {
   Dialog,
   DialogHeader,
@@ -28,6 +30,9 @@ import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
+  PlayIcon,
+  ServerIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/solid";
 import CustomButton from "../components/CustomButton";
 
@@ -42,9 +47,14 @@ const BackupDashboard = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [filterName, setFilterName] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [backupStatusFilter, setBackupStatusFilter] = useState("all");
   const [openExport, setOpenExport] = useState(false);
   const [selectedExportProvinces, setSelectedExportProvinces] = useState([]);
   const [availableProvinces, setAvailableProvinces] = useState([]);
+  const [processing, setProcessing] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const axiosInstance = useAxiosPrivate();
 
   const API_URL =
     import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
@@ -57,8 +67,9 @@ const BackupDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      // Gọi song song 2 API để lấy dữ liệu
-      const [summaryRes, historyRes] = await Promise.all([
+      // Gọi song song các API để lấy dữ liệu
+      const [routersRes, summaryRes, historyRes] = await Promise.all([
+        axiosInstance.get("/routers"),
         fetch(`${API_URL}/routers/backups/summary`),
         fetch(`${API_URL}/routers/backups/history`),
       ]);
@@ -72,10 +83,27 @@ const BackupDashboard = () => {
         throw new Error(`Lỗi History: ${errText || historyRes.statusText}`);
       }
 
+      const allRouters = routersRes.data;
       const summaryData = await summaryRes.json();
       const historyData = await historyRes.json();
 
-      setSummary(summaryData);
+      // Merge router list with backup summary
+      const summaryMap = new Map(
+        summaryData.map((item) => [item.router_name, item]),
+      );
+
+      const mergedList = allRouters.map((router) => {
+        const backupInfo = summaryMap.get(router.name);
+        return {
+          ...router,
+          router_name: router.name,
+          backup_count: backupInfo ? backupInfo.backup_count : 0,
+          last_backup: backupInfo ? backupInfo.last_backup : "Chưa có",
+          timestamp: backupInfo ? backupInfo.timestamp : 0,
+        };
+      });
+
+      setSummary(mergedList);
       // Sắp xếp lịch sử theo thời gian mới nhất -> cũ nhất
       setHistory(historyData.sort((a, b) => b.timestamp - a.timestamp));
 
@@ -95,6 +123,29 @@ const BackupDashboard = () => {
   const formatDate = (timestamp) => {
     if (!timestamp) return "Chưa có";
     return new Date(timestamp * 1000).toLocaleString("vi-VN");
+  };
+
+  const handleBackup = async (routerName) => {
+    setProcessing((prev) => ({ ...prev, [routerName]: true }));
+    try {
+      const response = await axiosInstance.post(
+        `/routers/backups/trigger/${routerName}`,
+      );
+      const result = response.data;
+
+      if (result.success) {
+        toast.success(`Backup thành công: ${routerName}`);
+        fetchData(); // Refresh data
+      } else {
+        toast.error(
+          `Lỗi backup ${routerName}: ${result.message || "Lỗi không xác định"}`,
+        );
+      }
+    } catch (error) {
+      toast.error(`Lỗi kết nối khi backup ${routerName}`);
+    } finally {
+      setProcessing((prev) => ({ ...prev, [routerName]: false }));
+    }
   };
 
   const handleOpenDetail = async (routerName) => {
@@ -215,6 +266,14 @@ const BackupDashboard = () => {
     const matchName = item.router_name
       .toLowerCase()
       .includes(filterName.toLowerCase());
+
+    let matchStatus = true;
+    if (backupStatusFilter === "backed_up") {
+      matchStatus = item.backup_count > 0;
+    } else if (backupStatusFilter === "not_backed_up") {
+      matchStatus = item.backup_count === 0;
+    }
+
     let matchDate = true;
     if (dateRange.start) {
       const start = new Date(dateRange.start).setHours(0, 0, 0, 0) / 1000;
@@ -224,28 +283,35 @@ const BackupDashboard = () => {
       const end = new Date(dateRange.end).setHours(23, 59, 59, 999) / 1000;
       matchDate = matchDate && item.timestamp <= end;
     }
-    return matchName && matchDate;
+    return matchName && matchDate && matchStatus;
   });
 
-  const filteredHistory = history.filter((log) => {
-    const matchName = log.router_name
-      .toLowerCase()
-      .includes(filterName.toLowerCase());
-    let matchDate = true;
-    if (dateRange.start) {
-      const start = new Date(dateRange.start).setHours(0, 0, 0, 0) / 1000;
-      matchDate = matchDate && log.timestamp >= start;
-    }
-    if (dateRange.end) {
-      const end = new Date(dateRange.end).setHours(23, 59, 59, 999) / 1000;
-      matchDate = matchDate && log.timestamp <= end;
-    }
-    return matchName && matchDate;
-  });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterName, dateRange, backupStatusFilter]);
+
+  const totalPages = Math.ceil(filteredSummary.length / itemsPerPage);
+  const paginatedSummary = filteredSummary.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const filteredHistory = history;
+
+  const totalRouters = summary.length;
+  const backedUpCount = summary.filter((i) => i.backup_count > 0).length;
+  const notBackedUpCount = totalRouters - backedUpCount;
+  const totalFiles = summary.reduce((acc, curr) => acc + curr.backup_count, 0);
 
   const provinceOptions = [
     { value: "all", label: "Tất cả" },
     ...availableProvinces.map((p) => ({ value: p, label: p })),
+  ];
+
+  const backupStatusOptions = [
+    { value: "all", label: "Tất cả trạng thái" },
+    { value: "backed_up", label: "Đã backup" },
+    { value: "not_backed_up", label: "Chưa backup" },
   ];
 
   return (
@@ -281,6 +347,45 @@ const BackupDashboard = () => {
         </div>
       )}
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-4 flex items-center">
+          <div className="p-3 rounded-full bg-blue-50 text-blue-500 mr-4">
+            <ServerIcon className="h-8 w-8" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Tổng thiết bị</p>
+            <p className="text-2xl font-bold text-gray-800">{totalRouters}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 flex items-center">
+          <div className="p-3 rounded-full bg-green-50 text-green-500 mr-4">
+            <CheckCircleIcon className="h-8 w-8" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Đã Backup</p>
+            <p className="text-2xl font-bold text-gray-800">{backedUpCount}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 flex items-center">
+          <div className="p-3 rounded-full bg-orange-50 text-orange-500 mr-4">
+            <ExclamationTriangleIcon className="h-8 w-8" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Chưa Backup</p>
+            <p className="text-2xl font-bold text-gray-800">{notBackedUpCount}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 flex items-center">
+          <div className="p-3 rounded-full bg-purple-50 text-purple-500 mr-4">
+            <ArchiveBoxIcon className="h-8 w-8" />
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Tổng file Backup</p>
+            <p className="text-2xl font-bold text-gray-800">{totalFiles}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-6 flex flex-wrap gap-4 items-end">
         <div className="w-full md:w-72">
           <Input
@@ -288,6 +393,17 @@ const BackupDashboard = () => {
             icon={<MagnifyingGlassIcon className="h-5 w-5" />}
             value={filterName}
             onChange={(e) => setFilterName(e.target.value)}
+          />
+        </div>
+        <div className="w-full md:w-48">
+          <Select
+            value={backupStatusOptions.find(
+              (opt) => opt.value === backupStatusFilter,
+            )}
+            onChange={(option) => setBackupStatusFilter(option.value)}
+            options={backupStatusOptions}
+            placeholder="Trạng thái"
+            className="text-sm"
           />
         </div>
         <div className="flex gap-2 items-center">
@@ -318,6 +434,7 @@ const BackupDashboard = () => {
           onClick={() => {
             setFilterName("");
             setDateRange({ start: "", end: "" });
+            setBackupStatusFilter("all");
           }}
         >
           Xóa lọc
@@ -352,7 +469,7 @@ const BackupDashboard = () => {
                       Lần Backup Cuối
                     </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Trạng thái
+                      Backup
                     </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Hành động
@@ -360,17 +477,17 @@ const BackupDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSummary.length === 0 ? (
+                  {paginatedSummary.length === 0 ? (
                     <tr>
                       <td
-                        colSpan="4"
+                        colSpan="5"
                         className="text-center py-4 text-gray-500"
                       >
                         Chưa có dữ liệu backup nào.
                       </td>
                     </tr>
                   ) : (
-                    filteredSummary.map((item) => (
+                    paginatedSummary.map((item) => (
                       <tr key={item.router_name} className="hover:bg-gray-50">
                         <td className="px-5 py-4 border-b border-gray-200 text-sm font-medium text-gray-900">
                           {item.router_name}
@@ -384,13 +501,24 @@ const BackupDashboard = () => {
                           {item.last_backup || "Chưa bao giờ"}
                         </td>
                         <td className="px-5 py-4 border-b border-gray-200 text-sm text-center">
-                          {item.backup_count > 0 ? (
-                            <span className="text-green-600 font-semibold">
-                              ● Đã có
-                            </span>
-                          ) : (
-                            <span className="text-red-500">● Trống</span>
-                          )}
+                          <CustomButton
+                            size="sm"
+                            color={
+                              processing[item.router_name] ? "gray" : "teal"
+                            }
+                            onClick={() => handleBackup(item.router_name)}
+                            disabled={processing[item.router_name]}
+                            className="flex items-center gap-2 justify-center whitespace-nowrap mx-auto"
+                          >
+                            {processing[item.router_name] ? (
+                              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <PlayIcon className="h-4 w-4" />
+                            )}
+                            {processing[item.router_name]
+                              ? "Đang chạy..."
+                              : "Backup"}
+                          </CustomButton>
                         </td>
                         <td className="px-5 py-4 border-b border-gray-200 text-sm text-center">
                           {item.backup_count > 0 && (
@@ -412,6 +540,46 @@ const BackupDashboard = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+            {/* Pagination Controls */}
+            <div className="px-5 py-3 bg-white border-t border-gray-200 flex items-center justify-between">
+              <span className="text-xs text-gray-600">
+                Hiển thị{" "}
+                <strong>
+                  {filteredSummary.length > 0
+                    ? (currentPage - 1) * itemsPerPage + 1
+                    : 0}
+                </strong>{" "}
+                đến{" "}
+                <strong>
+                  {Math.min(currentPage * itemsPerPage, filteredSummary.length)}
+                </strong>{" "}
+                trong số <strong>{filteredSummary.length}</strong> kết quả
+              </span>
+              <div className="flex gap-2">
+                <CustomButton
+                  size="sm"
+                  variant="text"
+                  color="blue-gray"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                >
+                  Trước
+                </CustomButton>
+                <CustomButton
+                  size="sm"
+                  variant="text"
+                  color="blue-gray"
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                >
+                  Sau
+                </CustomButton>
+              </div>
             </div>
           </div>
 
