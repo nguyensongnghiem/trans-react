@@ -353,7 +353,7 @@ const BackupDashboard = () => {
             <ServerIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-medium">Tổng thiết bị</p>
+            <p className="text-gray-500 text-sm font-semibold">Tổng thiết bị</p>
             <p className="text-2xl font-bold text-gray-800">{totalRouters}</p>
           </div>
         </div>
@@ -362,7 +362,7 @@ const BackupDashboard = () => {
             <CheckCircleIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-medium">Đã Backup</p>
+            <p className="text-gray-500 text-sm font-semibold">Đã Backup</p>
             <p className="text-2xl font-bold text-gray-800">{backedUpCount}</p>
           </div>
         </div>
@@ -371,7 +371,7 @@ const BackupDashboard = () => {
             <ExclamationTriangleIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-medium">Chưa Backup</p>
+            <p className="text-gray-500 text-sm font-semibold">Chưa Backup</p>
             <p className="text-2xl font-bold text-gray-800">{notBackedUpCount}</p>
           </div>
         </div>
@@ -380,7 +380,7 @@ const BackupDashboard = () => {
             <ArchiveBoxIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-medium">Tổng file Backup</p>
+            <p className="text-gray-500 text-sm font-semibold">Tổng file Backup</p>
             <p className="text-2xl font-bold text-gray-800">{totalFiles}</p>
           </div>
         </div>

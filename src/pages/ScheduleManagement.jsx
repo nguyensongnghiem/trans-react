@@ -516,7 +516,7 @@ const ScheduleManagement = () => {
         </div>
         <CustomButton
           className="flex items-center gap-2"
-          size="sm"
+          size="sm"          
           onClick={() => handleOpenDialog()}
         >
           <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm Lịch Mới
@@ -594,13 +594,13 @@ const ScheduleManagement = () => {
                                 onClick={() => handleToggleStatus(schedule)}
                               >
                                 <Chip
-                                  size="sm"
+                                  size="md"
                                   variant="ghost"
                                   value={
                                     schedule.is_active ? "Đang chạy" : "Tạm dừng"
                                   }
                                   color={schedule.is_active ? "teal" : "blue-gray"}
-                                  className="rounded-md px-2 py-0.5 font-semibold normal-case text-[10px] h-5 flex items-center justify-center"
+                                  className="rounded-md px-2 py-0.5 font-semibold normal-case text-sm h-5 flex items-center justify-center"
                                 />
                               </div>
                             </Tooltip>
@@ -812,18 +812,21 @@ const ScheduleManagement = () => {
                     const isLast = index === globalHistory.length - 1;
                     const isSuccess = item.status === "completed";
                     const isRunning = item.status === "running";
+                    const isCanceled = item.status === "canceled";
                     
                     return (
                       <TimelineItem key={item.id}>
                         {!isLast && <TimelineConnector />}
                         <TimelineHeader className="items-center">
                           <TimelineIcon 
-                            className={`p-2 ${isSuccess ? "bg-green-50 text-green-500" : isRunning ? "bg-blue-50 text-blue-500" : "bg-red-50 text-red-500"}`}
+                            className={`p-2 ${isSuccess ? "bg-green-50 text-green-500" : isRunning ? "bg-blue-50 text-blue-500" : isCanceled ? "bg-orange-50 text-orange-500" : "bg-red-50 text-red-500"}`}
                           >
                             {isSuccess ? (
                               <CheckCircleIcon className="h-4 w-4" />
                             ) : isRunning ? (
                               <ClockIcon className="h-4 w-4 animate-pulse" />
+                            ) : isCanceled ? (
+                              <StopIcon className="h-4 w-4" />
                             ) : (
                               <ExclamationTriangleIcon className="h-4 w-4" />
                             )}
@@ -836,8 +839,8 @@ const ScheduleManagement = () => {
                               <Chip
                                 size="sm"
                                 variant="ghost"
-                                value={item.status === 'completed' ? 'Thành công' : item.status === 'running' ? 'Đang chạy' : 'Thất bại'}
-                                color={isSuccess ? "green" : isRunning ? "blue" : "red"}
+                                value={item.status === 'completed' ? 'Thành công' : item.status === 'running' ? 'Đang chạy' : item.status === 'canceled' ? 'Hủy' : 'Thất bại'}
+                                color={isSuccess ? "green" : isRunning ? "blue" : isCanceled ? "orange" : "red"}
                                 className="rounded-full px-2 py-0.5 text-[10px]"
                               />
                             </div>
@@ -850,11 +853,9 @@ const ScheduleManagement = () => {
                           <Typography color="gray" className="font-normal text-xs">
                             Loại: <span className="font-semibold text-blue-600">{item.trigger_type === 'manual' ? 'Thủ công' : 'Tự động'}</span>
                           </Typography>
-                          {item.details && (
-                            <Typography color="gray" className="font-normal text-xs mt-1 break-words">
-                              Chi tiết: {item.details}
-                            </Typography>
-                          )}
+                          <Typography color="gray" className="font-normal text-xs mt-1">
+                            Người thực hiện: <span className="font-semibold text-blue-gray-700">{item.trigger_type === 'manual' ? (item.executor || 'system') : 'System'}</span>
+                          </Typography>
                         </TimelineBody>
                       </TimelineItem>
                     );
@@ -1045,11 +1046,12 @@ const ScheduleManagement = () => {
             variant="text"
             onClick={handleCloseDialog}
             className="mr-1"
-            color="gray"
+            
+            size="sm"
           >
             <span>Hủy</span>
           </CustomButton>
-          <CustomButton variant="filled" onClick={handleSubmit}>
+          <CustomButton variant="filled" size="sm" color="teal" onClick={handleSubmit}>
             <span>{isEdit ? "Lưu thay đổi" : "Tạo mới"}</span>
           </CustomButton>
         </DialogFooter>
@@ -1090,38 +1092,45 @@ const ScheduleManagement = () => {
       >
         <DialogHeader>Lịch sử thực thi</DialogHeader>
         <DialogBody divider className="max-h-[60vh] overflow-y-auto p-0">
-          <table className="w-full min-w-max table-auto text-left">
-            <thead className="bg-gray-50">
+          <table className="min-w-full leading-normal">
+            <thead>
               <tr>
-                <th className="p-4 border-b border-gray-100 text-xs font-semibold text-gray-600">Thời gian bắt đầu</th>
-                <th className="p-4 border-b border-gray-100 text-xs font-semibold text-gray-600">Thời gian kết thúc</th>
-                <th className="p-4 border-b border-gray-100 text-xs font-semibold text-gray-600">Loại</th>
-                <th className="p-4 border-b border-gray-100 text-xs font-semibold text-gray-600">Trạng thái</th>
-                <th className="p-4 border-b border-gray-100 text-xs font-semibold text-gray-600">Chi tiết</th>
+                {["Thời gian bắt đầu", "Thời gian kết thúc", "Loại", "Người thực hiện", "Trạng thái", "Chi tiết"].map((head) => (
+                  <th key={head} className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    {head}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {historyData.length === 0 ? (
-                <tr><td colSpan="5" className="p-4 text-center text-gray-500">Chưa có dữ liệu lịch sử.</td></tr>
+                <tr><td colSpan="6" className="px-5 py-5 text-center text-sm text-gray-500">Chưa có dữ liệu lịch sử.</td></tr>
               ) : (
                 historyData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-100">
-                    <td className="p-4 text-sm text-gray-700">{item.start_time_fmt}</td>
-                    <td className="p-4 text-sm text-gray-700">
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-5 py-4 border-b border-gray-200 text-sm text-gray-700">{item.start_time_fmt}</td>
+                    <td className="px-5 py-4 border-b border-gray-200 text-sm text-gray-700">
                       {item.end_time_fmt} 
                       {item.duration && <span className="text-xs text-gray-400 ml-1">({item.duration})</span>}
                     </td>
-                    <td className="p-4 text-sm text-gray-700 capitalize">{item.trigger_type === 'manual' ? 'Thủ công' : 'Tự động'}</td>
-                    <td className="p-4">
+                    <td className="px-5 py-4 border-b border-gray-200 text-sm text-gray-700 capitalize">{item.trigger_type === 'manual' ? 'Thủ công' : 'Tự động'}</td>
+                    <td className="px-5 py-4 border-b border-gray-200 text-sm text-gray-700">
+                        {item.trigger_type === 'manual' ? (
+                            <span className="font-semibold text-blue-600">{item.executor || 'system'}</span>
+                        ) : (
+                            <span className="text-gray-500 italic">System</span>
+                        )}
+                    </td>
+                    <td className="px-5 py-4 border-b border-gray-200 text-sm">
                       <Chip
                         size="sm"
                         variant="ghost"
-                        value={item.status}
-                        color={item.status === 'completed' ? 'green' : item.status === 'failed' ? 'red' : item.status === 'canceled' ? 'orange' : 'blue'}
-                        className="rounded-full px-2 py-0.5 text-[10px] capitalize"
+                        value={item.status === 'completed' ? 'Thành công' : item.status === 'running' ? 'Đang chạy' : item.status === 'canceled' ? 'Hủy' : 'Thất bại'}
+                        color={item.status === 'completed' ? 'green' : item.status === 'running' ? 'blue' : item.status === 'canceled' ? 'orange' : 'red'}
+                        className="rounded-full px-2 py-0.5 text-[10px] capitalize w-fit"
                       />
                     </td>
-                    <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={item.details}>{item.details}</td>
+                    <td className="px-5 py-4 border-b border-gray-200 text-sm text-gray-600 max-w-xs truncate" title={item.details}>{item.details}</td>
                   </tr>
                 ))
               )}

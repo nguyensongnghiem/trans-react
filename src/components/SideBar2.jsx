@@ -56,26 +56,34 @@ const menuConfig = [
     icon: BoltIcon,
     children: [
       { title: "Cáp quang thuê", path: "/hired-fo" },
-      { title: "Cáp quang đầu tư", path: "/under-construction" },
-      { title: "Hạ tầng cột cống bể", path: "/under-construction" },
+      { title: "Cáp quang đầu tư", path: "/under-construction/fiber-invest" },
+      {
+        title: "Hạ tầng cột cống bể",
+        path: "/under-construction/infrastructure",
+      },
     ],
   },
   {
     id: 5,
     title: "Quản lý tuyến viba",
     icon: RssIcon,
-    children: [{ title: "Dữ liệu tuyến viba", path: "/under-construction" }],
+    children: [
+      { title: "Dữ liệu tuyến viba", path: "/under-construction/microwave" },
+    ],
   },
   {
     id: 6,
     title: "Quản lý hợp đồng",
     icon: BookOpenIcon,
     children: [
-      { title: "Tổng quan", path: "/under-construction" },
+      { title: "Tổng quan", path: "/under-construction/contract-overview" },
       { title: "Hợp đồng thuê FO", path: "/fo-contract" },
-      { title: "Hợp đồng thuê kênh dung lượng", path: "/under-construction" },
-      { title: "Hợp đồng thuê cột", path: "/under-construction" },
-      { title: "Hợp đồng cống bể", path: "/under-construction" },
+      {
+        title: "Hợp đồng thuê kênh dung lượng",
+        path: "/under-construction/contract-leaseline",
+      },
+      { title: "Hợp đồng thuê cột", path: "/under-construction/contract-pole" },
+      { title: "Hợp đồng cống bể", path: "/under-construction/contract-duct" },
     ],
   },
   {
@@ -83,8 +91,11 @@ const menuConfig = [
     title: "Báo cáo",
     icon: TableCellsIcon,
     children: [
-      { title: "Báo cáo tổng hợp", path: "/under-construction" },
-      { title: "Báo cáo cước sử dụng kênh thuê", path: "/under-construction" },
+      { title: "Báo cáo tổng hợp", path: "/under-construction/report-summary" },
+      {
+        title: "Báo cáo cước sử dụng kênh thuê",
+        path: "/under-construction/report-cost",
+      },
       {
         title: "Báo cáo chi phí theo nhà cung cấp",
         path: "/fo-cost-by-supplier",
@@ -129,25 +140,56 @@ const Sidebar2 = ({ sidebarOpen }) => {
         {menuConfig.map((menu) => {
           if (menu.requiredRole === "ROLE_ADMIN" && !isAdmin) return null;
 
+          // Nếu không có menu con, render NavLink trực tiếp
+          if (!menu.children) {
+            return (
+              <NavLink key={menu.id} to={menu.path} end>
+                {({ isActive }) => (
+                  <ListItem
+                    className={`p-0 w-full ${isActive ? "bg-blue-gray-800" : ""}`}
+                    selected={isActive}
+                  >
+                    <div
+                      className={`flex items-center w-full border-b-0 p-2 ${isActive ? "text-blue-300 opacity-100" : "text-white opacity-70"}`}
+                    >
+                      <ListItemPrefix>
+                        <menu.icon className="h-4 w-4" />
+                      </ListItemPrefix>
+                      <Typography
+                        color="inherit"
+                        className="mr-auto font-semibold"
+                      >
+                        <span
+                          className={`${sidebarOpen ? "" : "hidden"} uppercase`}
+                        >
+                          {menu.title}
+                        </span>
+                      </Typography>
+                    </div>
+                  </ListItem>
+                )}
+              </NavLink>
+            );
+          }
+
+          // Nếu có menu con, render Accordion
           return (
             <Accordion
               key={menu.id}
               open={open === menu.id}
               icon={
-                menu.children && (
-                  <ChevronDownIcon
-                    strokeWidth={2.5}
-                    className={`mx-auto text-white opacity-70 h-4 w-4 transition-transform ${
-                      open === menu.id ? "rotate-180" : ""
-                    }`}
-                  />
-                )
+                <ChevronDownIcon
+                  strokeWidth={2.5}
+                  className={`mx-auto text-white opacity-70 h-4 w-4 transition-transform ${
+                    open === menu.id ? "rotate-180" : ""
+                  }`}
+                />
               }
             >
               <ListItem className="p-0 w-full" selected={open === menu.id}>
                 <AccordionHeader
-                  onClick={() => (menu.children ? handleOpen(menu.id) : null)}
-                  className="border-b-0 p-2 text-white opacity-70"
+                  onClick={() => handleOpen(menu.id)}
+                  className={`border-b-0 p-2 ${open === menu.id ? "text-white opacity-100" : "text-white opacity-70"}`}
                 >
                   <ListItemPrefix>
                     <menu.icon className="h-4 w-4" />
@@ -163,33 +205,34 @@ const Sidebar2 = ({ sidebarOpen }) => {
               </ListItem>
 
               {/* render children nếu có */}
-              {menu.children && (
-                <AccordionBody className="py-1">
-                  <List className="p-0 text-white opacity-70">
-                    {menu.children.map((child, idx) => (
-                      <NavLink
-                        key={idx}
-                        to={child.path}
-                        className={({ isActive }) =>
-                          isActive ? "text-blue-400" : ""
-                        }
-                      >
-                        <ListItem className="p-1 w-full">
+              <AccordionBody className="py-1">
+                <List className="p-0 text-white opacity-70">
+                  {menu.children.map((child, idx) => (
+                    <NavLink key={idx} to={child.path} end>
+                      {({ isActive }) => (
+                        <ListItem
+                          className={`p-1 w-full ${isActive ? "bg-blue-gray-800" : ""}`}
+                          selected={isActive}
+                        >
                           <ListItemPrefix>
                             <ChevronRightIcon
                               strokeWidth={3}
-                              className="h-3 w-5"
+                              className={`h-3 w-5 ${isActive ? "text-blue-300" : "text-white"}`}
                             />
                           </ListItemPrefix>
                           <span className={`${sidebarOpen ? "" : "hidden"}`}>
-                            <Typography>{child.title}</Typography>
+                            <Typography
+                              className={`${isActive ? "text-blue-300 font-bold" : "text-white font-medium"}`}
+                            >
+                              {child.title}
+                            </Typography>
                           </span>
                         </ListItem>
-                      </NavLink>
-                    ))}
-                  </List>
-                </AccordionBody>
-              )}
+                      )}
+                    </NavLink>
+                  ))}
+                </List>
+              </AccordionBody>
             </Accordion>
           );
         })}

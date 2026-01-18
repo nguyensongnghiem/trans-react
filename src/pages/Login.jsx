@@ -5,7 +5,6 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import axios from "../libs/axios/axiosConfig";
 import {
   Card,
-  CardHeader,
   CardBody,
   CardFooter,
   Input,
@@ -53,11 +52,10 @@ const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <Card className="w-96">
-        
         <CardBody className="flex flex-col gap-4">
           <Typography variant="h5" color="blue-gray" className="mb-2">
-          Quản lý truyền dẫn
-        </Typography>
+            Quản lý truyền dẫn
+          </Typography>
           {error && (
             <Typography
               variant="small"
@@ -68,35 +66,61 @@ const Login = () => {
             </Typography>
           )}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              label="Tên đăng nhập"
-              size="lg"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              icon={<UserIcon className="h-5 w-5" />}
-              crossOrigin={undefined}
-            />
-            <Input
-              label="Mật khẩu"
-              size="lg"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              icon={
-                <div
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="cursor-pointer"
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
-                </div>
-              }
-              crossOrigin={undefined}
-            />
-            <Button variant="gradient" fullWidth type="submit" color="blue">
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Tên đăng nhập
+              </Typography>
+              <Input
+                size="lg"
+                placeholder="Nhập tên đăng nhập"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                icon={<UserIcon className="h-5 w-5" />}
+                crossOrigin={undefined}
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Mật khẩu
+              </Typography>
+              <Input
+                size="lg"
+                placeholder="********"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={
+                  <div
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </div>
+                }
+                crossOrigin={undefined}
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <Button variant="filled" fullWidth type="submit" color="blue">
               Đăng Nhập
             </Button>
           </form>

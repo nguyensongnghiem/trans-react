@@ -41,7 +41,7 @@ const router = createBrowserRouter([
         element: <Unauthorized />,
       },
       {
-        path: "/under-construction",
+        path: "/under-construction/*",
         element: <UnderConstructionPage />,
       },
       {
@@ -57,13 +57,13 @@ const router = createBrowserRouter([
               },
             ],
           },
-           {
+          {
             path: "/fo-cost-by-supplier",
-            element: <FoReportBySupplierWithContracts />,            
+            element: <FoReportBySupplierWithContracts />,
           },
-           {
+          {
             path: "/fo-cost-by-contracts",
-            element: <FoReportByContracts />,            
+            element: <FoReportByContracts />,
           },
           {
             path: "/fo-create",
@@ -95,17 +95,17 @@ const router = createBrowserRouter([
           },
           {
             path: "/router/backup-dashboard",
-            element: <BackupDashboard />
+            element: <BackupDashboard />,
           },
-           {
+          {
             path: "/admin/users",
-            element: <UserManagement />
+            element: <UserManagement />,
           },
           {
             path: "/router/backup-scheduler",
             element: <ScheduleManagement />,
-          }          
-        ],        
+          },
+        ],
       },
       {
         element: <PrivateRoutes allowedRoles={["ROLE_USER"]} />,
@@ -128,5 +128,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </SidebarProvider>
       </AuthProvider>
     </ThemeProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
