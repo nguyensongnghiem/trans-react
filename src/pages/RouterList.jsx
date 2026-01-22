@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import {
+  DocumentIcon,
+  PencilIcon,
+  TrashIcon,
+  PlusIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/solid";
 import Select from "react-select";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
@@ -26,12 +32,13 @@ import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import useSimpleSites from "../hooks/useSimpleSites";
 import useRouters from "../hooks/useRouters"; // Import your custom hook for routers
+import CustomButton from "../components/CustomButton";
 function RouterList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
   const [routerTypeList, setRouterTypeList] = useState([]);
   const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
-    []
+    [],
   );
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
@@ -135,7 +142,7 @@ function RouterList() {
     const loadData = async () => {
       try {
         const transDeviceTypeList = await axiosInstance.get(
-          "transmission-device-types"
+          "transmission-device-types",
         );
         setTransmissionDeviceTypeList(transDeviceTypeList.data);
       } catch (error) {
@@ -164,7 +171,6 @@ function RouterList() {
     console.log(router);
     await createRouter(router);
     setOpenCreate(!openCreate);
-    
   };
   // Xử lý Edit
 
@@ -179,7 +185,7 @@ function RouterList() {
 
   const handleEditSubmit = async (router) => {
     console.log(router);
-    await updateRouter(router.id, router);    
+    await updateRouter(router.id, router);
     setOpenEdit(!openEdit);
   };
 
@@ -192,10 +198,10 @@ function RouterList() {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete);
   };
-  const handleDeleteSubmit = async () => {    
+  const handleDeleteSubmit = async () => {
     await deleteRouter(deleteId);
     setDeleteId(null);
-    setOpenDelete(!openDelete);   
+    setOpenDelete(!openDelete);
   };
 
   let deleteRouterName;
@@ -208,11 +214,11 @@ function RouterList() {
   const onBtnExport = () => {
     const columnDefs = gridRef.current.api.getColumnDefs();
     const rowData = [];
-    gridRef.current.api.forEachNode(node => rowData.push(node.data));
+    gridRef.current.api.forEachNode((node) => rowData.push(node.data));
 
-    const dataToExport = rowData.map(node => {
+    const dataToExport = rowData.map((node) => {
       const row = {};
-      columnDefs.forEach(colDef => {
+      columnDefs.forEach((colDef) => {
         if (colDef.headerName && colDef.valueGetter) {
           let value = colDef.valueGetter({ data: node });
           if (colDef.valueFormatter) {
@@ -230,43 +236,27 @@ function RouterList() {
     XLSX.writeFile(workbook, "RouterList.xlsx");
   };
   return (
-    <div className="p-5">
-      <div className="flex items-center justify-between">
-        <Typography variant="h4" color="blue-gray" className="mb-3">
-          Danh sách thiết bị
-        </Typography>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Danh sách thiết bị</h1>
         <div className="flex gap-2">
-          <Button
-            variant="gradient"
+          <CustomButton
+            className="flex items-center gap-2"
             size="sm"
-            className="mb-3 flex items-center gap-3"
             onClick={handleOpenCreate}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
-            </svg>
+            <PlusIcon className="h-4 w-4" />
             Thêm mới
-          </Button>
-          <Button
-            variant="gradient"
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2"
             size="sm"
-            color="green"
-            className="mb-3 flex items-center gap-3"
+            color="blue-gray"
             onClick={onBtnExport}
           >
+            <ArrowDownTrayIcon className="h-4 w-4" />
             Xuất Excel
-          </Button>
+          </CustomButton>
         </div>
       </div>
       <div
@@ -461,9 +451,9 @@ function RouterList() {
                   </Card>
                 </DialogBody>
                 <DialogFooter>
-                  <Button size="md" type="submit" color="red">
+                  <CustomButton size="sm" type="submit" color="blue">
                     Thêm mới
-                  </Button>
+                  </CustomButton>
                 </DialogFooter>
               </Form>
             )}
@@ -559,7 +549,7 @@ function RouterList() {
                         <Select
                           placeholder="Site ID"
                           defaultValue={simpleSiteList.find(
-                            ({ id }) => id === values.site.id
+                            ({ id }) => id === values.site.id,
                           )}
                           value={
                             simpleSiteList
@@ -664,9 +654,9 @@ function RouterList() {
                   </Card>
                 </DialogBody>
                 <DialogFooter>
-                  <Button size="md" type="submit" color="red">
+                  <CustomButton size="sm" type="submit" color="blue">
                     Cập nhật dữ liệu
-                  </Button>
+                  </CustomButton>
                 </DialogFooter>
               </Form>
             )}
@@ -681,17 +671,21 @@ function RouterList() {
           Bạn muốn xóa thông tin trạm <span>{deleteRouterName}</span> ?
         </DialogBody>
         <DialogFooter>
-          <Button
+          <CustomButton
             variant="text"
-            color="green"
+            color="gray"
             onClick={handleOpenDelete}
             className="mr-1"
           >
             <span>Hủy</span>
-          </Button>
-          <Button variant="gradient" color="red" onClick={handleDeleteSubmit}>
+          </CustomButton>
+          <CustomButton
+            variant="filled"
+            color="red"
+            onClick={handleDeleteSubmit}
+          >
             <span>Xóa</span>
-          </Button>
+          </CustomButton>
         </DialogFooter>
       </Dialog>
     </div>

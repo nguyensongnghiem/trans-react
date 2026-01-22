@@ -3,18 +3,27 @@ import { useAuth } from "../contexts/authContext";
 import { postData } from "../services/apiService";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import axios from "../libs/axios/axiosConfig";
-import { Button, Typography } from "@material-tailwind/react";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  Input,
+  Button,
+  Typography,
+} from "@material-tailwind/react";
 import { jwtDecode } from "jwt-decode";
 import useRefreshToken from "../hooks/useRefreshToken";
+import { UserIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const { auth, setToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshToken } = useRefreshToken();
-  const from = location.state?.from?.pathname || "/"; 
+  const from = location.state?.from?.pathname || "/";
   const handleSubmit = async (e) => {
     e.preventDefault();
     const submitCredentials = { username: username, password: password };
@@ -42,38 +51,96 @@ const Login = () => {
   };
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md space-y-3 rounded-lg bg-white p-8 shadow-md">
-        <h2 className="text-center text-2xl font-bold">Đăng Nhập</h2>
-        {error && <div className="text-red-500">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium">Tên đăng nhập</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full rounded-md border border-gray-300 p-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Mật khẩu</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded-md border border-gray-300 p-2"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-blue-600 py-2 text-white hover:bg-blue-700"
-          >
-            Đăng Nhập
-          </button>
-        </form>
-      </div>
+      <Card className="w-96">
+        <CardBody className="flex flex-col gap-4">
+          <Typography variant="h5" color="blue-gray" className="mb-2">
+            Quản lý truyền dẫn
+          </Typography>
+          {error && (
+            <Typography
+              variant="small"
+              color="red"
+              className="text-center font-bold"
+            >
+              {error}
+            </Typography>
+          )}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Tên đăng nhập
+              </Typography>
+              <Input
+                size="lg"
+                placeholder="Nhập tên đăng nhập"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                icon={<UserIcon className="h-5 w-5" />}
+                crossOrigin={undefined}
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <div>
+              <Typography
+                variant="small"
+                color="blue-gray"
+                className="mb-2 font-medium"
+              >
+                Mật khẩu
+              </Typography>
+              <Input
+                size="lg"
+                placeholder="********"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={
+                  <div
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </div>
+                }
+                crossOrigin={undefined}
+                className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <Button variant="filled" fullWidth type="submit" color="blue">
+              Đăng Nhập
+            </Button>
+          </form>
+        </CardBody>
+        <CardFooter className="pt-0">
+          <Typography variant="small" className="mt-6 flex justify-center">
+            Quên mật khẩu?
+            <Typography
+              as="a"
+              href="#"
+              variant="small"
+              color="blue"
+              className="ml-1 font-bold"
+              onClick={(e) => e.preventDefault()}
+            >
+              Liên hệ Admin
+            </Typography>
+          </Typography>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

@@ -6,9 +6,6 @@ import { ThemeProvider } from "@material-tailwind/react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import ErrorPage from "./pages/ErrorPage.jsx";
-import SiteList from "./pages/SiteList.jsx";
-import SiteEdit from "./pages/SiteEdit.jsx";
-import SiteCreate from "./pages/SiteCreate.jsx";
 import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import SiteList2 from "./pages/SiteList2.jsx";
 import RouterList from "./pages/RouterList.jsx";
@@ -25,8 +22,10 @@ import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
 import FoReportBySupplierWithContracts from "./pages/foContract/FoReportBySupplierWithContracts.jsx";
 import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
 import UnderConstructionPage from "./pages/UnderConstruction.jsx";
-
-
+import RouterBackup from "./pages/RouterBackup.jsx";
+import BackupDashboard from "./pages/BackupDashboard.jsx";
+import UserManagement from "./pages/UserManagement.jsx";
+import ScheduleManagement from "./pages/ScheduleManagement.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -42,7 +41,7 @@ const router = createBrowserRouter([
         element: <Unauthorized />,
       },
       {
-        path: "/under-construction",
+        path: "/under-construction/*",
         element: <UnderConstructionPage />,
       },
       {
@@ -58,13 +57,13 @@ const router = createBrowserRouter([
               },
             ],
           },
-           {
+          {
             path: "/fo-cost-by-supplier",
-            element: <FoReportBySupplierWithContracts />,            
+            element: <FoReportBySupplierWithContracts />,
           },
-           {
+          {
             path: "/fo-cost-by-contracts",
-            element: <FoReportByContracts />,            
+            element: <FoReportByContracts />,
           },
           {
             path: "/fo-create",
@@ -90,6 +89,22 @@ const router = createBrowserRouter([
             path: "/leaseline",
             element: <LeaselineList />,
           },
+          {
+            path: "/router/backup-routers",
+            element: <RouterBackup />,
+          },
+          {
+            path: "/router/backup-dashboard",
+            element: <BackupDashboard />,
+          },
+          {
+            path: "/admin/users",
+            element: <UserManagement />,
+          },
+          {
+            path: "/router/backup-scheduler",
+            element: <ScheduleManagement />,
+          },
         ],
       },
       {
@@ -103,9 +118,7 @@ const router = createBrowserRouter([
       },
     ],
   },
-
 ]);
-
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider>
@@ -115,5 +128,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </SidebarProvider>
       </AuthProvider>
     </ThemeProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
