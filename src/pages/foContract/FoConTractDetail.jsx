@@ -30,68 +30,52 @@ import { toast } from "react-toastify"; // Optional Theme applied to the Data Gr
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import "../../Styles/aggrid.css";
 function FoConTractDetail(props) {
-  const { id } = props;
+  const { id, onUpdated } = props;
   const [contractDetail, setContractDetail] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const axiosInstance = useAxiosPrivate();
   const [colDefs, setColDefs] = useState([
     {
-<<<<<<< Updated upstream
       headerName: "STT",
       width: 70,
       valueGetter: (params) => params.node.rowIndex + 1,
       sortable: false,
       filter: false,
     },
-=======
-    headerName: "STT",
-    width: 30,
-    valueGetter: (params) => params.node.rowIndex + 1,
-    sortable: false,
-    filter: false,
-    suppressHeaderMenuButton: true,
-    },
+    // headerName: "STT",
+    // width: 30,
+    // valueGetter: (params) => params.node.rowIndex + 1,
+    // sortable: false,
+    // filter: false,
+    // suppressHeaderMenuButton: true,
+    // },
 
->>>>>>> Stashed changes
     {
       headerName: "Tên tuyến",
       valueGetter: (p) =>
         p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
     },
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
     {
       headerName: "Tỉnh",
       valueGetter: (p) => p.data.nearSite?.province?.name || "",
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
-<<<<<<< Updated upstream
-    {
-      headerName: "Khoảng cách (km)",
-      width: 130,
-=======
+
+    // {
+    //   headerName: "Khoảng cách (km)",
+    //   width: 130,
 
 
     { headerName: "Khoảng cách",
       width: 130, 
->>>>>>> Stashed changes
       valueGetter: (p) => p.data.finalDistance,
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
-<<<<<<< Updated upstream
-    {
-      headerName: "Số core",
-      width: 100,
-=======
-
     {
       headerName: "Số core",
       width: 100, 
->>>>>>> Stashed changes
       valueGetter: (p) => p.data.coreQuantity,
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
@@ -103,18 +87,7 @@ function FoConTractDetail(props) {
       cellRenderer: (p) => VND.format(p.data.cost),
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
-<<<<<<< Updated upstream
     },
-    {
-      headerName: "Thành tiền / Tháng",
-      valueGetter: (p) => p.data.cost * p.data.finalDistance,
-      cellRenderer: (p) => VND.format(p.value),
-      headerClass: "ag-center-header",
-      cellClass: "ag-center-cell",
-=======
->>>>>>> Stashed changes
-    },
-
     {
     headerName: "Thành tiền / Tháng",
     valueGetter: (p) =>
@@ -233,6 +206,8 @@ function FoConTractDetail(props) {
   }
 };
   useEffect(() => {
+    // 🔴 RESET TRƯỚC
+    setPdfList([]);
     if (contractDetail?.id) {
       loadPdfList(contractDetail.id);
     }
@@ -270,11 +245,6 @@ function FoConTractDetail(props) {
   useEffect(() => {
     loadContract();
   }, [id]);
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-
 
   // const openDrawer = () => setOpen(true);
   const closeDrawer = () => setOpen(false);
@@ -300,7 +270,7 @@ function FoConTractDetail(props) {
     setOpen(true);
   }
 
-<<<<<<< Updated upstream
+
   const handleEdit = (lineId) => {
     // TODO: mở modal/sửa tuyến
     console.log("edit line", lineId);
@@ -310,8 +280,7 @@ function FoConTractDetail(props) {
     // TODO: gọi API xoá tuyến
     console.log("delete line", lineId);
   };
-=======
->>>>>>> Stashed changes
+
 
   const handleEditSubmit = async (values) => {
     try {
@@ -352,7 +321,14 @@ function FoConTractDetail(props) {
       setPdfFiles([]);
       closeDrawer();
       await loadContract();
-
+      // refresh luôn danh mục hợp đồng bên trái
+      if (typeof onUpdated === "function") {
+        onUpdated({
+          id: values.id,
+          contractNumber: values.contractNumber,
+          signedDate: values.signedDate,
+        });
+      }
     } catch (err) {
       console.error(err);
       toast.error("Cập nhật thất bại");
@@ -378,6 +354,9 @@ function FoConTractDetail(props) {
     closeDrawer();
   }
 
+  
+  const hasPdf = (pdfList?.length ?? 0) > 0;
+
   return (
     <>
       <div className="mt-6 rounded-none text-blue-gray-600 flex flex-col h-full">
@@ -401,24 +380,31 @@ function FoConTractDetail(props) {
             </Typography>
           </div>
           <Button
-            className="flex gap-2 p-2.5 transition-all duration-200"
-            onClick={() => setOpenDocuments(true)}
+            title={hasPdf ? "Xem văn bản hợp đồng" : "Chưa có văn bản PDF"}
             variant="text"
-            color="blue"
             size="sm"
-            disabled={false}
+            className={clsx(
+              "p-2.5 transition-all duration-200",
+              hasPdf
+                ? "text-blue-500 hover:bg-blue-50"
+                : "text-gray-400 cursor-not-allowed"
+            )}
+            onClick={() => {
+              if (!hasPdf) {
+                toast.info("Hợp đồng chưa có văn bản PDF. Vui lòng cập nhập dữ liệu!");
+                return;
+              }
+              setOpenDocuments(true);
+            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              fill="#4b9bf3"
               viewBox="0 0 512 512"
-              strokeWidth="1.5"
-              stroke="currentColor"
               className="size-4"
+              fill="currentColor"   // ⭐ QUAN TRỌNG
             >
               <path d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z" />
             </svg>
-         
           </Button>
           <Button
             className="flex gap-1 p-1.5 transition-all duration-300"
@@ -458,16 +444,11 @@ function FoConTractDetail(props) {
             }
           />
         </div>
-<<<<<<< Updated upstream
 
-        {contractDetail.contractName && (
-          <Typography variant="h6">{contractDetail.contractName}</Typography>
-=======
         {contractDetail.contractName && (
           <Typography variant="h6">
             {contractDetail.contractName}
           </Typography>
->>>>>>> Stashed changes
         )}
         <CardBody>
           <div className="mb-5 grid grid-cols-4 gap-2">
@@ -485,10 +466,6 @@ function FoConTractDetail(props) {
               <InfoCard
                 header="Nhà cung cấp"
                 content={contractDetail.transmissionOwner?.name || ""}
-              />
-              <InfoCard
-                header="Tổng giá trị hợp đồng (trước thuế)"
-                content={VND.format(totalAmountBeforeTax)}
               />
               <InfoCard
                 header="Tổng giá trị hợp đồng (trước thuế)"
@@ -558,11 +535,7 @@ function FoConTractDetail(props) {
               endDate: contractDetail.endDate,
               active: contractDetail.active,
               contractUrl: null, // 🔥 FILE LUÔN LUÔN NULL
-<<<<<<< Updated upstream
               transmissionOwnerId: contractDetail.transmissionOwner?.id || "",
-=======
-              ransmissionOwnerId: contractDetail.transmissionOwner?.id,
->>>>>>> Stashed changes
               note: contractDetail.note || "",
             }}
 
@@ -838,12 +811,7 @@ function FoConTractDetail(props) {
       )}
 
       </React.Fragment>
-
-<<<<<<< Updated upstream
       </div> 
-=======
-
->>>>>>> Stashed changes
     </>
   );
 }
