@@ -209,26 +209,44 @@ function HiredFoList() {
     setOpenEdit(!openEdit);
   };
 
+  const reloadHiredFoList = async () => {
+    const hiredFoListRes = await axiosInstance.get("hired-fos");
+    setHiredFoList(hiredFoListRes.data);
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setIsLoading(true);
+        await reloadHiredFoList();
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    init();
+  }, []);
+
   const handleEditSubmit = async (foLine) => {
-    console.log(foLine);
     try {
+      // 1) Update lên backend
       await axiosInstance.put(`hired-fos/${foLine.id}`, foLine);
-      setHiredFoList((prevList) =>
-        prevList.map((item) => (item.id === foLine.id ? foLine : item))
-      );
+
       toast.success("Đã cập nhật thành công tuyến FO");
+
+      // 2) Refresh lại list từ backend
+      await reloadHiredFoList();
+
     } catch (error) {
       console.log(error);
-      if (error.response && error.response.status === 400) {
-        toast.error(error.data.message);
-      } else {
-        toast.error("Có lỗi bất thường xảy ra");
-      }
+      toast.error(error?.response?.data?.message || "Có lỗi bất thường xảy ra");
     } finally {
-      setOpenEdit(!openEdit);
+      // 3) Đóng modal edit đúng cách (không toggle)
+      setOpenEdit(false);
     }
-    setOpenEdit(!openEdit);
   };
+
 
   // Xử lý Xóa
 
@@ -253,6 +271,46 @@ function HiredFoList() {
     } finally {
       handleOpenDelete();
     }
+  };
+  
+  // Select Site A/B: nền trắng chữ đen
+  const whiteSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      backgroundColor: "white",
+      color: "black",
+      borderColor: state.isFocused ? "#93c5fd" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 1px #93c5fd" : "none",
+      "&:hover": { borderColor: "#93c5fd" },
+      minHeight: "38px",
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: "black",
+    }),
+    input: (base) => ({
+      ...base,
+      color: "black",
+    }),
+    placeholder: (base) => ({
+      ...base,
+      color: "#6b7280",
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: "white",
+      color: "black",
+      zIndex: 9999,
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#bfdbfe"
+        : state.isFocused
+        ? "#e5e7eb"
+        : "white",
+      color: "black",
+    }),
   };
 
   // Hàm mở file excel
@@ -835,6 +893,7 @@ function HiredFoList() {
           </DialogHeader>
 
           <Formik
+            enableReinitialize
             onSubmit={handleEditSubmit}
             initialValues={{
               ...editFoLine,
@@ -905,36 +964,16 @@ function HiredFoList() {
                         </label>
                         <Select
                           placeholder="Site A"
-                          defaultValue={simpleSiteList.find(
-                            ({ id }) => id === values.nearSite.id
-                          )}
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("nearSite.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("nearSite.id", selectedOption.id);
-                          }}
-                          classNames={{
-                            control: (state) =>
-                              state.isFocused
-                                ? "border-blue-300"
-                                : "border-grey-300",
-                          }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
+                          styles={whiteSelectStyles}
+                          value={simpleSiteList.find((o) => o.id === values.nearSite?.id) || null}
+                          onChange={(opt) => setFieldValue("nearSite.id", opt?.id || null)}
+                          components={{ MenuList: CustomMenuList }}
                           isSearchable={true}
                           options={simpleSiteList}
-                          name="nearSite.id"
                           getOptionLabel={(option) => option.siteId}
-                          isLoading={false}
-                          loadingMessage={() => "Đang lấy thông tin trạm..."}
-                          noOptionsMessage={() => "Không có thông tin trạm"}
+                          getOptionValue={(option) => option.id}
                         />
+
                         <ErrorMessage
                           className="justify-items-end text-sm font-light italic text-red-500"
                           name="nearSite.siteId"
@@ -947,36 +986,16 @@ function HiredFoList() {
                         </label>
                         <Select
                           placeholder="Site B"
-                          defaultValue={simpleSiteList.find(
-                            ({ id }) => id === values.farSite.id
-                          )}
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("farSite.id", selectedOption.id);
-                          }}
-                          classNames={{
-                            control: (state) =>
-                              state.isFocused
-                                ? "border-blue-300"
-                                : "border-grey-300",
-                          }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
+                          styles={whiteSelectStyles}
+                          value={simpleSiteList.find((o) => o.id === values.farSite?.id) || null}
+                          onChange={(opt) => setFieldValue("farSite.id", opt?.id || null)}
+                          components={{ MenuList: CustomMenuList }}
                           isSearchable={true}
                           options={simpleSiteList}
-                          name="farSite.id"
                           getOptionLabel={(option) => option.siteId}
-                          isLoading={false}
-                          loadingMessage={() => "Đang lấy thông tin trạm..."}
-                          noOptionsMessage={() => "Không có thông tin trạm"}
+                          getOptionValue={(option) => option.id}
                         />
+
                         <ErrorMessage
                           className="justify-items-end text-sm font-light italic text-red-500"
                           name="farSite.siteId"

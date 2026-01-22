@@ -1,20 +1,21 @@
-import React, { useEffect, useMemo, useState, useRef  } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback  } from "react";
+import Select from "react-select";
 import { DateTime } from "luxon";
+import { CustomMenuList } from "../CustomList.jsx"; 
 // import { contractDB } from "../../services/firebase/config.js";
 import { clsx } from "clsx";
 import {
   Button,
   Card,
   CardBody,
-  CardFooter,
-  CardHeader,
   Chip,
+  Dialog,
   DialogBody,
   DialogFooter,
+  DialogHeader,
   Drawer,
   IconButton,
-  Input, Switch,
-  Textarea,
+  Switch,
   Typography,
 } from "@material-tailwind/react";
 import FoContractDocuments from "./FoContractDocuments";
@@ -34,7 +35,30 @@ function FoConTractDetail(props) {
   const [contractDetail, setContractDetail] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const axiosInstance = useAxiosPrivate();
-  const [colDefs, setColDefs] = useState([
+  const VND = useMemo(() => new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }), []);
+  const [openEditLine, setOpenEditLine] = useState(false);
+  const [editLine, setEditLine] = useState(null);
+
+  const handleEdit = useCallback(async (lineId) => {
+    try {
+      const res = await axiosInstance.get(`/hired-fos/${lineId}`);
+      setEditLine(res.data);
+      setOpenEditLine(true);
+    } catch (err) {
+      console.log(err);
+      toast.error("Không load được dữ liệu tuyến FO");
+    }
+  }, [axiosInstance]);
+  
+  const handleDeleteRouter = async (lineId) => {
+    console.log("delete", lineId);
+    // sau này gọi API delete ở đây
+  };
+
+  const colDefs = useMemo(() => ([
     {
       headerName: "STT",
       width: 70,
@@ -42,18 +66,9 @@ function FoConTractDetail(props) {
       sortable: false,
       filter: false,
     },
-    // headerName: "STT",
-    // width: 30,
-    // valueGetter: (params) => params.node.rowIndex + 1,
-    // sortable: false,
-    // filter: false,
-    // suppressHeaderMenuButton: true,
-    // },
-
     {
       headerName: "Tên tuyến",
-      valueGetter: (p) =>
-        p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
+      valueGetter: (p) => p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
     },
     {
       headerName: "Tỉnh",
@@ -61,57 +76,43 @@ function FoConTractDetail(props) {
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
-
-    // {
-    //   headerName: "Khoảng cách (km)",
-    //   width: 130,
-
-
-    { headerName: "Khoảng cách",
-      width: 130, 
+    {
+      headerName: "Khoảng cách",
+      width: 130,
       valueGetter: (p) => p.data.finalDistance,
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
     {
       headerName: "Số core",
-      width: 100, 
+      width: 100,
       valueGetter: (p) => p.data.coreQuantity,
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
-
     {
       headerName: "Đơn giá/km",
       valueGetter: (p) => p.data.cost,
-      cellRenderer: (p) => VND.format(p.data.cost),
+      cellRenderer: (p) => VND.format(p.data.cost || 0),
       headerClass: "ag-center-header",
       cellClass: "ag-center-cell",
     },
     {
-    headerName: "Thành tiền / Tháng",
-    valueGetter: (p) =>
-    p.data.cost * p.data.finalDistance,
-    cellRenderer: (p) => VND.format(p.value),
-    headerClass: "ag-center-header",
-    cellClass: "ag-center-cell",
+      headerName: "Thành tiền / Tháng",
+      valueGetter: (p) => (p.data.cost || 0) * (p.data.finalDistance || 0),
+      cellRenderer: (p) => VND.format(p.value || 0),
+      headerClass: "ag-center-header",
+      cellClass: "ag-center-cell",
     },
-
     {
       headerName: "Trạng thái",
       cellRenderer: (p) => (
-        <span
-          className={`inline-flex items-center ${
-            p.data.active
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          } text-xs font-medium px-2.5 py-0.5 rounded-full`}
-        >
-          <span
-            className={`w-2 h-2 me-1 ${
-              p.data.active ? "bg-green-500" : "bg-red-500"
-            } rounded-full`}
-          ></span>
+        <span className={`inline-flex items-center ${
+          p.data.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+        } text-xs font-medium px-2.5 py-0.5 rounded-full`}>
+          <span className={`w-2 h-2 me-1 ${
+            p.data.active ? "bg-green-500" : "bg-red-500"
+          } rounded-full`}></span>
           {p.data.active ? "Hoạt động" : "Không hoạt động"}
         </span>
       ),
@@ -121,25 +122,35 @@ function FoConTractDetail(props) {
       headerName: "Tác động",
       cellRenderer: (p) => (
         <div className="flex items-center justify-center">
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleEdit(p.data.id)}
-          >
+          <IconButton variant="text" size="sm" onClick={() => handleEdit(p.data.id)}>
             <PencilIcon className="h-4 w-4 text-gray-900" />
           </IconButton>
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleDeleteRouter(p.data.id)}
-          >
+          <IconButton variant="text" size="sm" onClick={() => handleDeleteRouter(p.data.id)}>
             <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
           </IconButton>
         </div>
       ),
     },
-  ]);
+  ]), [VND, handleEdit]);
 
+
+  const whiteSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      backgroundColor: "white",
+      color: "black",
+      borderColor: state.isFocused ? "#93c5fd" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(147,197,253,0.5)" : "none",
+    }),
+    singleValue: (base) => ({ ...base, color: "black" }),
+    input: (base) => ({ ...base, color: "black" }),
+    menu: (base) => ({ ...base, backgroundColor: "white", color: "black" }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isFocused ? "#f3f4f6" : "white",
+      color: "black",
+    }),
+  };
 
   const [openDocuments, setOpenDocuments] = useState(false);
 
@@ -178,7 +189,7 @@ function FoConTractDetail(props) {
   const totalAmountAfterTax = useMemo(() => {
     return totalAmountBeforeTax + totalVat;
   }, [totalAmountBeforeTax, totalVat]);
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = useState(false);
 
 
 
@@ -216,9 +227,13 @@ function FoConTractDetail(props) {
   // ==== Lưu số hợp đồng cũ ====== //
   const onFirstDataRendered = (params) => {
     const allColumns = params.api.getColumns();
+    if (!allColumns) return;
+
     const colIds = allColumns.map(col => col.getId());
-    params.columnApi.autoSizeColumns(colIds);
+    params.api.autoSizeColumns(colIds);
   };
+
+
 
   const oldContractNumberRef = useRef();
   useEffect(() => {
@@ -248,10 +263,6 @@ function FoConTractDetail(props) {
 
   // const openDrawer = () => setOpen(true);
   const closeDrawer = () => setOpen(false);
-  const VND = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  });
 
   function handleOpenEditDrawer() {
     if (formikRef.current) {
@@ -269,20 +280,52 @@ function FoConTractDetail(props) {
     }
     setOpen(true);
   }
+  const [simpleSiteList, setSimpleSiteList] = useState([]);
+
+  useEffect(() => {
+    const loadSites = async () => {
+      try {
+        const res = await axiosInstance.get("/sites/simple-list");
+        setSimpleSiteList(res.data);
+      } catch (e) {
+        console.log(e);
+        toast.error("Không load được danh sách site");
+      }
+    };
+    loadSites();
+  }, []);
 
 
-  const handleEdit = (lineId) => {
-    // TODO: mở modal/sửa tuyến
-    console.log("edit line", lineId);
-  };
+  const handleEditLineSubmit = useCallback(async (values) => {
+    try {
+      const payload = {
+        id: values.id,
+        coreQuantity: Number(values.coreQuantity),
+        cost: Number(values.cost),
+        designedDistance: Number(values.designedDistance || 0),
+        finalDistance: Number(values.finalDistance || 0),
+        active: !!values.active,
+        note: values.note || "",
+        nearSite: { id: Number(values.nearSite.id) },
+        farSite: { id: Number(values.farSite.id) },
+        foContract: { id: Number(contractDetail.id) },
+      };
 
-  const handleDeleteRouter = (lineId) => {
-    // TODO: gọi API xoá tuyến
-    console.log("delete line", lineId);
-  };
+      await axiosInstance.put(`/hired-fos/${values.id}`, payload);
+      toast.success("Cập nhật tuyến FO thành công");
+
+      setOpenEditLine(false);
+      setEditLine(null);
+
+      await loadContract();
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.response?.data?.message || "Cập nhật tuyến FO thất bại");
+    }
+  }, [axiosInstance, contractDetail?.id, loadContract]);
 
 
-  const handleEditSubmit = async (values) => {
+  const handleUpdateContract = async (values) => {
     try {
       const oldNumber = oldContractNumberRef.current;
       const newNumber = values.contractNumber;
@@ -296,6 +339,7 @@ function FoConTractDetail(props) {
 
       // 2️⃣ update các field khác
       await axiosInstance.put(`/contract/${id}`, {
+        contractNumber: values.contractNumber, 
         contractName: values.contractName,
         signedDate: values.signedDate,
         endDate: values.endDate,
@@ -334,6 +378,7 @@ function FoConTractDetail(props) {
       toast.error("Cập nhật thất bại");
     }
   };
+
 
 
   function handleCloseEditDrawer(resetForm) {
@@ -540,7 +585,7 @@ function FoConTractDetail(props) {
             }}
 
             enableReinitialize={true}
-            onSubmit={handleEditSubmit}
+            onSubmit={handleUpdateContract}
             validationSchema={Yup.object({
               contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
               contractName: Yup.string().required("Yêu cầu nhập tên hợp đồng"),
@@ -809,6 +854,197 @@ function FoConTractDetail(props) {
           </div>
         </Drawer>
       )}
+      <Dialog open={openEditLine} handler={() => setOpenEditLine(false)} size="sm">
+        <div className="max-h-[90vh] overflow-y-auto p-3">
+          <DialogHeader className="relative m-0 block">
+            <Typography variant="h4" color="blue">
+              Cập nhật tuyến FO
+            </Typography>
+            <IconButton
+              size="sm"
+              variant="text"
+              className="!absolute right-3.5 top-3.5"
+              onClick={() => setOpenEditLine(false)}
+            >
+              ✖
+            </IconButton>
+          </DialogHeader>
+
+          {editLine && (
+            <Formik
+              enableReinitialize
+              initialValues={{
+                id: editLine.id,
+                active: editLine.active ?? true,
+
+                // nearSite / farSite phải là object theo DTO
+                nearSite: { id: editLine.nearSite?.id || "" },
+                farSite: { id: editLine.farSite?.id || "" },
+
+                coreQuantity: editLine.coreQuantity ?? 1,
+                cost: editLine.cost ?? 0,
+                designedDistance: editLine.designedDistance ?? 0,
+                finalDistance: editLine.finalDistance ?? 0,
+                note: editLine.note || "",
+              }}
+              validationSchema={Yup.object({
+                coreQuantity: Yup.number().moreThan(0, "Yêu cầu lớn hơn 0").required("Nhập số core"),
+                nearSite: Yup.object({ id: Yup.string().required("Chọn Site A") }),
+                farSite: Yup.object({ id: Yup.string().required("Chọn Site B") }),
+                cost: Yup.number().min(0, ">= 0").required("Nhập đơn giá"),
+                finalDistance: Yup.number().min(0, ">= 0").required("Nhập chiều dài thực tế"),
+              })}
+              onSubmit={async (values) => {
+                try {
+                  const payload = {
+                    id: values.id,
+                    coreQuantity: Number(values.coreQuantity),
+                    cost: Number(values.cost),
+                    designedDistance: Number(values.designedDistance || 0),
+                    finalDistance: Number(values.finalDistance || 0),
+                    active: !!values.active,
+                    note: values.note || "",
+
+                    nearSite: { id: Number(values.nearSite.id) },
+                    farSite: { id: Number(values.farSite.id) },
+
+                    // 🔥 đảm bảo contract luôn đúng
+                    foContract: { id: Number(contractDetail.id) },
+                  };
+
+                  await axiosInstance.put(`/hired-fos/${values.id}`, payload);
+
+                  toast.success("Cập nhật tuyến FO thành công");
+                  setOpenEditLine(false);
+                  setEditLine(null);
+
+                  // ✅ refresh UI ngay
+                  await loadContract();
+                } catch (err) {
+                  console.log(err);
+                  toast.error(err?.response?.data?.message || "Cập nhật thất bại");
+                }
+              }}
+            >
+              {({ values, setFieldValue }) => (
+                <Form>
+                  <DialogBody className="space-y-4 pb-6">
+
+                    {/* ACTIVE */}
+                    <div className="flex justify-end">
+                      <Switch
+                        checked={values.active}
+                        color="green"
+                        label={
+                          <Typography variant="h6">
+                            {values.active ? "Đang hoạt động" : "Không hoạt động"}
+                          </Typography>
+                        }
+                        onChange={(e) => setFieldValue("active", e.target.checked)}
+                      />
+                    </div>
+
+                    {/* SITE A */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Site A</label>
+
+                      <Select
+                        value={simpleSiteList.find(s => s.id === Number(values.nearSite.id)) || null}
+                        onChange={(opt) => setFieldValue("nearSite.id", opt.id)}
+                        options={simpleSiteList}
+                        getOptionLabel={(opt) => opt.siteId}
+                        getOptionValue={(opt) => String(opt.id)}
+                        placeholder="Chọn Site A"
+                        styles={whiteSelectStyles}   // ✅ đổi nền trắng chữ đen
+                        components={{ MenuList: CustomMenuList }}
+                      />
+
+                      <ErrorMessage name="nearSite.id" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* SITE B */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Site B</label>
+
+                      <Select
+                        value={simpleSiteList.find(s => s.id === Number(values.farSite.id)) || null}
+                        onChange={(opt) => setFieldValue("farSite.id", opt.id)}
+                        options={simpleSiteList}
+                        getOptionLabel={(opt) => opt.siteId}
+                        getOptionValue={(opt) => String(opt.id)}
+                        placeholder="Chọn Site B"
+                        styles={whiteSelectStyles}   // ✅ đổi nền trắng chữ đen
+                        components={{ MenuList: CustomMenuList }}
+                      />
+
+                      <ErrorMessage name="farSite.id" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* CORE */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Số core</label>
+                      <Field
+                        name="coreQuantity"
+                        type="number"
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                      <ErrorMessage name="coreQuantity" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* FINAL DIST */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Chiều dài thực tế (km)</label>
+                      <Field
+                        name="finalDistance"
+                        type="number"
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                      <ErrorMessage name="finalDistance" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* COST */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Đơn giá (VNĐ/km)</label>
+                      <Field
+                        name="cost"
+                        type="number"
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                      <ErrorMessage name="cost" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* NOTE */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Ghi chú</label>
+                      <Field
+                        as="textarea"
+                        name="note"
+                        rows={3}
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                    </div>
+
+                  </DialogBody>
+
+                  <DialogFooter>
+                    <Button variant="text" onClick={() => setOpenEditLine(false)}>
+                      Đóng
+                    </Button>
+                    <Button color="red" type="submit">
+                      Cập nhật
+                    </Button>
+                  </DialogFooter>
+                </Form>
+              )}
+            </Formik>
+          )}
+        </div>
+      </Dialog>
 
       </React.Fragment>
       </div> 
