@@ -1,66 +1,70 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
-import { useAuth } from "../contexts/authContext"; // Import your custom hook for authentication
-const BASE_URL = import.meta.env.VITE_BE_API_URL;
-function useSites() { 
-  const [sites, setSites] = useState([]);  
+import { useAuth } from "../contexts/authContext";
+import * as siteService from "../services/SiteService";
+
+/**
+ * Hook quản lý logic cho Site
+ * Pattern: Component -> Hook -> Service -> Axios
+ */
+function useSites() {
+  const [sites, setSites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const {axiosPrivate} = useAuth();  
-  const fetchSites = async () => {
+  const { axiosPrivate } = useAuth();
+
+  const fetchSites = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosPrivate.get(`${BASE_URL}/sites`);
-      setSites(response.data);
+      const data = await siteService.getAllSites(axiosPrivate);
+      setSites(data);
       setError(null);
     } catch (err) {
       setError(err);
       toast.error("Lỗi khi tải danh sách trạm!");
     } finally {
       setIsLoading(false);
-    }    
-  };
+    }
+  }, [axiosPrivate]);
 
-  // Hàm để tạo mới (Create)
   const createSite = async (newSite) => {
+    setIsLoading(true);
     try {
-      const response = await axiosPrivate.post(`${BASE_URL}/sites`, newSite);
-      // Cập nhật lại state sau khi thêm thành công
-      setSites((prevSites) => [...prevSites, response.data]);
+      const createdData = await siteService.createSite(axiosPrivate, newSite);
+      setSites((prev) => [...prev, createdData]);
       toast.success("Tạo trạm mới thành công!");
+      return createdData;
     } catch (err) {
       setError(err);
-      toast.error("Lỗi khi tạo trạm mới!");
+      const message = err.response?.data?.message || "Lỗi khi tạo trạm mới!";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm để chỉnh sửa (Update)
-  const updateSite = async (id, updatedSite) => {
+  const updateSite = async (id, updatedData) => {
+    setIsLoading(true);
     try {
-      const response = await axiosPrivate.put(`${BASE_URL}/sites/${id}`, updatedSite);
-      setSites((prevSites) =>
-        prevSites.map((site) =>
-          site.id === id ? response.data : site
-        )
+      const responseData = await siteService.updateSite(axiosPrivate, id, updatedData);
+      setSites((prev) =>
+        prev.map((item) => (item.id === id ? responseData : item))
       );
       toast.success("Cập nhật trạm thành công!");
     } catch (err) {
       setError(err);
-      toast.error("Lỗi khi cập nhật thông tin trạm!");
+      const message = err.response?.data?.message || "Lỗi khi cập nhật trạm!";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm để xóa (Delete)
   const deleteSite = async (id) => {
+    setIsLoading(true);
     try {
-      await axiosPrivate.delete(`${BASE_URL}/sites/${id}`);
-      setSites((prevSites) =>
-        prevSites.filter((site) => site.id !== id)
-      );
+      await siteService.deleteSite(axiosPrivate, id);
+      setSites((prev) => prev.filter((item) => item.id !== id));
       toast.success("Xóa trạm thành công!");
     } catch (err) {
       setError(err);
@@ -70,11 +74,11 @@ function useSites() {
     }
   };
 
-  // Gọi hàm fetchContracts khi component mount lần đầu
   useEffect(() => {
     fetchSites();
-  }, []);
+  }, [fetchSites]);
 
-  return { sites, isLoading, createSite, updateSite, deleteSite, fetchSites };
+  return { sites, isLoading, error, createSite, updateSite, deleteSite, fetchSites };
 }
+
 export default useSites;

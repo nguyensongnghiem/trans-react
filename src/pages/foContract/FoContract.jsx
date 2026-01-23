@@ -69,7 +69,7 @@ function FoContract() {
   const [excelErrors, setExcelErrors] = useState({});
   const [excelChecked, setExcelChecked] = useState(false); // đã bấm kiểm tra
   const [excelSuccess, setExcelSuccess] = useState(false); // excel hợp lệ
-  
+
   // // ===== STEP 3 – Save DB =====
   const [excelRows, setExcelRows] = useState([]); // dữ liệu excel hợp lệ
   const [saving, setSaving] = useState(false);
@@ -90,21 +90,21 @@ function FoContract() {
     getAllTransmissionOwner();
   }, []);
 
-  
+
   const loadContractList = async () => {
-  setIsLoading(true);
-  try {
-    const response = await axiosInstance.get("/contract/all");
-    setContractList(response.data);
-  } catch (e) {
-    console.log(e);
-  } finally {
-    setIsLoading(false);
-  }
-};
-useEffect(() => {
-  loadContractList();
-}, []);
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.get("/contract/all");
+      setContractList(response.data);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadContractList();
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -152,7 +152,7 @@ useEffect(() => {
       return acc;
     },
     {}
-  );  
+  );
   const contractArrayByYearWithSearch = Object.entries(
     contractByYearWithSearch
   ).map(([year, count]) => ({
@@ -182,7 +182,7 @@ useEffect(() => {
     }
 
     try {
-      const res = await checkExcelImport(excelFile, contractNumber);
+      const res = await checkExcelImport(axiosInstance, excelFile, contractNumber);
 
       setExcelErrors({});
       setExcelSuccess(true);
@@ -252,7 +252,7 @@ useEffect(() => {
 
       // ✅ TỰ ĐỘNG MỞ HỢP ĐỒNG VỪA TẠO
       setSelectedId(res.data.id);
-  
+
       // Đợi render list xong
       setTimeout(() => {
         setSelectedId(res.data.id);
@@ -328,143 +328,144 @@ useEffect(() => {
 
   // const handleNext = () => !isLastStep && setActiveStep((cur) => cur + 1);
   const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
-  const handleNext = async (values, {validateForm, setErrors, setTouched}) => {
+  const handleNext = async (values, { validateForm, setErrors, setTouched }) => {
     console.log(values);
-    const errors = await validateForm();    
-    console.log(errors);    
-    if (Object.keys(errors).length === 0) {      
+    const errors = await validateForm();
+    console.log(errors);
+    if (Object.keys(errors).length === 0) {
       !isLastStep && setActiveStep((cur) => cur + 1);
     }
     else {
-      setTouched( {contractNumber: true,
+      setTouched({
+        contractNumber: true,
         contractName: true,
         signedDate: true,
         endDate: true,
         contractUrl: true,
         transmissionOwner: { id: true }
-        });
+      });
       setErrors(errors)
     }
   };
   // if (isLoading) return <Spinner />;
-return (
-  <div className={`flex gap-2 p-3`}>
-    <div className="flex-shrink-0">
-      <div className="h-[calc(100vh-2rem)] max-w-max overflow-y-auto border-r-2 border-r-gray-300 p-1">
-        <div className="mb-1 flex items-center gap-2 justify-between">
-          <Typography variant="h6" color="blue-gray">
-            Danh mục hợp đồng
-          </Typography>
+  return (
+    <div className={`flex gap-2 p-3`}>
+      <div className="flex-shrink-0">
+        <div className="h-[calc(100vh-2rem)] max-w-max overflow-y-auto border-r-2 border-r-gray-300 p-1">
+          <div className="mb-1 flex items-center gap-2 justify-between">
+            <Typography variant="h6" color="blue-gray">
+              Danh mục hợp đồng
+            </Typography>
 
-          <div className="flex gap-2">
-            {/* Nút thêm mới: icon + giống code mới */}
-            <Button
-              variant="gradient"
-              size="sm"
-              className="flex items-center gap-2"
-              onClick={handleOpenCreate}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              {/* Nút thêm mới: icon + giống code mới */}
+              <Button
+                variant="gradient"
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={handleOpenCreate}
+              >
+                <PlusIcon className="h-4 w-4" />
+              </Button>
 
-            {/* Nút xuất Excel giống code mới */}
-            <Button
-              variant="gradient"
-              size="sm"
-              color="green"
-              className="flex items-center gap-2"
-              onClick={onBtnExport}
-            >
-              Xuất Excel
-            </Button>
+              {/* Nút xuất Excel giống code mới */}
+              <Button
+                variant="gradient"
+                size="sm"
+                color="green"
+                className="flex items-center gap-2"
+                onClick={onBtnExport}
+              >
+                Xuất Excel
+              </Button>
+            </div>
           </div>
+
+          <div className="p-0">
+            <Input
+              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+              variant="standard"
+              label="Tìm theo tên hợp đồng"
+              onChange={handleContractSearch}
+              value={searchTerm}
+            />
+          </div>
+
+          {/* Danh sách hợp đồng theo năm */}
+          <List className="p-0">
+            {contractArrayByYearWithSearch.map((item) => (
+              <Accordion
+                key={item.year}
+                open={!!open[item.year]}
+                icon={
+                  <Chip
+                    value={item.count}
+                    variant="ghost"
+                    size="sm"
+                    color="blue"
+                    className="rounded-full"
+                  />
+                }
+              >
+                <ListItem className="p-0">
+                  <AccordionHeader
+                    onClick={() => handleOpen(item.year)}
+                    className="border-b-0 p-2"
+                  >
+                    <ListItemPrefix>
+                      <HashtagIcon className="h-3 w-3" />
+                    </ListItemPrefix>
+                    <Typography color="blue" className="mr-auto font-semibold text-sm">
+                      {item.year}
+                    </Typography>
+                  </AccordionHeader>
+                </ListItem>
+
+                <AccordionBody className="py-0.5">
+                  <List className="p-0">
+                    {contractListWithSearch
+                      .filter(
+                        (contract) =>
+                          new Date(contract.signedDate).getFullYear() === item.year
+                      )
+                      .map((contract) => (
+                        <ListItem
+                          key={contract.id}
+                          selected={contract.id === selectedId}
+                          onClick={() => setSelectedId(contract.id)}
+                        >
+                          <ListItemPrefix>
+                            <ArrowRightCircleIcon strokeWidth={2} className="h-2 w-2" />
+                          </ListItemPrefix>
+                          <Typography color="blue-gray" className="text-sm">
+                            {contract.contractNumber}
+                          </Typography>
+                        </ListItem>
+                      ))}
+                  </List>
+                </AccordionBody>
+              </Accordion>
+            ))}
+          </List>
         </div>
-
-        <div className="p-0">
-          <Input
-            icon={<MagnifyingGlassIcon className="h-4 w-4" />}
-            variant="standard"
-            label="Tìm theo tên hợp đồng"
-            onChange={handleContractSearch}
-            value={searchTerm}
-          />
-        </div>
-
-        {/* Danh sách hợp đồng theo năm */}
-        <List className="p-0">
-          {contractArrayByYearWithSearch.map((item) => (
-            <Accordion
-              key={item.year}
-              open={!!open[item.year]}
-              icon={
-                <Chip
-                  value={item.count}
-                  variant="ghost"
-                  size="sm"
-                  color="blue"
-                  className="rounded-full"
-                />
-              }
-            >
-              <ListItem className="p-0">
-                <AccordionHeader
-                  onClick={() => handleOpen(item.year)}
-                  className="border-b-0 p-2"
-                >
-                  <ListItemPrefix>
-                    <HashtagIcon className="h-3 w-3" />
-                  </ListItemPrefix>
-                  <Typography color="blue" className="mr-auto font-semibold text-sm">
-                    {item.year}
-                  </Typography>
-                </AccordionHeader>
-              </ListItem>
-
-              <AccordionBody className="py-0.5">
-                <List className="p-0">
-                  {contractListWithSearch
-                    .filter(
-                      (contract) =>
-                        new Date(contract.signedDate).getFullYear() === item.year
-                    )
-                    .map((contract) => (
-                      <ListItem
-                        key={contract.id}
-                        selected={contract.id === selectedId}
-                        onClick={() => setSelectedId(contract.id)}
-                      >
-                        <ListItemPrefix>
-                          <ArrowRightCircleIcon strokeWidth={2} className="h-2 w-2" />
-                        </ListItemPrefix>
-                        <Typography color="blue-gray" className="text-sm">
-                          {contract.contractNumber}
-                        </Typography>
-                      </ListItem>
-                    ))}
-                </List>
-              </AccordionBody>
-            </Accordion>
-          ))}
-        </List>
       </div>
-    </div>
-    <div className="flex-grow">
-      {selectedId && (
-        <FoConTractDetail
-          id={selectedId}
-          onUpdated={async (updatedContract) => {
-            // refresh lại danh mục hợp đồng
-            await loadContractList();
+      <div className="flex-grow">
+        {selectedId && (
+          <FoConTractDetail
+            id={selectedId}
+            onUpdated={async (updatedContract) => {
+              // refresh lại danh mục hợp đồng
+              await loadContractList();
 
-            // (tuỳ chọn) đảm bảo năm của hợp đồng đang mở
-            if (updatedContract?.signedDate) {
-              const year = new Date(updatedContract.signedDate).getFullYear();
-              setOpen((prev) => ({ ...prev, [year]: true }));
-            }
-          }}
-        />
-      )}
-    </div>
+              // (tuỳ chọn) đảm bảo năm của hợp đồng đang mở
+              if (updatedContract?.signedDate) {
+                const year = new Date(updatedContract.signedDate).getFullYear();
+                setOpen((prev) => ({ ...prev, [year]: true }));
+              }
+            }}
+          />
+        )}
+      </div>
       {/* Modal Thêm mới */}
 
       <Dialog
@@ -532,12 +533,12 @@ return (
             </Stepper>
             <div className="mt-10">
               <div>
-                  <Formik
-                    initialValues={newContract}
-                    validationSchema={validateStep1}
-                    enableReinitialize
-                  >
-                  {({ setFieldValue,  values, setErrors, isSubmitting, validateForm,setTouched }) => (
+                <Formik
+                  initialValues={newContract}
+                  validationSchema={validateStep1}
+                  enableReinitialize
+                >
+                  {({ setFieldValue, values, setErrors, isSubmitting, validateForm, setTouched }) => (
                     <Form className="flex flex-initial flex-shrink flex-col">
                       <div className="space-y-4 pb-6 overflow-visible">
                         {activeStep === 0 && (
@@ -701,165 +702,165 @@ return (
                           </Card>
                         )}
                         {activeStep === 1 && (
-                        <Card className="shadow-none">
+                          <Card className="shadow-none">
 
-                          {/* ===== GRID: Upload + Button ===== */}
-                          <div className="grid grid-cols-12 gap-3 p-2">
+                            {/* ===== GRID: Upload + Button ===== */}
+                            <div className="grid grid-cols-12 gap-3 p-2">
 
-                            {/* Upload Excel */}
-                            <div className="col-span-full mt-6 flex flex-col gap-2">
-                              <label className="text-slate-400 font-semibold">
-                                Tải file Excel theo mẫu (
-                                <a
-                                  href="/template/Danh sach FO trien khai v2.xlsx"
-                                  title="Tải file Excel chuẩn để nhập dữ liệu"
-                                  className="text-blue-500 italic hover:underline"
-                                >
-                                  File mẫu
-                                </a>
-                                )
-                              </label>
-
-                              <input
-                                type="file"
-                                accept=".xlsx"
-                                className="w-full rounded border"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    setExcelFile(file);
-                                    setExcelErrors({});
-                                    setExcelRows([]);
-                                    setExcelChecked(false);
-                                    setExcelSuccess(false);
-                                  }
-                                }}
-                              />
-                              {excelFile && (
-                                <div className="mt-2 text-sm text-blue-700">
-                                  📊 File Excel: <b>{excelFile.name}</b>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Button kiểm tra */}
-                            <div className="col-span-full">
-                              <Button
-                                type="button"
-                                color="blue"
-                                onClick={() => handleCheckExcel(values.contractNumber)}
-                              >
-                                KIỂM TRA DỮ LIỆU EXCEL
-                              </Button>
-
-                              {excelSuccess && (
-                                <div className="mt-3 rounded border border-green-300 bg-green-50 p-3 text-green-700">
-                                  ✔ File Excel hợp lệ, bạn có thể tiếp tục bước tiếp theo
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* ===== ERROR BOX – NGOÀI GRID ===== */}
-                          {activeStep === 1 && excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
-
-                            <div className="mt-6 w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
-
-                              {/* Header */}
-                              <div className="mb-3 text-lg font-semibold text-red-600">
-                                ❌ Dữ liệu Excel không hợp lệ
-                              </div>
-                              {/* Total lỗi */}
-                              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                                Tổng số dòng lỗi
-                                <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
-                                  {Object.keys(excelErrors).length}
-                                </span>
-                              </div>
-
-                              {/* Scroll bên trong */}
-                              <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
-
-                                {Object.entries(excelErrors).map(([row, rowError]) => (
-                                  <div
-                                    key={row}
-                                    className="rounded border border-red-200 bg-white p-4"
+                              {/* Upload Excel */}
+                              <div className="col-span-full mt-6 flex flex-col gap-2">
+                                <label className="text-slate-400 font-semibold">
+                                  Tải file Excel theo mẫu (
+                                  <a
+                                    href="/template/Danh sach FO trien khai v2.xlsx"
+                                    title="Tải file Excel chuẩn để nhập dữ liệu"
+                                    className="text-blue-500 italic hover:underline"
                                   >
-                                    <div className="mb-2 font-semibold text-red-700">
-                                    ⚠️ Dòng {row}
-                                    </div>
+                                    File mẫu
+                                  </a>
+                                  )
+                                </label>
 
-                                    <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
-                                      {rowError.errors.map((err, idx) => (
-                                        <li key={idx}>
-                                          <span className="font-semibold text-red-600">
-                                            {err.column}:
-                                          </span>{" "}
-                                          {err.message}
-                                        </li>
-                                      ))}
-                                    </ul>
+                                <input
+                                  type="file"
+                                  accept=".xlsx"
+                                  className="w-full rounded border"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      setExcelFile(file);
+                                      setExcelErrors({});
+                                      setExcelRows([]);
+                                      setExcelChecked(false);
+                                      setExcelSuccess(false);
+                                    }
+                                  }}
+                                />
+                                {excelFile && (
+                                  <div className="mt-2 text-sm text-blue-700">
+                                    📊 File Excel: <b>{excelFile.name}</b>
                                   </div>
-                                ))}
+                                )}
+                              </div>
+
+                              {/* Button kiểm tra */}
+                              <div className="col-span-full">
+                                <Button
+                                  type="button"
+                                  color="blue"
+                                  onClick={() => handleCheckExcel(values.contractNumber)}
+                                >
+                                  KIỂM TRA DỮ LIỆU EXCEL
+                                </Button>
+
+                                {excelSuccess && (
+                                  <div className="mt-3 rounded border border-green-300 bg-green-50 p-3 text-green-700">
+                                    ✔ File Excel hợp lệ, bạn có thể tiếp tục bước tiếp theo
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          )}
 
-                        </Card>
+                            {/* ===== ERROR BOX – NGOÀI GRID ===== */}
+                            {activeStep === 1 && excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
+
+                              <div className="mt-6 w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
+
+                                {/* Header */}
+                                <div className="mb-3 text-lg font-semibold text-red-600">
+                                  ❌ Dữ liệu Excel không hợp lệ
+                                </div>
+                                {/* Total lỗi */}
+                                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                  Tổng số dòng lỗi
+                                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
+                                    {Object.keys(excelErrors).length}
+                                  </span>
+                                </div>
+
+                                {/* Scroll bên trong */}
+                                <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
+
+                                  {Object.entries(excelErrors).map(([row, rowError]) => (
+                                    <div
+                                      key={row}
+                                      className="rounded border border-red-200 bg-white p-4"
+                                    >
+                                      <div className="mb-2 font-semibold text-red-700">
+                                        ⚠️ Dòng {row}
+                                      </div>
+
+                                      <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
+                                        {rowError.errors.map((err, idx) => (
+                                          <li key={idx}>
+                                            <span className="font-semibold text-red-600">
+                                              {err.column}:
+                                            </span>{" "}
+                                            {err.message}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                          </Card>
                         )}
                         {activeStep === 2 && (
-                        <Card className="shadow-none">
-                          <div className="p-4 space-y-4">
+                          <Card className="shadow-none">
+                            <div className="p-4 space-y-4">
 
-                            <Typography variant="h5" color="blue-gray">
-                              Xác nhận dữ liệu trước khi lưu
-                            </Typography>
+                              <Typography variant="h5" color="blue-gray">
+                                Xác nhận dữ liệu trước khi lưu
+                              </Typography>
 
-                            {/* ===== Thông tin hợp đồng ===== */}
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div><b>Số hợp đồng:</b> {values.contractNumber}</div>
-                              <div><b>Tên hợp đồng:</b> {values.contractName}</div>
-                              <div><b>Ngày ký:</b> {values.signedDate}</div>
-                              <div><b>Ngày hết hạn:</b> {values.endDate}</div>
-                            </div>
+                              {/* ===== Thông tin hợp đồng ===== */}
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div><b>Số hợp đồng:</b> {values.contractNumber}</div>
+                                <div><b>Tên hợp đồng:</b> {values.contractName}</div>
+                                <div><b>Ngày ký:</b> {values.signedDate}</div>
+                                <div><b>Ngày hết hạn:</b> {values.endDate}</div>
+                              </div>
 
-                            {/* ===== Danh sách tuyến FO ===== */}
-                            <div className="overflow-x-auto">
-                              <table className="w-full border text-sm">
-                                <thead className="bg-gray-100">
-                                  <tr>
-                                    <th className="border px-2 py-1">#</th>
-                                    {/* <th className="border px-2 py-1">Tỉnh</th> */}
-                                    <th className="border px-2 py-1">Trạm đầu</th>
-                                    <th className="border px-2 py-1">Trạm cuối</th>
-                                    <th className="border px-2 py-1">Core</th>
-                                    <th className="border px-2 py-1">Thiết kế</th>
-                                    <th className="border px-2 py-1">Thực tế</th>
-                                    <th className="border px-2 py-1">Đơn giá</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {excelRows.map((r, i) => (
-                                    <tr key={i}>
-                                      <td className="border px-2 py-1">{i + 1}</td>
-                                      {/* <td className="border px-2 py-1">{r.provinceName}</td> */}
-                                      <td className="border px-2 py-1">{r.nearSite}</td>
-                                      <td className="border px-2 py-1">{r.farSite}</td>
-                                      <td className="border px-2 py-1">{r.coreQuantity}</td>
-                                      <td className="border px-2 py-1">{r.designedDistance}</td>
-                                      <td className="border px-2 py-1">{r.finalDistance}</td>
-                                      <td className="border px-2 py-1">{r.cost}</td>
+                              {/* ===== Danh sách tuyến FO ===== */}
+                              <div className="overflow-x-auto">
+                                <table className="w-full border text-sm">
+                                  <thead className="bg-gray-100">
+                                    <tr>
+                                      <th className="border px-2 py-1">#</th>
+                                      {/* <th className="border px-2 py-1">Tỉnh</th> */}
+                                      <th className="border px-2 py-1">Trạm đầu</th>
+                                      <th className="border px-2 py-1">Trạm cuối</th>
+                                      <th className="border px-2 py-1">Core</th>
+                                      <th className="border px-2 py-1">Thiết kế</th>
+                                      <th className="border px-2 py-1">Thực tế</th>
+                                      <th className="border px-2 py-1">Đơn giá</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
+                                  </thead>
+                                  <tbody>
+                                    {excelRows.map((r, i) => (
+                                      <tr key={i}>
+                                        <td className="border px-2 py-1">{i + 1}</td>
+                                        {/* <td className="border px-2 py-1">{r.provinceName}</td> */}
+                                        <td className="border px-2 py-1">{r.nearSite}</td>
+                                        <td className="border px-2 py-1">{r.farSite}</td>
+                                        <td className="border px-2 py-1">{r.coreQuantity}</td>
+                                        <td className="border px-2 py-1">{r.designedDistance}</td>
+                                        <td className="border px-2 py-1">{r.finalDistance}</td>
+                                        <td className="border px-2 py-1">{r.cost}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
 
-                          </div>
-                        </Card>
-                      )}
+                            </div>
+                          </Card>
+                        )}
                       </div>
-                        
+
                       {/* <DialogBody className="space-y-4 pb-6"></DialogBody> */}
                       <div className="flex justify-between">
                         <Button onClick={handlePrev} disabled={isFirstStep}>
@@ -896,18 +897,18 @@ return (
                           >
                             Tiếp theo
                           </Button>
-                        : <Button
+                          : <Button
                             size="md"
                             color="green"
                             disabled={saving}
                             onClick={() => handleFinish(values)}
                           >
                             {saving ? "Đang lưu..." : "Hoàn thành"}
-                          </Button>  
+                          </Button>
                         }
                       </div>
                     </Form>
-                  )}                  
+                  )}
                 </Formik>
               </div>
             </div>

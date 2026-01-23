@@ -1,17 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
-import { useAuth } from "../contexts/authContext"; // Import your custom hook for authentication
-const BASE_URL = import.meta.env.VITE_BE_API_URL;
-function useRouters() { 
-  const [routers, setRouters] = useState([]);  
+import { useAuth } from "../contexts/authContext";
+import * as routerService from "../services/RouterService";
+
+/**
+ * Hook quản lý logic cho Router
+ * Pattern: Component -> Hook -> Service -> Axios
+ */
+function useRouters() {
+  const [routers, setRouters] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const {axiosPrivate} = useAuth();  
-  const fetchRouters = async () => {
+  const { axiosPrivate } = useAuth();
+
+  const fetchRouters = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosPrivate.get(`${BASE_URL}/routers`);
-      setRouters(response.data);
+      const data = await routerService.getRouters(axiosPrivate);
+      setRouters(data);
       setError(null);
     } catch (err) {
       setError(err);
@@ -19,74 +25,69 @@ function useRouters() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [axiosPrivate]);
 
-  // Hàm để tạo mới (Create)
   const createRouter = async (newRouter) => {
     setIsLoading(true);
-    try {      
-      const response = await axiosPrivate.post(`${BASE_URL}/routers`, newRouter);
-      // Cập nhật lại state sau khi thêm thành công
-      console.log("New router created:", response.data);
-      setRouters((prevRouters) => [...prevRouters, response.data]);
+    try {
+      const createdData = await routerService.createRouter(axiosPrivate, newRouter);
+      setRouters((prev) => [...prev, createdData]);
       toast.success("Tạo router mới thành công!");
-    } catch (error) {
-      setError(error);
-      toast.error(error.response.data.message, {
-        zIndex: 9999,
-      });
-    }
-    finally {
+      return createdData;
+    } catch (err) {
+      setError(err);
+      const message = err.response?.data?.message || "Lỗi khi tạo router!";
+      toast.error(message);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm để chỉnh sửa (Update)
-  const updateRouter = async (id, updatedRouter) => {
+  const updateRouter = async (id, updatedData) => {
     setIsLoading(true);
     try {
-      console.log("Updating router with ID:", id, "Data:", updatedRouter);
-      const response = await axiosPrivate.put(`${BASE_URL}/routers/${id}`, updatedRouter);
-      setRouters((prevRouters) =>
-        prevRouters.map((router) =>
-          router.id === id ? updatedRouter : router
-        )
+      const responseData = await routerService.updateRouter(axiosPrivate, id, updatedData);
+      setRouters((prev) =>
+        prev.map((item) => (item.id === id ? responseData : item))
       );
       toast.success("Cập nhật router thành công!");
-    } catch (error) {
-      setError(error);
-          if (error.response && error.response.status === 400) {
-        toast.error(error.data.message);
-      } else {
-        toast.error("Có lỗi bất thường xảy ra");
-      }      
-    }
-    finally {
+    } catch (err) {
+      setError(err);
+      const message = err.response?.data?.message || "Lỗi khi cập nhật router!";
+      toast.error(message);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm để xóa (Delete)
   const deleteRouter = async (id) => {
     setIsLoading(true);
     try {
-      await axiosPrivate.delete(`${BASE_URL}/routers/${id}`);
-      setRouters((prevRouters) =>
-        prevRouters.filter((router) => router.id !== id)
-      );
+      await routerService.deleteRouter(axiosPrivate, id);
+      setRouters((prev) => prev.filter((item) => item.id !== id));
       toast.success("Xóa router thành công!");
     } catch (err) {
       setError(err);
-      toast.error("Lỗi khi xóa router khỏi hệ thống!");
-    }
-    finally {
+      toast.error("Lỗi khi xóa router!");
+    } finally {
       setIsLoading(false);
     }
-  };  
+  };
+
   useEffect(() => {
     fetchRouters();
-  }, []);
+  }, [fetchRouters]);
 
-  return { routers, setRouters, isLoading,  createRouter, updateRouter, deleteRouter, fetchRouters };
+  return {
+    routers,
+    setRouters,
+    isLoading,
+    error,
+    createRouter,
+    updateRouter,
+    deleteRouter,
+    fetchRouters,
+  };
 }
+
 export default useRouters;

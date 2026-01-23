@@ -1,24 +1,36 @@
-import axios from "../libs/axios/axiosConfig";
-import { toast } from "react-toastify";
+// RouterService.js
 
+/**
+ * Service xử lý các API liên quan đến Router
+ * Pattern: Service nhận axiosInstance để thực hiện request
+ */
 
-export const getRouterById = async (id) => {
-    try {
-        let response = await axios.get(`/routers/${id}`);
-        return response.data;
-    } catch (error) {
-        toast.error(error.response.data.message)
-        console.log(error);
-    }
+export const getRouters = async (axiosInstance) => {
+    const response = await axiosInstance.get('/routers');
+    return response.data;
 };
 
-export const getTotalRouters = async () => {
-    try {
-        let response = await axios.get(`/routers/reports/total`);
-        console.log(response.data);
-        return response.data;
-    } catch (error) {
-        toast.error(error.response.data.message)
-        console.log(error);
-    }
+export const getRouterById = async (axiosInstance, id) => {
+    const response = await axiosInstance.get(`/routers/${id}`);
+    return response.data;
+};
+
+export const createRouter = async (axiosInstance, newRouter) => {
+    const response = await axiosInstance.post('/routers', newRouter);
+    return response.data;
+};
+
+export const updateRouter = async (axiosInstance, id, updatedRouter) => {
+    const response = await axiosInstance.put(`/routers/${id}`, updatedRouter);
+    return response.data;
+};
+
+export const deleteRouter = async (axiosInstance, id) => {
+    await axiosInstance.delete(`/routers/${id}`);
+    return true;
+};
+
+export const getTotalRouters = async (axiosInstance) => {
+    const response = await axiosInstance.get(`/routers/reports/total`);
+    return response.data;
 };

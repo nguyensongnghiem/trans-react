@@ -1,12 +1,5 @@
-import axios from "../libs/axios/axiosConfig";
-export const getAll = async () => {
-    const query = `/transmissionOwners`
-    try {
-        let result = await axios.get(query);
-
-        return result.data
-    } catch (error) {
-        console.log(error)
-    }
-
-}
+// TransmissionOwnerService.js
+export const getAll = async (axiosInstance) => {
+    const response = await axiosInstance.get('/transmissionOwners');
+    return response.data;
+};

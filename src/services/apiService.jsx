@@ -1,89 +1,35 @@
-import axios from "axios";
-import { toast } from "react-toastify";
+// apiService.js
 
-const BASE_URL = import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
+/**
+ * Generic API helpers that work with any axios instance
+ * Use these for common operations like file uploads
+ */
 
-/* ======================
-   AXIOS INSTANCE CHUẨN
-====================== */
-const api = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-});
-
-/* ======================
-   GET
-====================== */
-export const fetchData = async (endpoint) => {
-  try {
-    const res = await api.get(endpoint);
-    return res.data;
-  } catch (error) {
-    console.error("❌ GET ERROR:", error);
-    throw error;
-  }
+export const fetchData = async (axiosInstance, endpoint) => {
+  const res = await axiosInstance.get(endpoint);
+  return res.data;
 };
 
-/* ======================
-   POST JSON
-====================== */
-export const postData = async (endpoint, data) => {
-  try {
-    const res = await api.post(endpoint, data);
-    return res.data;
-  } catch (error) {
-    console.error("❌ POST ERROR:", error);
-    throw error;
-  }
+export const postData = async (axiosInstance, endpoint, data) => {
+  const res = await axiosInstance.post(endpoint, data);
+  return res.data;
 };
 
-/* ======================
-   POST FILE / EXCEL
-====================== */
-export const postFile = async (endpoint, formData) => {
-  try {
-    const res = await api.post(endpoint, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return res.data;
-  } catch (error) {
-    console.error("❌ POST FILE ERROR:", error);
-    throw error;
-  }
+export const postFile = async (axiosInstance, endpoint, formData) => {
+  const res = await axiosInstance.post(endpoint, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
 };
 
-/* ======================
-   PUT
-====================== */
-export const putData = async (endpoint, data) => {
-  try {
-    const res = await api.put(endpoint, data);
-    return res.data;
-  } catch (error) {
-    console.error("❌ PUT ERROR:", error);
-    throw error;
-  }
+export const putData = async (axiosInstance, endpoint, data) => {
+  const res = await axiosInstance.put(endpoint, data);
+  return res.data;
 };
 
-/* ======================
-   DELETE
-====================== */
-export const deleteData = async (endpoint) => {
-  try {
-    await api.delete(endpoint);
-  } catch (error) {
-    console.error("❌ DELETE ERROR:", error);
-    throw error;
-  }
+export const deleteData = async (axiosInstance, endpoint) => {
+  await axiosInstance.delete(endpoint);
+  return true;
 };
-const apiService = {
-  fetchData,
-  postData,
-  putData,
-  deleteData,
-  postFile,
-};
-
-export default apiService;

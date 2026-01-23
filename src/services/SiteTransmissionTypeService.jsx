@@ -1,49 +1,20 @@
-import axios from "../libs/axios/axiosConfig";
-export const getAll = async () => {
-    const query = `/site-transmission-types`
-    try {
-        let result = await axios.get(query);
+// SiteTransmissionTypeService.js
+export const getAll = async (axiosInstance) => {
+    const response = await axiosInstance.get('/site-transmission-types');
+    return response.data;
+};
 
-        return result.data
-    } catch (error) {
-        console.log(error)
-    }
+export const getTotalFoSite = async (axiosInstance) => {
+    const response = await axiosInstance.get('/site-transmission-types/totalFo');
+    return response.data;
+};
 
-}
+export const getTotalMWSite = async (axiosInstance) => {
+    const response = await axiosInstance.get('/site-transmission-types/totalMW');
+    return response.data;
+};
 
-export const getTotalFoSite = async () => {
-    const query = `/site-transmission-types/totalFo`
-    try {
-        let result = await axios.get(query);
-
-        return result.data
-    } catch (error) {
-        console.log(error)
-    }
-
-}
-
-
-export const getTotalMWSite = async () => {
-    const query = `/site-transmission-types/totalMW`
-    try {
-        let result = await axios.get(query);
-
-        return result.data
-    } catch (error) {
-        console.log(error)
-    }
-
-}
-
-export const getTotalLLSite = async () => {
-    const query = `/site-transmission-types/totalLL`
-    try {
-        let result = await axios.get(query);
-
-        return result.data
-    } catch (error) {
-        console.log(error)
-    }
-
-}
+export const getTotalLLSite = async (axiosInstance) => {
+    const response = await axiosInstance.get('/site-transmission-types/totalLL');
+    return response.data;
+};
