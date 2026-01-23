@@ -11,6 +11,8 @@ import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import { MagnifyingGlassIcon, FunnelIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { Input } from "@material-tailwind/react";
 
 import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
@@ -48,6 +50,15 @@ function RouterList() {
   const [isLoading, setIsLoading] = useState(true);
   const [editRouter, setEditRouter] = useState({});
   const [editId, setEditId] = useState(null);
+  const [provinces, setProvinces] = useState([]);
+  const [transmissionOwners, setTransmissionOwners] = useState([]);
+  const [filters, setFilters] = useState({
+    province: null,
+    routerType: null,
+    transDeviceType: null,
+    transmissionOwner: null,
+    search: "",
+  });
   const axiosInstance = useAxiosPrivate();
   const [colDefs, setColDefs] = useState([
     { headerName: "Tỉnh", valueGetter: (p) => p.data.site.province?.name },
@@ -152,6 +163,37 @@ function RouterList() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const [provRes, ownerRes] = await Promise.all([
+          axiosInstance.get("provinces"),
+          axiosInstance.get("transmissionOwners"),
+        ]);
+        setProvinces(provRes.data);
+        setTransmissionOwners(ownerRes.data);
+      } catch (error) {
+        console.error("Error fetching filter metadata:", error);
+      }
+    };
+    fetchMetadata();
+  }, []);
+
+  const filteredRouters = useMemo(() => {
+    return routerList.filter((router) => {
+      const matchProvince = !filters.province || router.site?.province?.id === filters.province.id;
+      const matchRouterType = !filters.routerType || router.routerType?.id === filters.routerType.id;
+      const matchTransDeviceType = !filters.transDeviceType || router.transmissionDeviceType?.id === filters.transDeviceType.id;
+      const matchTransmissionOwner = !filters.transmissionOwner || router.site?.transmissionOwner?.id === filters.transmissionOwner.id;
+      const matchSearch = !filters.search || 
+        (router.name?.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (router.ip?.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (router.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase()));
+
+      return matchProvince && matchRouterType && matchTransDeviceType && matchTransmissionOwner && matchSearch;
+    });
+  }, [routerList, filters]);
+
   const getRouterById = async (editId) => {
     try {
       const router = await axiosInstance.get(`routers/${editId}`);
@@ -235,10 +277,26 @@ function RouterList() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Routers");
     XLSX.writeFile(workbook, "RouterList.xlsx");
   };
+
+  const handleResetFilters = () => {
+    setFilters({
+      province: null,
+      routerType: null,
+      transDeviceType: null,
+      transmissionOwner: null,
+      search: "",
+    });
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Danh sách thiết bị</h1>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Danh sách thiết bị</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tổng số: <span className="font-semibold text-blue-600">{filteredRouters.length}</span> / {routerList.length} thiết bị
+          </p>
+        </div>
         <div className="flex gap-2">
           <CustomButton
             className="flex items-center gap-2"
@@ -259,13 +317,137 @@ function RouterList() {
           </CustomButton>
         </div>
       </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
+        <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
+          <FunnelIcon className="h-5 w-5" />
+          <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
+          {(filters.province || filters.routerType || filters.transDeviceType || filters.transmissionOwner || filters.search) && (
+            <button 
+              onClick={handleResetFilters}
+              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+            >
+              <ArrowPathIcon className="h-3 w-3" />
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tỉnh</span>
+            <Select
+              isClearable
+              placeholder="Tất cả tỉnh"
+              className="text-sm"
+              options={provinces}
+              getOptionLabel={(option) => option.name}
+              getOptionValue={(option) => option.id}
+              value={filters.province}
+              onChange={(val) => setFilters(prev => ({ ...prev, province: val }))}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: '40px',
+                  borderRadius: '8px',
+                  borderColor: '#e2e8f0',
+                })
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Loại Router</span>
+            <Select
+              isClearable
+              placeholder="Tất cả loại"
+              className="text-sm"
+              options={routerTypeList}
+              getOptionLabel={(option) => option.name}
+              getOptionValue={(option) => option.id}
+              value={filters.routerType}
+              onChange={(val) => setFilters(prev => ({ ...prev, routerType: val }))}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: '40px',
+                  borderRadius: '8px',
+                  borderColor: '#e2e8f0',
+                })
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Thiết bị TD</span>
+            <Select
+              isClearable
+              placeholder="Tất cả thiết bị"
+              className="text-sm"
+              options={transmissionDeviceTypeList}
+              getOptionLabel={(option) => option.name}
+              getOptionValue={(option) => option.id}
+              value={filters.transDeviceType}
+              onChange={(val) => setFilters(prev => ({ ...prev, transDeviceType: val }))}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: '40px',
+                  borderRadius: '8px',
+                  borderColor: '#e2e8f0',
+                })
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Nhà cung cấp</span>
+            <Select
+              isClearable
+              placeholder="Tất cả nhà CC"
+              className="text-sm"
+              options={transmissionOwners}
+              getOptionLabel={(option) => option.name}
+              getOptionValue={(option) => option.id}
+              value={filters.transmissionOwner}
+              onChange={(val) => setFilters(prev => ({ ...prev, transmissionOwner: val }))}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: '40px',
+                  borderRadius: '8px',
+                  borderColor: '#e2e8f0',
+                })
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tìm kiếm nhanh</span>
+            <Input
+              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+              placeholder="Site ID, Tên, IP..."
+              className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg"
+              labelProps={{
+                className: "before:content-none after:content-none",
+              }}
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              containerProps={{
+                className: "min-w-0"
+              }}
+            />
+          </div>
+        </div>
+      </div>
       <div
         className="ag-theme-quartz" // applying the Data Grid theme
         style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
       >
         <AgGridReact
           ref={gridRef}
-          rowData={routerList}
+          rowData={filteredRouters}
           columnDefs={colDefs}
           defaultColDef={defaultColDef}
           pagination={true}
