@@ -1,6 +1,6 @@
-import axios from "axios";
+import axios from "../libs/axios/axiosConfig";
 export const getAll = async () => {
-    const query = `http://localhost:8080/api/transmissionOwners`
+    const query = `/transmissionOwners`
     try {
         let result = await axios.get(query);
 

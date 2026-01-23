@@ -1,7 +1,7 @@
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
 
 /* ======================
    AXIOS INSTANCE CHUẨN

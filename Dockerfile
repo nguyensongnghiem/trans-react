@@ -4,6 +4,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Receive build arguments from docker-compose
+ARG VITE_BE_API_URL
+ENV VITE_BE_API_URL=$VITE_BE_API_URL
+
 RUN npm run build
 
 FROM nginx:alpine

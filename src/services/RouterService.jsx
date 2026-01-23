@@ -1,10 +1,10 @@
-import axios from "axios";
+import axios from "../libs/axios/axiosConfig";
 import { toast } from "react-toastify";
 
 
 export const getRouterById = async (id) => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/routers/${id}`);
+        let response = await axios.get(`/routers/${id}`);
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
@@ -14,9 +14,8 @@ export const getRouterById = async (id) => {
 
 export const getTotalRouters = async () => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/routers/reports/total`);
+        let response = await axios.get(`/routers/reports/total`);
         console.log(response.data);
-        (response.data)
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)

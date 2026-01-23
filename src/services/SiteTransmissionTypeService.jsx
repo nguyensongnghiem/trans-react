@@ -1,6 +1,6 @@
-import axios from "axios";
+import axios from "../libs/axios/axiosConfig";
 export const getAll = async () => {
-    const query = `http://localhost:8080/api/site-transmission-types`
+    const query = `/site-transmission-types`
     try {
         let result = await axios.get(query);
 
@@ -12,7 +12,7 @@ export const getAll = async () => {
 }
 
 export const getTotalFoSite = async () => {
-    const query = `http://localhost:8080/api/site-transmission-types/totalFo`
+    const query = `/site-transmission-types/totalFo`
     try {
         let result = await axios.get(query);
 
@@ -25,7 +25,7 @@ export const getTotalFoSite = async () => {
 
 
 export const getTotalMWSite = async () => {
-    const query = `http://localhost:8080/api/site-transmission-types/totalMW`
+    const query = `/site-transmission-types/totalMW`
     try {
         let result = await axios.get(query);
 
@@ -37,7 +37,7 @@ export const getTotalMWSite = async () => {
 }
 
 export const getTotalLLSite = async () => {
-    const query = `http://localhost:8080/api/site-transmission-types/totalLL`
+    const query = `/site-transmission-types/totalLL`
     try {
         let result = await axios.get(query);
 

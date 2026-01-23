@@ -1,10 +1,10 @@
-import axios from "axios";
+import axios from "../libs/axios/axiosConfig";
 import { toast } from "react-toastify";
 import { postFile } from "./apiService";
 
 
 export const getAllSites = async (setError) => {
-    const query = `http://localhost:8080/api/sites`
+    const query = `/sites`
     try {
         let result = await axios.get(query);
 
@@ -15,7 +15,7 @@ export const getAllSites = async (setError) => {
 
 }
 export const searchSites = async (page, siteId, transOwner, transType, province) => {
-    const query = `http://localhost:8080/api/sites/search?page=${page}&siteId=${siteId}&transOwner=${transOwner}&transType=${transType}&province=${province}`
+    const query = `/sites/search?page=${page}&siteId=${siteId}&transOwner=${transOwner}&transType=${transType}&province=${province}`
     try {
         let result = await axios.get(query);
 
@@ -30,7 +30,7 @@ export const searchSites = async (page, siteId, transOwner, transType, province)
 export const saveSite = async (site, setErrors) => {
 
     try {
-        let response = await axios.post("http://localhost:8080/api/sites", site);
+        let response = await axios.post("/sites", site);
         toast.success(site.id !== null ? 'Cập nhật thành công' : 'Thêm mới thành công');
         return true;
     } catch (error) {
@@ -48,7 +48,7 @@ export const saveSite = async (site, setErrors) => {
 
 export const deleteSite = async (id) => {
     try {
-        let response = await axios.delete(`http://localhost:8080/api/sites/${id}`);
+        let response = await axios.delete(`/sites/${id}`);
         toast.success("Đã xóa thành công !")
         return true;
     } catch (error) {
@@ -59,7 +59,7 @@ export const deleteSite = async (id) => {
 
 export const getSiteById = async (id) => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/sites/${id}`);
+        let response = await axios.get(`/sites/${id}`);
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
@@ -69,7 +69,7 @@ export const getSiteById = async (id) => {
 
 export const getTotalSites = async () => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/sites/reports/total`);
+        let response = await axios.get(`/sites/reports/total`);
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
@@ -79,7 +79,7 @@ export const getTotalSites = async () => {
 
 export const countByProvince = async (province) => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/sites/reports/count-by-province?province=${province}`);
+        let response = await axios.get(`/sites/reports/count-by-province?province=${province}`);
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
@@ -89,7 +89,7 @@ export const countByProvince = async (province) => {
 
 export const countByTransmissionType = async (transmissionType) => {
     try {
-        let response = await axios.get(`http://localhost:8080/api/sites/reports/count-by-transmission-type?transmission-type=${transmissionType}`);
+        let response = await axios.get(`/sites/reports/count-by-transmission-type?transmission-type=${transmissionType}`);
         return response.data;
     } catch (error) {
         toast.error(error.response.data.message)
@@ -98,9 +98,9 @@ export const countByTransmissionType = async (transmissionType) => {
 };
 
 export const checkExcelImport = async (file, contractNumber) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("contractNumber", contractNumber.toUpperCase());
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("contractNumber", contractNumber.toUpperCase());
 
-  return postFile("contract/import-excel/check", formData);
+    return postFile("contract/import-excel/check", formData);
 };
