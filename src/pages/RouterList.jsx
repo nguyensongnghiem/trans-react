@@ -47,16 +47,16 @@ function RouterList() {
   const [isLoading, setIsLoading] = useState(true);
   const [editRouter, setEditRouter] = useState({});
   const [editId, setEditId] = useState(null);
-  const [provinces, setProvinces] = useState([]);
   const [filters, setFilters] = useState({
     province: null,
+    vendor: null,
     routerType: null,
     transDeviceType: null,
     status: null,
     search: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 15;
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const axiosInstance = useAxiosPrivate();
   const {
     simpleSites: simpleSiteList,
@@ -99,21 +99,52 @@ function RouterList() {
     loadData();
   }, []);
 
-  useEffect(() => {
-    const fetchMetadata = async () => {
-      try {
-        const provRes = await axiosInstance.get("provinces");
-        setProvinces(provRes.data);
-      } catch (error) {
-        console.error("Error fetching filter metadata:", error);
-      }
+
+  // Linked Filter Logic: Derive options from current filtered result (ignoring own filter)
+  const filterOptions = useMemo(() => {
+    const getUnique = (arr, keyPath) => {
+      const seen = new Set();
+      return arr.reduce((acc, item) => {
+        const val = keyPath.split('.').reduce((o, i) => o?.[i], item);
+        if (val && !seen.has(val.id)) {
+          seen.add(val.id);
+          acc.push(val);
+        }
+        return acc;
+      }, []).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     };
-    fetchMetadata();
-  }, []);
+
+    // Helper to filter routers by all filters EXCEPT specialized ones
+    const getFilteredFor = (excludeKey) => {
+      return routerList.filter(r => {
+        if (excludeKey !== 'province' && filters.province && r.site?.province?.id !== filters.province.id) return false;
+        if (excludeKey !== 'vendor' && filters.vendor && r.routerType?.vendor?.id !== filters.vendor.id) return false;
+        if (excludeKey !== 'routerType' && filters.routerType && r.routerType?.id !== filters.routerType.id) return false;
+        if (excludeKey !== 'transDeviceType' && filters.transDeviceType && r.transmissionDeviceType?.id !== filters.transDeviceType.id) return false;
+        if (excludeKey !== 'status' && filters.status && r.active !== filters.status.value) return false;
+        if (excludeKey !== 'search' && filters.search) {
+          const search = filters.search.toLowerCase();
+          return (r.name?.toLowerCase().includes(search)) ||
+                 (r.ip?.toLowerCase().includes(search)) ||
+                 (r.site?.siteId?.toLowerCase().includes(search)) ||
+                 (r.note?.toLowerCase().includes(search));
+        }
+        return true;
+      });
+    };
+
+    return {
+      provinces: getUnique(getFilteredFor('province'), 'site.province'),
+      vendors: getUnique(getFilteredFor('vendor'), 'routerType.vendor'),
+      routerTypes: getUnique(getFilteredFor('routerType'), 'routerType'),
+      transDeviceTypes: getUnique(getFilteredFor('transDeviceType'), 'transmissionDeviceType'),
+    };
+  }, [routerList, filters]);
 
   const filteredRouters = useMemo(() => {
     return routerList.filter((router) => {
       const matchProvince = !filters.province || router.site?.province?.id === filters.province.id;
+      const matchVendor = !filters.vendor || router.routerType?.vendor?.id === filters.vendor.id;
       const matchRouterType = !filters.routerType || router.routerType?.id === filters.routerType.id;
       const matchTransDeviceType = !filters.transDeviceType || router.transmissionDeviceType?.id === filters.transDeviceType.id;
       const matchStatus = !filters.status || router.active === filters.status.value;
@@ -123,7 +154,7 @@ function RouterList() {
         (router.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase())) ||
         (router.note?.toLowerCase().includes(filters.search.toLowerCase()));
 
-      return matchProvince && matchRouterType && matchTransDeviceType && matchStatus && matchSearch;
+      return matchProvince && matchVendor && matchRouterType && matchTransDeviceType && matchStatus && matchSearch;
     });
   }, [routerList, filters]);
 
@@ -204,6 +235,7 @@ function RouterList() {
       "Loại Router": router.routerType?.name,
       "Loại thiết bị TD": router.transmissionDeviceType?.name,
       "IP quản lý": router.ip,
+      "Nhà sản xuất": router.routerType?.vendor?.name,
       "Trạng thái": router.active ? "Hoạt động" : "Không hoạt động",
       "Ghi chú": router.note,
     }));
@@ -217,6 +249,7 @@ function RouterList() {
   const handleResetFilters = () => {
     setFilters({
       province: null,
+      vendor: null,
       routerType: null,
       transDeviceType: null,
       status: null,
@@ -259,7 +292,7 @@ function RouterList() {
         <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
           <FunnelIcon className="h-5 w-5" />
           <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
-          {(filters.province || filters.routerType || filters.transDeviceType || filters.status || filters.search) && (
+          {(filters.province || filters.vendor || filters.routerType || filters.transDeviceType || filters.status || filters.search) && (
             <button 
               onClick={handleResetFilters}
               className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
@@ -270,18 +303,42 @@ function RouterList() {
           )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tỉnh</span>
             <Select
               isClearable
               placeholder="Tất cả tỉnh"
               className="text-sm"
-              options={provinces}
+              options={filterOptions.provinces}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.province}
               onChange={(val) => setFilters(prev => ({ ...prev, province: val }))}
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: '40px',
+                  borderRadius: '8px',
+                  borderColor: '#e2e8f0',
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Nhà sản xuất</span>
+            <Select
+              isClearable
+              placeholder="Tất cả hãng"
+              className="text-sm"
+              options={filterOptions.vendors}
+              getOptionLabel={(option) => option.name}
+              getOptionValue={(option) => option.id}
+              value={filters.vendor}
+              onChange={(val) => setFilters(prev => ({ ...prev, vendor: val }))}
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
@@ -301,7 +358,7 @@ function RouterList() {
               isClearable
               placeholder="Tất cả loại"
               className="text-sm"
-              options={routerTypeList}
+              options={filterOptions.routerTypes}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.routerType}
@@ -325,7 +382,7 @@ function RouterList() {
               isClearable
               placeholder="Tất cả thiết bị"
               className="text-sm"
-              options={transmissionDeviceTypeList}
+              options={filterOptions.transDeviceTypes}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.transDeviceType}
@@ -404,6 +461,9 @@ function RouterList() {
                   <Typography variant="small" color="blue-gray" className="font-bold leading-none">Loại Router</Typography>
                 </th>
                 <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Nhà sản xuất</Typography>
+                </th>
+                <th className="p-4">
                   <Typography variant="small" color="blue-gray" className="font-bold leading-none">Loại thiết bị TD</Typography>
                 </th>
                 <th className="p-4">
@@ -434,6 +494,9 @@ function RouterList() {
                   </td>
                   <td className="p-4">
                     <Typography variant="small" color="blue-gray" className="font-normal">{router.routerType?.name}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">{router.routerType?.vendor?.name || "-"}</Typography>
                   </td>
                   <td className="p-4">
                     <Typography variant="small" color="blue-gray" className="font-normal">{router.transmissionDeviceType?.name}</Typography>
@@ -486,9 +549,26 @@ function RouterList() {
         
         {/* Pagination Controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
-          <Typography variant="small" color="blue-gray" className="font-normal">
-            Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages || 1}</span>
-          </Typography>
+          <div className="flex items-center gap-4">
+            <Typography variant="small" color="blue-gray" className="font-normal">
+              Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages || 1}</span>
+            </Typography>
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+              <span className="text-xs text-blue-gray-400 font-medium">Hiển thị:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="text-xs border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-blue-500 transition-colors"
+              >
+                {[5, 10, 15, 20, 50, 100].map(val => (
+                  <option key={val} value={val}>{val} dòng</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="flex gap-2">
             <MTIconButton
               variant="outlined"
