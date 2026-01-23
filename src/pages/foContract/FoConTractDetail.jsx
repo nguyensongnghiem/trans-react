@@ -1,26 +1,24 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { fetchData, postData, putData } from "../../services/apiService.jsx";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState, useRef, useCallback  } from "react";
+import Select from "react-select";
 import { DateTime } from "luxon";
-import { contractDB } from "../../services/firebase/config.js";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { CustomMenuList } from "../CustomList.jsx"; 
+// import { contractDB } from "../../services/firebase/config.js";
 import { clsx } from "clsx";
 import {
   Button,
   Card,
   CardBody,
-  CardFooter,
-  CardHeader,
   Chip,
+  Dialog,
   DialogBody,
   DialogFooter,
+  DialogHeader,
   Drawer,
   IconButton,
-  Input, Switch,
-  Textarea,
+  Switch,
   Typography,
 } from "@material-tailwind/react";
-import { DocumentIcon } from "@heroicons/react/24/solid";
+import FoContractDocuments from "./FoContractDocuments";
 import InfoCard from "./component/InfoCard.jsx";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid/index.js";
 import { AgGridReact } from "ag-grid-react";
@@ -31,159 +29,378 @@ import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { toast } from "react-toastify"; // Optional Theme applied to the Data Grid
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+import "../../Styles/aggrid.css";
 function FoConTractDetail(props) {
-  const { id } = props;
+  const { id, onUpdated } = props;
   const [contractDetail, setContractDetail] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const axiosInstance = useAxiosPrivate();
-  const [colDefs, setColDefs] = useState([
+  const VND = useMemo(() => new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }), []);
+  const [openEditLine, setOpenEditLine] = useState(false);
+  const [editLine, setEditLine] = useState(null);
+
+  const handleEdit = useCallback(async (lineId) => {
+    try {
+      const res = await axiosInstance.get(`/hired-fos/${lineId}`);
+      setEditLine(res.data);
+      setOpenEditLine(true);
+    } catch (err) {
+      console.log(err);
+      toast.error("Không load được dữ liệu tuyến FO");
+    }
+  }, [axiosInstance]);
+  
+  const handleDeleteRouter = async (lineId) => {
+    console.log("delete", lineId);
+    // sau này gọi API delete ở đây
+  };
+
+  const colDefs = useMemo(() => ([
     {
-      headerName: "Tỉnh",
-      valueGetter: (p) => p.data.nearSite?.province.name,
+      headerName: "STT",
+      width: 70,
+      valueGetter: (params) => params.node.rowIndex + 1,
+      sortable: false,
+      filter: false,
     },
     {
       headerName: "Tên tuyến",
-      valueGetter: (p) =>
-        p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
+      valueGetter: (p) => p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
     },
-    { headerName: "Khoảng cách", valueGetter: (p) => p.data.finalDistance },
+    {
+      headerName: "Tỉnh",
+      valueGetter: (p) => p.data.nearSite?.province?.name || "",
+      headerClass: "ag-center-header",
+      cellClass: "ag-center-cell",
+    },
+    {
+      headerName: "Khoảng cách",
+      width: 130,
+      valueGetter: (p) => p.data.finalDistance,
+      headerClass: "ag-center-header",
+      cellClass: "ag-center-cell",
+    },
     {
       headerName: "Số core",
+      width: 100,
       valueGetter: (p) => p.data.coreQuantity,
+      headerClass: "ag-center-header",
+      cellClass: "ag-center-cell",
     },
     {
       headerName: "Đơn giá/km",
       valueGetter: (p) => p.data.cost,
-      cellRenderer: (p) => VND.format(p.data.cost),
+      cellRenderer: (p) => VND.format(p.data.cost || 0),
+      headerClass: "ag-center-header",
+      cellClass: "ag-center-cell",
+    },
+    {
+      headerName: "Thành tiền / Tháng",
+      valueGetter: (p) => (p.data.cost || 0) * (p.data.finalDistance || 0),
+      cellRenderer: (p) => VND.format(p.value || 0),
+      headerClass: "ag-center-header",
+      cellClass: "ag-center-cell",
     },
     {
       headerName: "Trạng thái",
-      valueGetter: (p) => p.data.active,
-      cellRenderer: (p) => {
-        return (
-          <span className={`inline-flex items-center ${p.data.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}>
-            <span className={`w-2 h-2 me-1 ${p.data.active ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></span>
-            {p.data.active ? 'Hoạt động' : 'Không hoạt động'}
-          </span>
-        );
-      },
+      cellRenderer: (p) => (
+        <span className={`inline-flex items-center ${
+          p.data.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+        } text-xs font-medium px-2.5 py-0.5 rounded-full`}>
+          <span className={`w-2 h-2 me-1 ${
+            p.data.active ? "bg-green-500" : "bg-red-500"
+          } rounded-full`}></span>
+          {p.data.active ? "Hoạt động" : "Không hoạt động"}
+        </span>
+      ),
     },
     { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
     {
       headerName: "Tác động",
       cellRenderer: (p) => (
         <div className="flex items-center justify-center">
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleEdit(p.data.id)}
-          >
+          <IconButton variant="text" size="sm" onClick={() => handleEdit(p.data.id)}>
             <PencilIcon className="h-4 w-4 text-gray-900" />
           </IconButton>
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleDeleteRouter(p.data.id)}
-          >
+          <IconButton variant="text" size="sm" onClick={() => handleDeleteRouter(p.data.id)}>
             <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
           </IconButton>
         </div>
       ),
     },
-  ]);
-  const defaultColDef = useMemo(() => {
-    return {
-      flex: 1,
-      sortable: true,
-      filter: true,
-      floatingFilter: true,
-    };
-  });
+  ]), [VND, handleEdit]);
 
-  const [open, setOpen] = React.useState(false);
 
+  const whiteSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      backgroundColor: "white",
+      color: "black",
+      borderColor: state.isFocused ? "#93c5fd" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(147,197,253,0.5)" : "none",
+    }),
+    singleValue: (base) => ({ ...base, color: "black" }),
+    input: (base) => ({ ...base, color: "black" }),
+    menu: (base) => ({ ...base, backgroundColor: "white", color: "black" }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isFocused ? "#f3f4f6" : "white",
+      color: "black",
+    }),
+  };
+
+  const [openDocuments, setOpenDocuments] = useState(false);
+
+  const defaultColDef = useMemo(() => ({
+    resizable: true,
+    sortable: true,
+    filter: true,
+    floatingFilter: true,
+    minWidth: 60,
+  }), []);
+
+  const totalKm = useMemo(() => {
+  if (!contractDetail?.hiredFoLineList) return 0;
+
+  return contractDetail.hiredFoLineList.reduce(
+    (sum, item) => sum + (item.finalDistance || 0),
+    0
+  );
+  }, [contractDetail]);
+
+  const totalAmountBeforeTax = useMemo(() => {
+    if (!contractDetail?.hiredFoLineList) return 0;
+
+    return contractDetail.hiredFoLineList.reduce(
+      (sum, item) =>
+        sum + (item.cost || 0) * (item.finalDistance || 0),
+      0
+    );
+  }, [contractDetail]);
+  
+  const totalVat = useMemo(() => {
+    return totalAmountBeforeTax * 0.1;
+  }, [totalAmountBeforeTax]);
+
+  
+  const totalAmountAfterTax = useMemo(() => {
+    return totalAmountBeforeTax + totalVat;
+  }, [totalAmountBeforeTax, totalVat]);
+    const [open, setOpen] = useState(false);
+
+
+
+  const [owners, setOwners] = useState([]);
   useEffect(() => {
-    const loadContract = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axiosInstance.get(`contracts/${id}`);
-        setContractDetail(response.data);
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadContract();
-  }, [id]);
+    axiosInstance.get("/transmission-owner/all")
+      .then(res => setOwners(res.data))
+      .catch(err => console.error(err));
+  }, []);
 
-  const fetchFile = async () => {
+  // ==== STATE Up file PDF ====== //
+  const [pdfFiles, setPdfFiles] = useState([]);
 
-    const fileRef = ref(contractDB, contractDetail.contractUrl); // Đường dẫn đến file trong Firebase Storage
+  // ==== STATE QUẢN LÝ PDF ====== //
+  const [pdfList, setPdfList] = useState([]);
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const loadPdfList = async (contractId) => {
+  try {
+    const res = await axiosInstance.get(
+      `/contract/${contractId}/pdfs`
+    );
+    setPdfList(res.data);
+  } catch (err) {
+    console.error("Load pdf list error", err);
+  }
+};
+  useEffect(() => {
+    // 🔴 RESET TRƯỚC
+    setPdfList([]);
+    if (contractDetail?.id) {
+      loadPdfList(contractDetail.id);
+    }
+  }, [contractDetail?.id]);
 
+  // ==== Lưu số hợp đồng cũ ====== //
+  const onFirstDataRendered = (params) => {
+    const allColumns = params.api.getColumns();
+    if (!allColumns) return;
+
+    const colIds = allColumns.map(col => col.getId());
+    params.api.autoSizeColumns(colIds);
+  };
+
+
+
+  const oldContractNumberRef = useRef();
+  useEffect(() => {
+    if (contractDetail?.contractNumber) {
+      oldContractNumberRef.current = contractDetail.contractNumber;
+    }
+  }, [contractDetail?.contractNumber]);
+
+
+ // ==== Refresh web ====== //
+  const formikRef = useRef(null);
+  const loadContract = async () => {
+    setIsLoading(true);
     try {
-      const url = await getDownloadURL(fileRef);
-      const response = await axiosInstance.get(url);
-      const blob = await response.data.blob();
-      const file = new File([blob], 'contract_document.pdf', { type: blob.type }); // Đặt tên và kiểu file
-      return file
-    } catch (error) {
-      console.error("Error fetching file:", error);
+      const res = await axiosInstance.get(`/contracts/${id}`);
+      setContractDetail({ ...res.data }); // tạo reference mới
+    } catch (err) {
+      console.error("Load contract error", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (contractDetail) {
-    const currentContractPdf = fetchFile()
-  }
+  useEffect(() => {
+    loadContract();
+  }, [id]);
 
-  const openDrawer = () => setOpen(true);
+  // const openDrawer = () => setOpen(true);
   const closeDrawer = () => setOpen(false);
-  const VND = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  });
 
   function handleOpenEditDrawer() {
-    openDrawer();
+    if (formikRef.current) {
+      formikRef.current.resetForm({
+        values: {
+          id: contractDetail.id,
+          contractNumber: contractDetail.contractNumber,
+          contractName: contractDetail.contractName,
+          signedDate: contractDetail.signedDate,
+          endDate: contractDetail.endDate,
+          active: contractDetail.active,
+          contractUrl: null,
+        }
+      });
+    }
+    setOpen(true);
   }
+  const [simpleSiteList, setSimpleSiteList] = useState([]);
 
-  async function handleEditSubmit(value) {
-    console.log(value);
-    if (typeof value.contractUrl !== "string") {
-      console.log("upload lên firebase");
-      const contractPdf = ref(
-        contractDB,
-        `contracts/${value.contractUrl.name}`,
-      );
+  useEffect(() => {
+    const loadSites = async () => {
       try {
-        await uploadBytes(contractPdf, value.contractUrl);
-        const url = await getDownloadURL(contractPdf);
-        value.contractUrl = url;
+        const res = await axiosInstance.get("/sites/simple-list");
+        setSimpleSiteList(res.data);
       } catch (e) {
-        if (e.message) toast.error(e.message);
+        console.log(e);
+        toast.error("Không load được danh sách site");
+      }
+    };
+    loadSites();
+  }, []);
+
+
+  const handleEditLineSubmit = useCallback(async (values) => {
+    try {
+      const payload = {
+        id: values.id,
+        coreQuantity: Number(values.coreQuantity),
+        cost: Number(values.cost),
+        designedDistance: Number(values.designedDistance || 0),
+        finalDistance: Number(values.finalDistance || 0),
+        active: !!values.active,
+        note: values.note || "",
+        nearSite: { id: Number(values.nearSite.id) },
+        farSite: { id: Number(values.farSite.id) },
+        foContract: { id: Number(contractDetail.id) },
+      };
+
+      await axiosInstance.put(`/hired-fos/${values.id}`, payload);
+      toast.success("Cập nhật tuyến FO thành công");
+
+      setOpenEditLine(false);
+      setEditLine(null);
+
+      await loadContract();
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.response?.data?.message || "Cập nhật tuyến FO thất bại");
+    }
+  }, [axiosInstance, contractDetail?.id, loadContract]);
+
+
+  const handleUpdateContract = async (values) => {
+    try {
+      const oldNumber = oldContractNumberRef.current;
+      const newNumber = values.contractNumber;
+
+      // 1️⃣ NẾU ĐỔI SỐ HỢP ĐỒNG → RENAME FOLDER
+      if (oldNumber !== newNumber) {
+        await axiosInstance.put(`/contract/${id}/change-number`, {
+          contractNumber: newNumber
+        });
       }
 
+      // 2️⃣ update các field khác
+      await axiosInstance.put(`/contract/${id}`, {
+        contractNumber: values.contractNumber, 
+        contractName: values.contractName,
+        signedDate: values.signedDate,
+        endDate: values.endDate,
+        active: values.active,
+        note: values.note,
+        transmissionOwnerId: values.transmissionOwnerId
+      });
+
+      // 3️⃣ UPLOAD PDF (NẾU CÓ)
+      if (pdfFiles.length > 0) {
+        const formData = new FormData();
+        pdfFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        await axiosInstance.post(
+          `/contract/${values.id}/upload-pdfs`,
+          formData
+        );
+      }
+
+      toast.success("Cập nhật thành công");
+      setPdfFiles([]);
+      closeDrawer();
+      await loadContract();
+      // refresh luôn danh mục hợp đồng bên trái
+      if (typeof onUpdated === "function") {
+        onUpdated({
+          id: values.id,
+          contractNumber: values.contractNumber,
+          signedDate: values.signedDate,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Cập nhật thất bại");
     }
+  };
 
-    const { hiredFoLineList, ...submitContract } = value;
 
-    console.log(submitContract);
-    await axiosInstance.put(`contracts/${submitContract.id}`, submitContract);
-    setContractDetail({ ...contractDetail, ...submitContract });
-    // setContractDetail(submitContract)
-    handleCloseEditDrawer();
-    toast.success("Đã cập nhật thông tin hợp đồng");
-  }
 
   function handleCloseEditDrawer(resetForm) {
+    if (typeof resetForm === "function") {
+      resetForm();
+    }
+    setPdfFiles([]);
     closeDrawer();
   }
+
+
+
   if (!contractDetail) return <p>Không có thông tin </p>;
 
   function handleDismissEditDrawer(resetForm) {
-    resetForm()
+    resetForm();
+    setPdfFiles([]); // 🔴 BẮT BUỘC
     closeDrawer();
   }
+
+  
+  const hasPdf = (pdfList?.length ?? 0) > 0;
 
   return (
     <>
@@ -208,26 +425,31 @@ function FoConTractDetail(props) {
             </Typography>
           </div>
           <Button
-            className="flex gap-1 p-1.5 transition-all duration-200"
-            onClick={() => {
-              window.open(contractDetail.contractUrl, "_blank");
-            }}
+            title={hasPdf ? "Xem văn bản hợp đồng" : "Chưa có văn bản PDF"}
             variant="text"
-            color="blue"
             size="sm"
-            disabled={contractDetail.contractUrl === null}
+            className={clsx(
+              "p-2.5 transition-all duration-200",
+              hasPdf
+                ? "text-blue-500 hover:bg-blue-50"
+                : "text-gray-400 cursor-not-allowed"
+            )}
+            onClick={() => {
+              if (!hasPdf) {
+                toast.info("Hợp đồng chưa có văn bản PDF. Vui lòng cập nhập dữ liệu!");
+                return;
+              }
+              setOpenDocuments(true);
+            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              fill="#4b9bf3"
               viewBox="0 0 512 512"
-              strokeWidth="1.5"
-              stroke="currentColor"
               className="size-4"
+              fill="currentColor"   // ⭐ QUAN TRỌNG
             >
               <path d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z" />
             </svg>
-         
           </Button>
           <Button
             className="flex gap-1 p-1.5 transition-all duration-300"
@@ -267,18 +489,32 @@ function FoConTractDetail(props) {
             }
           />
         </div>
-        <Typography variant="h6" >{contractDetail.contractName}</Typography>
-        <div className="mb-3 grid grid-cols-4 gap-1">
+
+        {contractDetail.contractName && (
+          <Typography variant="h6">
+            {contractDetail.contractName}
+          </Typography>
+        )}
+        <CardBody>
+          <div className="mb-5 grid grid-cols-4 gap-2">
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
               <InfoCard
                 header="Số tuyến cáp"
                 content={contractDetail.hiredFoLineList.length}
               />
+              <InfoCard
+                header="Tổng số KM"
+                content={`${totalKm.toFixed(2)} km`}
+             />
             </div>
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
               <InfoCard
                 header="Nhà cung cấp"
-                content={contractDetail.transmissionOwner.name}
+                content={contractDetail.transmissionOwner?.name || ""}
+              />
+              <InfoCard
+                header="Tổng giá trị hợp đồng (trước thuế)"
+                content={VND.format(totalAmountBeforeTax)}
               />
             </div>
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
@@ -288,6 +524,10 @@ function FoConTractDetail(props) {
                   .setLocale("vn")
                   .toFormat("dd-MM-yyyy")}
               />
+              <InfoCard
+                header="Thuế VAT %"
+                content={VND.format(totalVat)}
+              />
             </div>
             <div className="col-span-4 lg:col-span-2 xl:col-span-1">
               <InfoCard
@@ -296,28 +536,34 @@ function FoConTractDetail(props) {
                   .setLocale("vn")
                   .toFormat("dd-MM-yyyy")}
               />
+
+              <InfoCard
+                  header="Tổng giá trị hợp đồng (sau thuế)"
+                  content={VND.format(totalAmountAfterTax)}
+                />
             </div>
           </div>
 
           <div
-            className="ag-theme-quartz w-full flex-grow" // applying the Data Grid theme
+            className="ag-theme-quartz h-[500px] w-full max-w-full overflow-hidden" // applying the Data Grid theme
           // style={{ height: "400px", width: "100%" }} // the Data Grid will fill the size of the parent container
           >
-            <AgGridReact
-              rowData={contractDetail.hiredFoLineList}
-              columnDefs={colDefs}
-              defaultColDef={defaultColDef}
-              className="overflow-x-auto"
-            />
+          <AgGridReact
+            rowData={contractDetail.hiredFoLineList}
+            columnDefs={colDefs}
+            defaultColDef={defaultColDef}
+            onFirstDataRendered={onFirstDataRendered} 
+          />
           </div>
-      </div>
-
+      </CardBody>
       {/*   Drawer edit hợp đồng */}
 
       <React.Fragment>
         <Drawer
           open={open}
-          onClose={handleCloseEditDrawer}
+          onClose={() =>
+            handleCloseEditDrawer(formikRef.current?.resetForm)
+          }
           placement="right"
           className="pt-4"
           size={500}
@@ -325,26 +571,26 @@ function FoConTractDetail(props) {
         >
 
           <Formik
-            onSubmit={handleEditSubmit}
+            innerRef={formikRef}
             initialValues={{
-              ...contractDetail,
+              id: contractDetail.id,
+              contractNumber: contractDetail.contractNumber,
+              contractName: contractDetail.contractName,
+              signedDate: contractDetail.signedDate,
+              endDate: contractDetail.endDate,
+              active: contractDetail.active,
+              contractUrl: null, // 🔥 FILE LUÔN LUÔN NULL
+              transmissionOwnerId: contractDetail.transmissionOwner?.id || "",
+              note: contractDetail.note || "",
             }}
+
             enableReinitialize={true}
+            onSubmit={handleUpdateContract}
             validationSchema={Yup.object({
               contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
               contractName: Yup.string().required("Yêu cầu nhập tên hợp đồng"),
               signedDate: Yup.date().required("Yêu cầu nhập ngày ký hợp đồng"),
-              contractUrl: Yup.mixed()
-                .required("Yêu cầu tải lên văn bản pdf")
-                .test("fileFormat", "Yêu cầu định dạng pdf", (value) => {
-                  if (value && typeof value === "object") {
-                    const supportedFormats = ["pdf"];
-                    return supportedFormats.includes(
-                      value.name.split(".").pop(),
-                    );
-                  }
-                  return true;
-                }),
+              contractUrl: Yup.mixed().nullable(),
               endDate: Yup.string().required(
                 "Yêu cầu nhập ngày kết thúc hợp đồng",
               ),
@@ -394,23 +640,15 @@ function FoConTractDetail(props) {
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex justify-end gap-2">
-                        {/*<label className="text-slate-400 font-semibold">*/}
-                        {/*  Trạng thái*/}
-                        {/*</label>*/}
-                        <Field
-                          as={Switch}
-                          name="active"
-                          color="green"
-                          label={
-                            <Typography variant="h6">
-                              {values.active ? 'Còn hiệu lực' : 'Đã thanh lý'}
-                            </Typography>
-                          }
+                      <div className="col-span-full flex justify-end gap-3 items-center">
+                        <Typography variant="h6" className="text-blue-gray-600">
+                          {values.active ? "Còn hiệu lực" : "Đã thanh lý"}
+                        </Typography>
+
+                        <Switch
                           checked={values.active}
-                          onChange={({ target }) =>
-                            setFieldValue("active", target.checked)
-                          } // Thiết lập giá trị true/false
+                          color="green"
+                          onChange={() => setFieldValue("active", !values.active)}
                         />
                       </div>
                       <div className="col-span-full flex flex-col gap-2">
@@ -428,6 +666,7 @@ function FoConTractDetail(props) {
                           component="span"
                         ></ErrorMessage>
                       </div>
+
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Tên hợp đồng
@@ -443,6 +682,27 @@ function FoConTractDetail(props) {
                           component="span"
                         ></ErrorMessage>
                       </div>
+
+                      <div className="col-span-full flex flex-col gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Nhà cung cấp
+                        </label>
+
+                        <select
+                          name="transmissionOwnerId"
+                          value={values.transmissionOwnerId}
+                          onChange={handleChange}
+                          className="rounded border border-gray-300 px-2 py-1"
+                        >
+                          <option value="">-- Chọn nhà cung cấp --</option>
+                          {owners.map(o => (
+                            <option key={o.id} value={o.id}>
+                              {o.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                     
                       <div className="col-span-full flex flex-col items-stretch gap-2">
                         <label className="text-slate-400 font-semibold">
                           Ngày ký
@@ -458,9 +718,10 @@ function FoConTractDetail(props) {
                           component="span"
                         ></ErrorMessage>
                       </div>
+                      
                       <div className="col-span-full flex flex-col items-stretch gap-2">
                         <label className="text-slate-400 font-semibold">
-                          Ngày ký
+                          Ngày kết thúc
                         </label>
                         <Field
                           name="endDate"
@@ -478,39 +739,57 @@ function FoConTractDetail(props) {
                         <label className="text-slate-400 font-semibold">
                           Tải lên văn bản hợp đồng
                         </label>
-                        {contractDetail.contractUrl ? (
-                          <Button
-
-                            color="blue"
-                            size="sm"
-
-                            onClick={() => {
-                              window.open(contractDetail.contractUrl, "_blank");
-                            }}
-                          >
-                            Văn bản hợp đồng
-                          </Button>
-                        ) : (
+                        {contractDetail.contractUrl && (
                           <Typography color="blue-gray">
-                            - Chưa có hợp đồng
+                            Văn bản hợp đồng
                           </Typography>
                         )}
                         <input
                           type="file"
-                          name="contractUrl"
-                          accept=".pdf"
-                          className="w-full cursor-pointer rounded border bg-white text-sm font-semibold text-gray-400 file:mr-4 file:cursor-pointer file:border-0 file:bg-gray-100 file:px-4 file:py-3 file:text-gray-500 file:hover:bg-gray-200"
+                          accept="application/pdf"
+                          multiple
+                          className="w-full cursor-pointer rounded border bg-white text-sm
+                                    file:mr-4 file:border-0 file:bg-gray-100
+                                    file:px-4 file:py-2 file:text-gray-600"
                           onChange={(e) => {
-                            // Object is possibly null error w/o check
-                            const file = e.currentTarget.files[0];
-                            if (e.currentTarget.files) {
-                              setFieldValue(
-                                "contractUrl",
-                                file || currentContractPdf,
-                              );
-                            }
+                            const selectedFiles = Array.from(e.target.files || []);
+
+                            setPdfFiles((prev) => [
+                              ...prev,
+                              ...selectedFiles.filter(
+                                f => !prev.some(p => p.name === f.name)
+                              )
+                            ]);
+
+                            e.target.value = null; // ⭐ cho phép chọn lại file cùng tên
                           }}
                         ></input>
+                        {pdfFiles.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {pdfFiles.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between rounded bg-green-100 px-3 py-2 text-sm"
+                              >
+                                <span className="truncate">
+                                  📄 {file.name}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  className="ml-2 text-red-500 hover:text-red-700"
+                                  onClick={() =>
+                                    setPdfFiles(prev =>
+                                      prev.filter((_, i) => i !== index)
+                                    )
+                                  }
+                                >
+                                  ❌
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <ErrorMessage
                           className="justify-items-end text-sm font-light italic text-red-500"
                           name="contractUrl"
@@ -518,10 +797,26 @@ function FoConTractDetail(props) {
                         ></ErrorMessage>
                       </div>
                     </div>
+                    <div className="col-span-full flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">
+                        Ghi chú
+                      </label>
+                      <Field
+                        as="textarea"
+                        name="note"
+                        rows={3}
+                        placeholder="Nhập ghi chú"
+                        className="rounded border border-gray-300 px-2 py-1 focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
                   </Card>
                 </DialogBody>
                 <DialogFooter>
-                  <Button size="md" type="submit" color="red">
+                  <Button
+                    size="md"
+                    type="submit"
+                    color="red"
+                  >
                     Cập nhật dữ liệu
                   </Button>
                 </DialogFooter>
@@ -529,7 +824,230 @@ function FoConTractDetail(props) {
             )}
           </Formik>
         </Drawer>
+      {/* ===== DRAWER VĂN BẢN HỢP ĐỒNG ===== */}
+      {openDocuments && (
+        <Drawer
+          open
+          onClose={() => setOpenDocuments(false)}
+          placement="right"
+          size="90%"
+          className="pt-4"
+        >
+          {/* HEADER */}
+          <div className="flex items-center justify-between px-4 pb-2 border-b">
+            <Typography variant="h4" color="blue">
+              📄 Văn bản hợp đồng
+            </Typography>
+
+            <IconButton
+              variant="text"
+              color="blue-gray"
+              onClick={() => setOpenDocuments(false)}
+            >
+              ✖
+            </IconButton>
+          </div>
+
+          {/* BODY */}
+          <div className="h-[calc(100%-60px)] overflow-hidden">
+            <FoContractDocuments contractId={contractDetail.id} />
+          </div>
+        </Drawer>
+      )}
+      <Dialog open={openEditLine} handler={() => setOpenEditLine(false)} size="sm">
+        <div className="max-h-[90vh] overflow-y-auto p-3">
+          <DialogHeader className="relative m-0 block">
+            <Typography variant="h4" color="blue">
+              Cập nhật tuyến FO
+            </Typography>
+            <IconButton
+              size="sm"
+              variant="text"
+              className="!absolute right-3.5 top-3.5"
+              onClick={() => setOpenEditLine(false)}
+            >
+              ✖
+            </IconButton>
+          </DialogHeader>
+
+          {editLine && (
+            <Formik
+              enableReinitialize
+              initialValues={{
+                id: editLine.id,
+                active: editLine.active ?? true,
+
+                // nearSite / farSite phải là object theo DTO
+                nearSite: { id: editLine.nearSite?.id || "" },
+                farSite: { id: editLine.farSite?.id || "" },
+
+                coreQuantity: editLine.coreQuantity ?? 1,
+                cost: editLine.cost ?? 0,
+                designedDistance: editLine.designedDistance ?? 0,
+                finalDistance: editLine.finalDistance ?? 0,
+                note: editLine.note || "",
+              }}
+              validationSchema={Yup.object({
+                coreQuantity: Yup.number().moreThan(0, "Yêu cầu lớn hơn 0").required("Nhập số core"),
+                nearSite: Yup.object({ id: Yup.string().required("Chọn Site A") }),
+                farSite: Yup.object({ id: Yup.string().required("Chọn Site B") }),
+                cost: Yup.number().min(0, ">= 0").required("Nhập đơn giá"),
+                finalDistance: Yup.number().min(0, ">= 0").required("Nhập chiều dài thực tế"),
+              })}
+              onSubmit={async (values) => {
+                try {
+                  const payload = {
+                    id: values.id,
+                    coreQuantity: Number(values.coreQuantity),
+                    cost: Number(values.cost),
+                    designedDistance: Number(values.designedDistance || 0),
+                    finalDistance: Number(values.finalDistance || 0),
+                    active: !!values.active,
+                    note: values.note || "",
+
+                    nearSite: { id: Number(values.nearSite.id) },
+                    farSite: { id: Number(values.farSite.id) },
+
+                    // 🔥 đảm bảo contract luôn đúng
+                    foContract: { id: Number(contractDetail.id) },
+                  };
+
+                  await axiosInstance.put(`/hired-fos/${values.id}`, payload);
+
+                  toast.success("Cập nhật tuyến FO thành công");
+                  setOpenEditLine(false);
+                  setEditLine(null);
+
+                  // ✅ refresh UI ngay
+                  await loadContract();
+                } catch (err) {
+                  console.log(err);
+                  toast.error(err?.response?.data?.message || "Cập nhật thất bại");
+                }
+              }}
+            >
+              {({ values, setFieldValue }) => (
+                <Form>
+                  <DialogBody className="space-y-4 pb-6">
+
+                    {/* ACTIVE */}
+                    <div className="flex justify-end">
+                      <Switch
+                        checked={values.active}
+                        color="green"
+                        label={
+                          <Typography variant="h6">
+                            {values.active ? "Đang hoạt động" : "Không hoạt động"}
+                          </Typography>
+                        }
+                        onChange={(e) => setFieldValue("active", e.target.checked)}
+                      />
+                    </div>
+
+                    {/* SITE A */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Site A</label>
+
+                      <Select
+                        value={simpleSiteList.find(s => s.id === Number(values.nearSite.id)) || null}
+                        onChange={(opt) => setFieldValue("nearSite.id", opt.id)}
+                        options={simpleSiteList}
+                        getOptionLabel={(opt) => opt.siteId}
+                        getOptionValue={(opt) => String(opt.id)}
+                        placeholder="Chọn Site A"
+                        styles={whiteSelectStyles}   // ✅ đổi nền trắng chữ đen
+                        components={{ MenuList: CustomMenuList }}
+                      />
+
+                      <ErrorMessage name="nearSite.id" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* SITE B */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Site B</label>
+
+                      <Select
+                        value={simpleSiteList.find(s => s.id === Number(values.farSite.id)) || null}
+                        onChange={(opt) => setFieldValue("farSite.id", opt.id)}
+                        options={simpleSiteList}
+                        getOptionLabel={(opt) => opt.siteId}
+                        getOptionValue={(opt) => String(opt.id)}
+                        placeholder="Chọn Site B"
+                        styles={whiteSelectStyles}   // ✅ đổi nền trắng chữ đen
+                        components={{ MenuList: CustomMenuList }}
+                      />
+
+                      <ErrorMessage name="farSite.id" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* CORE */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Số core</label>
+                      <Field
+                        name="coreQuantity"
+                        type="number"
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                      <ErrorMessage name="coreQuantity" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* FINAL DIST */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Chiều dài thực tế (km)</label>
+                      <Field
+                        name="finalDistance"
+                        type="number"
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                      <ErrorMessage name="finalDistance" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* COST */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Đơn giá (VNĐ/km)</label>
+                      <Field
+                        name="cost"
+                        type="number"
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                      <ErrorMessage name="cost" component="span"
+                        className="text-sm italic text-red-500" />
+                    </div>
+
+                    {/* NOTE */}
+                    <div className="flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">Ghi chú</label>
+                      <Field
+                        as="textarea"
+                        name="note"
+                        rows={3}
+                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                      />
+                    </div>
+
+                  </DialogBody>
+
+                  <DialogFooter>
+                    <Button variant="text" onClick={() => setOpenEditLine(false)}>
+                      Đóng
+                    </Button>
+                    <Button color="red" type="submit">
+                      Cập nhật
+                    </Button>
+                  </DialogFooter>
+                </Form>
+              )}
+            </Formik>
+          )}
+        </div>
+      </Dialog>
+
       </React.Fragment>
+      </div> 
     </>
   );
 }

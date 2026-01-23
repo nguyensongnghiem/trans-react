@@ -1,6 +1,6 @@
 import axios from "axios";
 import { toast } from "react-toastify";
-
+import { postFile } from "./apiService";
 
 
 export const getAllSites = async (setError) => {
@@ -95,4 +95,12 @@ export const countByTransmissionType = async (transmissionType) => {
         toast.error(error.response.data.message)
 
     }
+};
+
+export const checkExcelImport = async (file, contractNumber) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("contractNumber", contractNumber.toUpperCase());
+
+  return postFile("contract/import-excel/check", formData);
 };
