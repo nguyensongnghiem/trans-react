@@ -11,12 +11,9 @@ import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
-import { MagnifyingGlassIcon, FunnelIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
-import { Input } from "@material-tailwind/react";
+import { MagnifyingGlassIcon, FunnelIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { Input, IconButton as MTIconButton } from "@material-tailwind/react";
 
-import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
-import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
-import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import {
   Button,
   Card,
@@ -51,77 +48,16 @@ function RouterList() {
   const [editRouter, setEditRouter] = useState({});
   const [editId, setEditId] = useState(null);
   const [provinces, setProvinces] = useState([]);
-  const [transmissionOwners, setTransmissionOwners] = useState([]);
   const [filters, setFilters] = useState({
     province: null,
     routerType: null,
     transDeviceType: null,
-    transmissionOwner: null,
+    status: null,
     search: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 15;
   const axiosInstance = useAxiosPrivate();
-  const [colDefs, setColDefs] = useState([
-    { headerName: "Tỉnh", valueGetter: (p) => p.data.site.province?.name },
-    { headerName: "Site ID", valueGetter: (p) => p.data.site.siteId },
-    {
-      headerName: "Tên thiết bị",
-      valueGetter: (p) => p.data.name,
-    },
-    { headerName: "Loại Router", valueGetter: (p) => p.data.routerType?.name },
-    {
-      headerName: "Loại thiết bị TD",
-      valueGetter: (p) => p.data.transmissionDeviceType?.name,
-    },
-    {
-      headerName: "IP quản lý",
-      valueGetter: (p) => p.data.ip,
-    },
-    { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
-    {
-      headerName: "Trạng thái",
-      valueGetter: (p) => p.data.active,
-      cellRenderer: (p) => {
-        return (
-          <div className="flex items-center justify-center h-full">
-            <StatusChip 
-              active={p.data.active} 
-              labelOn="Hoạt động" 
-              labelOff="Không hoạt động" 
-            />
-          </div>
-        );
-      },
-    },
-    {
-      headerName: "Tác động",
-      cellRenderer: (p) => (
-        <div className="flex items-center justify-center">
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleEdit(p.data.id)}
-          >
-            <PencilIcon className="h-4 w-4 text-gray-900" />
-          </IconButton>
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleDeleteRouter(p.data.id)}
-          >
-            <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
-          </IconButton>
-        </div>
-      ),
-    },
-  ]);
-  const defaultColDef = useMemo(() => {
-    return {
-      flex: 1,
-      sortable: true,
-      filter: true,
-      floatingFilter: true,
-    };
-  });
   const {
     simpleSites: simpleSiteList,
     setSimpleSites: setSimpleSiteList,
@@ -166,12 +102,8 @@ function RouterList() {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const [provRes, ownerRes] = await Promise.all([
-          axiosInstance.get("provinces"),
-          axiosInstance.get("transmissionOwners"),
-        ]);
+        const provRes = await axiosInstance.get("provinces");
         setProvinces(provRes.data);
-        setTransmissionOwners(ownerRes.data);
       } catch (error) {
         console.error("Error fetching filter metadata:", error);
       }
@@ -184,15 +116,26 @@ function RouterList() {
       const matchProvince = !filters.province || router.site?.province?.id === filters.province.id;
       const matchRouterType = !filters.routerType || router.routerType?.id === filters.routerType.id;
       const matchTransDeviceType = !filters.transDeviceType || router.transmissionDeviceType?.id === filters.transDeviceType.id;
-      const matchTransmissionOwner = !filters.transmissionOwner || router.site?.transmissionOwner?.id === filters.transmissionOwner.id;
+      const matchStatus = !filters.status || router.active === filters.status.value;
       const matchSearch = !filters.search || 
         (router.name?.toLowerCase().includes(filters.search.toLowerCase())) ||
         (router.ip?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (router.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase()));
+        (router.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (router.note?.toLowerCase().includes(filters.search.toLowerCase()));
 
-      return matchProvince && matchRouterType && matchTransDeviceType && matchTransmissionOwner && matchSearch;
+      return matchProvince && matchRouterType && matchTransDeviceType && matchStatus && matchSearch;
     });
   }, [routerList, filters]);
+
+  const totalPages = Math.ceil(filteredRouters.length / rowsPerPage);
+  const paginatedRouters = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredRouters.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredRouters, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   const getRouterById = async (editId) => {
     try {
@@ -254,23 +197,16 @@ function RouterList() {
 
   // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
-    const columnDefs = gridRef.current.api.getColumnDefs();
-    const rowData = [];
-    gridRef.current.api.forEachNode((node) => rowData.push(node.data));
-
-    const dataToExport = rowData.map((node) => {
-      const row = {};
-      columnDefs.forEach((colDef) => {
-        if (colDef.headerName && colDef.valueGetter) {
-          let value = colDef.valueGetter({ data: node });
-          if (colDef.valueFormatter) {
-            value = colDef.valueFormatter({ value: value });
-          }
-          row[colDef.headerName] = value;
-        }
-      });
-      return row;
-    });
+    const dataToExport = filteredRouters.map((router) => ({
+      "Tỉnh": router.site?.province?.name,
+      "Site ID": router.site?.siteId,
+      "Tên thiết bị": router.name,
+      "Loại Router": router.routerType?.name,
+      "Loại thiết bị TD": router.transmissionDeviceType?.name,
+      "IP quản lý": router.ip,
+      "Trạng thái": router.active ? "Hoạt động" : "Không hoạt động",
+      "Ghi chú": router.note,
+    }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -283,7 +219,7 @@ function RouterList() {
       province: null,
       routerType: null,
       transDeviceType: null,
-      transmissionOwner: null,
+      status: null,
       search: "",
     });
   };
@@ -323,7 +259,7 @@ function RouterList() {
         <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
           <FunnelIcon className="h-5 w-5" />
           <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
-          {(filters.province || filters.routerType || filters.transDeviceType || filters.transmissionOwner || filters.search) && (
+          {(filters.province || filters.routerType || filters.transDeviceType || filters.status || filters.search) && (
             <button 
               onClick={handleResetFilters}
               className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
@@ -346,13 +282,15 @@ function RouterList() {
               getOptionValue={(option) => option.id}
               value={filters.province}
               onChange={(val) => setFilters(prev => ({ ...prev, province: val }))}
+              menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
                   minHeight: '40px',
                   borderRadius: '8px',
                   borderColor: '#e2e8f0',
-                })
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 })
               }}
             />
           </div>
@@ -368,13 +306,15 @@ function RouterList() {
               getOptionValue={(option) => option.id}
               value={filters.routerType}
               onChange={(val) => setFilters(prev => ({ ...prev, routerType: val }))}
+              menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
                   minHeight: '40px',
                   borderRadius: '8px',
                   borderColor: '#e2e8f0',
-                })
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 })
               }}
             />
           </div>
@@ -390,35 +330,40 @@ function RouterList() {
               getOptionValue={(option) => option.id}
               value={filters.transDeviceType}
               onChange={(val) => setFilters(prev => ({ ...prev, transDeviceType: val }))}
+              menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
                   minHeight: '40px',
                   borderRadius: '8px',
                   borderColor: '#e2e8f0',
-                })
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 })
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Nhà cung cấp</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Trạng thái</span>
             <Select
               isClearable
-              placeholder="Tất cả nhà CC"
+              placeholder="Tất cả trạng thái"
               className="text-sm"
-              options={transmissionOwners}
-              getOptionLabel={(option) => option.name}
-              getOptionValue={(option) => option.id}
-              value={filters.transmissionOwner}
-              onChange={(val) => setFilters(prev => ({ ...prev, transmissionOwner: val }))}
+              options={[
+                { label: "Hoạt động", value: true },
+                { label: "Không hoạt động", value: false },
+              ]}
+              value={filters.status}
+              onChange={(val) => setFilters(prev => ({ ...prev, status: val }))}
+              menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
                   minHeight: '40px',
                   borderRadius: '8px',
                   borderColor: '#e2e8f0',
-                })
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 })
               }}
             />
           </div>
@@ -441,20 +386,131 @@ function RouterList() {
           </div>
         </div>
       </div>
-      <div
-        className="ag-theme-quartz" // applying the Data Grid theme
-        style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
-      >
-        <AgGridReact
-          ref={gridRef}
-          rowData={filteredRouters}
-          columnDefs={colDefs}
-          defaultColDef={defaultColDef}
-          pagination={true}
-          paginationPageSize={20}
-          className="overflow-x-auto"
-        />
-      </div>
+      <Card className="w-full overflow-hidden border border-gray-200 shadow-sm rounded-xl">
+        <div className="overflow-auto max-h-[70vh]">
+          <table className="w-full min-w-max table-auto text-left">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tỉnh</Typography>
+                </th>
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Site ID</Typography>
+                </th>
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tên thiết bị</Typography>
+                </th>
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Loại Router</Typography>
+                </th>
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Loại thiết bị TD</Typography>
+                </th>
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">IP quản lý</Typography>
+                </th>
+                <th className="p-4">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Ghi chú</Typography>
+                </th>
+                <th className="p-4 text-center">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Trạng thái</Typography>
+                </th>
+                <th className="p-4 text-center">
+                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tác động</Typography>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {paginatedRouters.map((router) => (
+                <tr key={router.id} className="hover:bg-gray-50/80 transition-colors">
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">{router.site?.province?.name}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-bold">{router.site?.siteId}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-medium">{router.name}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">{router.routerType?.name}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">{router.transmissionDeviceType?.name}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal font-mono text-xs">{router.ip}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal opacity-70 italic max-w-[200px] truncate">{router.note || "-"}</Typography>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex justify-center">
+                      <StatusChip 
+                        active={router.active} 
+                        labelOn="Hoạt động" 
+                        labelOff="Không hoạt động" 
+                      />
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-1">
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="blue"
+                        onClick={() => handleEdit(router.id)}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </IconButton>
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="red"
+                        onClick={() => handleDeleteRouter(router.id)}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </IconButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredRouters.length === 0 && (
+            <div className="py-20 text-center">
+              <Typography variant="h6" color="blue-gray" className="opacity-40">Không tìm thấy thiết bị nào khớp với bộ lọc</Typography>
+            </div>
+          )}
+        </div>
+        
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
+          <Typography variant="small" color="blue-gray" className="font-normal">
+            Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages || 1}</span>
+          </Typography>
+          <div className="flex gap-2">
+            <MTIconButton
+              variant="outlined"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="rounded-md border-gray-300"
+            >
+              <ChevronLeftIcon strokeWidth={2} className="h-4 w-4" />
+            </MTIconButton>
+            <MTIconButton
+              variant="outlined"
+              size="sm"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className="rounded-md border-gray-300"
+            >
+              <ChevronRightIcon strokeWidth={2} className="h-4 w-4" />
+            </MTIconButton>
+          </div>
+        </div>
+      </Card>
 
       {/* Modal Thêm mới */}
       <Dialog
