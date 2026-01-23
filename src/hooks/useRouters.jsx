@@ -31,7 +31,8 @@ function useRouters() {
     setIsLoading(true);
     try {
       const createdData = await routerService.createRouter(axiosPrivate, newRouter);
-      setRouters((prev) => [...prev, createdData]);
+      // Re-fetch all routers to ensure we have fully hydrated data (including nested relations)
+      await fetchRouters();
       toast.success("Tạo router mới thành công!");
       return createdData;
     } catch (err) {
@@ -46,10 +47,9 @@ function useRouters() {
   const updateRouter = async (id, updatedData) => {
     setIsLoading(true);
     try {
-      const responseData = await routerService.updateRouter(axiosPrivate, id, updatedData);
-      setRouters((prev) =>
-        prev.map((item) => (item.id === id ? responseData : item))
-      );
+      await routerService.updateRouter(axiosPrivate, id, updatedData);
+      // Re-fetch all routers to ensure we have fully hydrated data (including nested relations)
+      await fetchRouters();
       toast.success("Cập nhật router thành công!");
     } catch (err) {
       setError(err);
