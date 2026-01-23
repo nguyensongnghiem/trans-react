@@ -25,6 +25,7 @@ import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import OwnerChip from "../components/OwnerChip";
+import StatusChip from "../components/StatusChip";
 function LeaselineList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
@@ -74,14 +75,13 @@ function LeaselineList() {
       valueGetter: (p) => p.data.active,
       cellRenderer: (p) => {
         return (
-          <span
-            className={`inline-flex items-center ${p.data.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}
-          >
-            <span
-              className={`w-2 h-2 me-1 ${p.data.active ? "bg-green-500" : "bg-red-500"} rounded-full`}
-            ></span>
-            {p.data.active ? "Hoạt động" : "Không hoạt động"}
-          </span>
+          <div className="flex items-center justify-center h-full">
+            <StatusChip 
+              active={p.data.active} 
+              labelOn="Hoạt động" 
+              labelOff="Không hoạt động" 
+            />
+          </div>
         );
       },
     },

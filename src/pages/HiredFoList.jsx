@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { 
+  DocumentIcon, 
+  PencilIcon, 
+  TrashIcon, 
+  PlusIcon,
+  DocumentTextIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/solid";
 import Select from "react-select";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
@@ -18,11 +28,14 @@ import {
   DialogHeader,
   DialogFooter,
   Switch,
+  Chip,
+  Tooltip,
 } from "@material-tailwind/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import CustomButton from "../components/CustomButton";
+import StatusChip from "../components/StatusChip";
 function HiredFoList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
@@ -81,10 +94,9 @@ function HiredFoList() {
         valueGetter: (p) => p.data.active,
         cellRenderer: (p) => {
           return (
-            <span className={`inline-flex items-center ${p.data.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300`}>
-              <span className={`w-2 h-2 me-1 ${p.data.active ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></span>
-              {p.data.active ? 'ON' : 'OFF'}
-            </span>
+            <div className="flex items-center justify-center h-full">
+              <StatusChip active={p.data.active} />
+            </div>
           );
         },
       },
@@ -92,21 +104,26 @@ function HiredFoList() {
       {
         headerName: "Tác động",
         cellRenderer: (p) => (
-          <div className="flex items-center justify-center">
-            <IconButton
-              variant="text"
-              size="sm"
-              onClick={() => handleEdit(p.data.id)}
-            >
-              <PencilIcon className="h-4 w-4 text-gray-900" />
-            </IconButton>
-            {/* <IconButton
-              variant="text"
-              size="sm"
-              onClick={() => handleDeleteRouter(p.data.id)}
-            >
-              <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
-            </IconButton> */}
+          <div className="flex items-center justify-center gap-1">
+            <Tooltip content="Sửa">
+              <IconButton
+                variant="text"
+                size="sm"
+                onClick={() => handleEdit(p.data.id)}
+              >
+                <PencilIcon className="h-4 w-4 text-blue-gray-600" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip content="Xóa">
+              <IconButton
+                variant="text"
+                color="red"
+                size="sm"
+                onClick={() => handleDeleteRouter(p.data.id)}
+              >
+                <TrashIcon className="h-4 w-4" />
+              </IconButton>
+            </Tooltip>
           </div>
         ),
       },
@@ -413,6 +430,26 @@ function HiredFoList() {
       setSaving(false);
     }
   };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axiosInstance.get("hired-fos/import-excel/template", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "hired-fo-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Không thể tải file mẫu. Vui lòng thử lại sau.");
+      console.error(error);
+    }
+  };
+
   const VND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -450,58 +487,41 @@ function HiredFoList() {
     XLSX.writeFile(workbook, "HiredFo.xlsx");
   };
   return (
-    <div className="p-5">
-      <div className="flex items-center justify-between">
-        <Typography variant="h4" color="blue-gray" className="mb-3">
-          Danh sách FO thuê
-        </Typography>
+    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Danh sách FO thuê</h1>
         <div className="flex gap-2">
-          <Button
-            variant="gradient"
+          <CustomButton
+            className="flex items-center gap-2"
             size="sm"
-            className="mb-3 flex items-center gap-3"
             onClick={handleOpenImport}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
-            </svg>
-            Thêm mới
-          </Button>
-          <Button
-            variant="gradient"
+            <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm mới
+          </CustomButton>
+          <CustomButton
+            color="blue-gray"
             size="sm"
-            color="green"
-            className="mb-3 flex items-center gap-3"
+            className="flex items-center gap-2 text-white"
             onClick={onBtnExport}
           >
-            Xuất Excel
-          </Button>
+            <ArrowDownTrayIcon className="h-4 w-4" /> Xuất Excel
+          </CustomButton>
         </div>
       </div>
-      <div
-        className="ag-theme-quartz" // applying the Data Grid theme
-        style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
-      >
-        <AgGridReact
-          ref={gridRef}
-          rowData={hiredFoList}
-          columnDefs={colDefs}
-          defaultColDef={defaultColDef}
-          pagination={true}
-          paginationPageSize={20}
-          className="overflow-x-auto"
-        />
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div
+          className="ag-theme-quartz" // applying the Data Grid theme
+          style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
+        >
+          <AgGridReact
+            ref={gridRef}
+            rowData={hiredFoList}
+            columnDefs={colDefs}
+            defaultColDef={defaultColDef}
+            pagination={true}
+            paginationPageSize={20}
+          />
+        </div>
       </div>
 
       {/* Modal Thêm mới */}
@@ -512,12 +532,12 @@ function HiredFoList() {
         size="sm"
       >
         <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue">
+          <DialogHeader className="relative m-0 block pb-4 border-b border-gray-100">
+            <Typography variant="h4" color="blue-gray" className="font-bold">
               Thêm mới thiết bị
             </Typography>
-            <Typography className="mt-1 font-normal text-gray-600">
-              Đảm bảo dữ liệu đồng bộ
+            <Typography color="gray" className="mt-1 font-normal text-gray-600 text-sm">
+              Nhập thông tin chi tiết để đồng bộ dữ liệu hệ thống.
             </Typography>
             <IconButton
               size="sm"
@@ -680,10 +700,10 @@ function HiredFoList() {
                     </div>
                   </Card>
                 </DialogBody>
-                <DialogFooter>
-                  <Button size="md" type="submit" color="red">
-                    Thêm mới
-                  </Button>
+                <DialogFooter className="pt-0 pr-6 pb-6">
+                  <CustomButton size="md" type="submit" color="gray" className="bg-gray-900 border-none shadow-none hover:shadow-lg">
+                    Thêm mới thiết bị
+                  </CustomButton>
                 </DialogFooter>
               </Form>
             )}
@@ -693,12 +713,12 @@ function HiredFoList() {
       </Dialog>
       <Dialog open={importOpen} handler={handleOpenImport} size="lg">
         <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue">
+          <DialogHeader className="relative m-0 block pb-4 border-b border-gray-100">
+            <Typography variant="h4" color="blue-gray" className="font-bold">
               Import nhiều hợp đồng + tuyến FO
             </Typography>
-            <Typography className="mt-1 font-normal text-gray-600">
-              Upload Excel → kiểm tra → preview → lưu DB
+            <Typography color="gray" className="mt-1 font-normal text-gray-600 text-sm">
+              Upload file Excel mẫu để cập nhật dữ liệu hàng loạt.
             </Typography>
             <IconButton
               size="sm"
@@ -713,7 +733,17 @@ function HiredFoList() {
           <DialogBody className="space-y-4">
             {/* Upload */}
             <div className="flex flex-col gap-2">
-              <label className="text-slate-400 font-semibold">Chọn file Excel</label>
+              <label className="text-slate-400 font-semibold">
+                Chọn file Excel (
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="text-blue-500 italic hover:underline"
+                >
+                  Tải file mẫu tại đây
+                </button>
+                )
+              </label>
               <input
                 type="file"
                 accept=".xlsx"
@@ -738,18 +768,18 @@ function HiredFoList() {
 
             {/* Buttons */}
             <div className="flex gap-2">
-              <Button color="blue" type="button" onClick={handleCheckExcelMulti}>
+              <CustomButton color="blue" type="button" onClick={handleCheckExcelMulti}>
                 KIỂM TRA DỮ LIỆU
-              </Button>
+              </CustomButton>
 
-              <Button
+              <CustomButton
                 color="green"
                 type="button"
                 disabled={!excelSuccess || saving}
                 onClick={handleSaveExcelMulti}
               >
                 {saving ? "Đang lưu..." : "LƯU DATABASE"}
-              </Button>
+              </CustomButton>
             </div>
 
             {/* Success */}
@@ -875,12 +905,12 @@ function HiredFoList() {
         size="sm"
       >
         <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue">
+          <DialogHeader className="relative m-0 block pb-4 border-b border-gray-100">
+            <Typography variant="h4" color="blue-gray" className="font-bold">
               Cập nhật thông tin tuyến cáp
             </Typography>
-            <Typography className="mt-1 font-normal text-gray-700">
-              Cập nhật dữ liệu đảm bảo thực tế
+            <Typography color="gray" className="mt-1 font-normal text-gray-600 text-sm">
+              Chỉnh sửa thông tin tuyến cáp quang thuê để đảm bảo dữ liệu chính xác.
             </Typography>
             <IconButton
               size="sm"
@@ -1051,10 +1081,10 @@ function HiredFoList() {
                     </div>
                   </Card>
                 </DialogBody>
-                <DialogFooter>
-                  <Button size="md" type="submit" color="red">
+                <DialogFooter className="pt-0 pr-6 pb-6">
+                  <CustomButton size="md" type="submit" color="gray" className="bg-gray-900 border-none shadow-none hover:shadow-lg">
                     Cập nhật dữ liệu
-                  </Button>
+                  </CustomButton>
                 </DialogFooter>
               </Form>
             )}
@@ -1063,23 +1093,34 @@ function HiredFoList() {
       </Dialog>
 
       {/*Modal confirm xóa site*/}
-      <Dialog open={openDelete} handler={handleOpenDelete} size="md">
-        <DialogHeader>Xác nhận xóa router khỏi cơ sở dữ liệu</DialogHeader>
-        <DialogBody>
-          Bạn muốn xóa thông tin trạm <span>{deleteRouterName}</span> ?
+      <Dialog open={openDelete} handler={handleOpenDelete} size="sm">
+        <DialogHeader className="flex flex-col items-center gap-2 pt-6">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-500" />
+          <Typography variant="h4" color="blue-gray" className="font-bold">
+            Xác nhận xóa
+          </Typography>
+        </DialogHeader>
+        <DialogBody className="text-center font-normal text-gray-600">
+          Bạn có chắc chắn muốn xóa thông tin trạm <span className="font-bold text-blue-gray-900">{deleteRouterName}</span>? 
+          <br />
+          Hành động này không thể hoàn tác.
         </DialogBody>
-        <DialogFooter>
-          <Button
+        <DialogFooter className="flex justify-center gap-3 pb-6">
+          <CustomButton
             variant="text"
-            color="green"
+            color="gray"
             onClick={handleOpenDelete}
-            className="mr-1"
+            className="px-6"
           >
-            <span>Hủy</span>
-          </Button>
-          <Button variant="gradient" color="red" onClick={handleDeleteSubmit}>
-            <span>Xóa</span>
-          </Button>
+            Hủy
+          </CustomButton>
+          <CustomButton 
+            color="red" 
+            onClick={handleDeleteSubmit}
+            className="px-6"
+          >
+            Xác nhận xóa
+          </CustomButton>
         </DialogFooter>
       </Dialog>
     </div>

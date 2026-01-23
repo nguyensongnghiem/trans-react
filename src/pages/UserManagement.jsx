@@ -19,6 +19,7 @@ import {
   Spinner,
 } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon, UserPlusIcon } from "@heroicons/react/24/solid";
+import StatusChip from "../components/StatusChip";
 
 const TABLE_HEAD = ["ID", "Username", "Email", "Quyền hạn", "Trạng thái", "Hành động"];
 
@@ -257,20 +258,11 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td className={classes}>
-                      <Chip
-                        size="sm"
-                        className="inline-block"
-                        variant="ghost"
-                        value={user.state}
-                        color={
-                          user.state === "ACTIVE"
-                            ? "green"
-                            : user.state === "LOCKED"
-                            ? "red"
-                            : "blue-gray"
-                        }
+                      <StatusChip 
+                        active={user.state === "ACTIVE"} 
+                        labelOn="ACTIVE" 
+                        labelOff={user.state} 
                       />
-                      
                     </td>
                     <td className={classes}>
                       <div className="flex gap-2">

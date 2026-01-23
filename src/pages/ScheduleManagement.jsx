@@ -26,6 +26,7 @@ import {
   TimelineBody,
 } from "@material-tailwind/react";
 import CustomButton from "../components/CustomButton";
+import StatusChip from "../components/StatusChip";
 import {
   PencilIcon,
   TrashIcon,
@@ -593,14 +594,10 @@ const ScheduleManagement = () => {
                                 className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
                                 onClick={() => handleToggleStatus(schedule)}
                               >
-                                <Chip
-                                  size="md"
-                                  variant="ghost"
-                                  value={
-                                    schedule.is_active ? "Đang chạy" : "Tạm dừng"
-                                  }
-                                  color={schedule.is_active ? "teal" : "blue-gray"}
-                                  className="rounded-md px-2 py-0.5 font-semibold normal-case text-sm h-5 flex items-center justify-center"
+                                <StatusChip 
+                                  active={schedule.is_active} 
+                                  labelOn="Đang chạy" 
+                                  labelOff="Tạm dừng" 
                                 />
                               </div>
                             </Tooltip>
