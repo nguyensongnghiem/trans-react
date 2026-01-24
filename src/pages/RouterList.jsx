@@ -33,6 +33,7 @@ import useSimpleSites from "../hooks/useSimpleSites";
 import useRouters from "../hooks/useRouters"; // Import your custom hook for routers
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
+import FormSelect from "../components/FormSelect";
 function RouterList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
@@ -162,7 +163,7 @@ function RouterList() {
   const paginatedRouters = useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     return filteredRouters.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredRouters, currentPage]);
+  }, [filteredRouters, currentPage, rowsPerPage]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -268,7 +269,7 @@ function RouterList() {
         </div>
         <div className="flex gap-2">
           <CustomButton
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-[#0d47a1] hover:bg-[#0a3a82]"
             size="sm"
             onClick={handleOpenCreate}
           >
@@ -276,9 +277,8 @@ function RouterList() {
             Thêm mới
           </CustomButton>
           <CustomButton
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
             size="sm"
-            color="blue-gray"
             onClick={onBtnExport}
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
@@ -430,7 +430,7 @@ function RouterList() {
             <Input
               icon={<MagnifyingGlassIcon className="h-4 w-4" />}
               placeholder="Site ID, Tên, IP..."
-              className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg"
+              className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg text-sm"
               labelProps={{
                 className: "before:content-none after:content-none",
               }}
@@ -605,7 +605,7 @@ function RouterList() {
               Thêm mới thiết bị
             </Typography>
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
-              Nhập thông tin chi tiết cho thiết bị mới
+              Nhập các thông tin chi tiết cho router mới
             </Typography>
           </div>
           <IconButton
@@ -622,11 +622,12 @@ function RouterList() {
           <Formik
             onSubmit={handleCreate}
             initialValues={{
-              name: null,
-              site: { id: null },
+              name: "",
+              site: { id: "" },
               ip: "",
               transmissionDeviceType: { id: 1 },
               routerType: { id: 1 },
+              active: true, // Default to active
               note: "",
             }}
             validationSchema={Yup.object({
@@ -642,9 +643,31 @@ function RouterList() {
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
                     
+                    {/* Trạng thái Switch */}
+                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="font-bold">
+                          Trạng thái hoạt động
+                        </Typography>
+                        <Typography variant="small" className="text-gray-500 text-xs font-normal">
+                          Bật/tắt để thiết lập trạng thái ban đầu
+                        </Typography>
+                      </div>
+                      <Switch
+                        name="active"
+                        color="green"
+                        checked={values.active}
+                        onChange={({ target }) => setFieldValue("active", target.checked)}
+                        className="scale-90"
+                        circleProps={{
+                          className: "border-none",
+                        }}
+                      />
+                    </div>
+                    
                     {/* Tên thiết bị */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
                         Tên thiết bị <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -660,54 +683,18 @@ function RouterList() {
                     </div>
 
                     {/* Site ID */}
-                    <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
-                        Site ID <span className="text-red-500">*</span>
-                      </Typography>
-                      <Select
-                        placeholder="Chọn Site ID..."
-                        value={
-                          simpleSiteList
-                            ? simpleSiteList.find((option) => option.id === getFieldProps("site.id"))
-                            : ""
-                        }
-                        onChange={(selectedOption) => {
-                          setFieldValue("site.id", selectedOption.id);
-                        }}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            minHeight: '38px',
-                            borderRadius: '0.375rem',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                            '&:hover': { borderColor: state.isFocused ? '#3b82f6' : '#9ca3af' }
-                          }),
-                          input: (base) => ({ ...base, fontSize: '0.875rem' }),
-                          placeholder: (base) => ({ ...base, fontSize: '0.875rem', color: '#9ca3af' }),
-                          singleValue: (base) => ({ ...base, fontSize: '0.875rem', color: '#111827' }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999 })
-                        }}
-                        components={{ MenuList: CustomMenuList }}
-                        isSearchable={true}
-                        options={simpleSiteList}
-                        menuPortalTarget={document.body}
-                        name="site.id"
-                        getOptionLabel={(option) => option.siteId}
-                        isLoading={false}
-                        loadingMessage={() => "Đang tải..."}
-                        noOptionsMessage={() => "Không tìm thấy Site ID"}
-                      />
-                      <ErrorMessage
-                        name="site.id"
-                        component="div"
-                        className="mt-1 text-xs text-red-600 font-medium"
-                      />
-                    </div>
+                    <FormSelect
+                      label="Site ID"
+                      name="site.id"
+                      placeholder="Chọn Site ID..."
+                      options={simpleSiteList || []}
+                      getOptionLabel={(option) => option.siteId}
+                      required
+                    />
 
                     {/* IP Quản lý */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
                         IP quản lý <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -723,46 +710,25 @@ function RouterList() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Loại thiết bị truyền dẫn */}
-                      <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
-                          Loại thiết bị TD
-                        </Typography>
-                        <Field
-                          as="select"
-                          name="transmissionDeviceType.id"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                        >
-                          {transmissionDeviceTypeList.map((type) => (
-                            <option key={type.id} value={type.id}>
-                              {type.name}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-
-                      {/* Loại Router */}
-                      <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
-                          Loại Router
-                        </Typography>
-                        <Field
-                          as="select"
-                          name="routerType.id"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                        >
-                          {routerTypeList.map((type) => (
-                            <option key={type.id} value={type.id}>
-                              {type.name}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
+                      <FormSelect
+                        label="Loại thiết bị TD"
+                        name="transmissionDeviceType.id"
+                        options={transmissionDeviceTypeList || []}
+                        getOptionLabel={(option) => option.name}
+                        useVirtualization={false}
+                      />
+                      <FormSelect
+                        label="Loại Router"
+                        name="routerType.id"
+                        options={routerTypeList || []}
+                        getOptionLabel={(option) => option.name}
+                        useVirtualization={false}
+                      />
                     </div>
 
                     {/* Ghi chú */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
                         Ghi chú
                       </Typography>
                       <Field
@@ -787,7 +753,7 @@ function RouterList() {
                   </CustomButton>
                   <CustomButton 
                     type="submit" 
-                    color="blue"
+                    className="bg-[#0d47a1] hover:bg-[#0a3a82]"
                     size="sm"
                   >
                     <div className="flex items-center gap-2">
@@ -850,7 +816,7 @@ function RouterList() {
                     {/* Trạng thái Switch */}
                     <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="font-medium">
+                        <Typography variant="small" color="blue-gray" className="font-bold">
                           Trạng thái hoạt động
                         </Typography>
                         <Typography variant="small" className="text-gray-500 text-xs font-normal">
@@ -871,7 +837,7 @@ function RouterList() {
 
                     {/* Tên thiết bị */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
                         Tên thiết bị <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -887,55 +853,18 @@ function RouterList() {
                     </div>
 
                     {/* Site ID */}
-                    <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
-                        Site ID <span className="text-red-500">*</span>
-                      </Typography>
-                      <Select
-                        placeholder="Chọn Site ID..."
-                        defaultValue={simpleSiteList.find(({ id }) => id === values.site.id)}
-                        value={
-                          simpleSiteList
-                            ? simpleSiteList.find((option) => option.id === getFieldProps("site.id"))
-                            : ""
-                        }
-                        onChange={(selectedOption) => {
-                          setFieldValue("site.id", selectedOption.id);
-                        }}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            minHeight: '38px',
-                            borderRadius: '0.375rem',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                            '&:hover': { borderColor: state.isFocused ? '#3b82f6' : '#9ca3af' }
-                          }),
-                          input: (base) => ({ ...base, fontSize: '0.875rem' }),
-                          placeholder: (base) => ({ ...base, fontSize: '0.875rem', color: '#9ca3af' }),
-                          singleValue: (base) => ({ ...base, fontSize: '0.875rem', color: '#111827' }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999 })
-                        }}
-                        components={{ MenuList: CustomMenuList }}
-                        isSearchable={true}
-                        options={simpleSiteList}
-                        menuPortalTarget={document.body}
-                        name="site.id"
-                        getOptionLabel={(option) => option.siteId}
-                        isLoading={false}
-                        loadingMessage={() => "Đang tải..."}
-                        noOptionsMessage={() => "Không tìm thấy Site ID"}
-                      />
-                      <ErrorMessage
-                        name="site.siteId"
-                        component="div"
-                        className="mt-1 text-xs text-red-600 font-medium"
-                      />
-                    </div>
+                    <FormSelect
+                      label="Site ID"
+                      name="site.id"
+                      placeholder="Chọn Site ID..."
+                      options={simpleSiteList || []}
+                      getOptionLabel={(option) => option.siteId}
+                      required
+                    />
 
                     {/* IP Quản lý */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
                         IP quản lý <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -950,47 +879,26 @@ function RouterList() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Loại thiết bị truyền dẫn */}
-                      <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
-                          Loại thiết bị TD
-                        </Typography>
-                        <Field
-                          as="select"
-                          name="transmissionDeviceType.id"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                        >
-                          {transmissionDeviceTypeList.map((type) => (
-                            <option key={type.id} value={type.id}>
-                              {type.name}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-
-                      {/* Loại Router */}
-                      <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
-                          Loại Router
-                        </Typography>
-                        <Field
-                          as="select"
-                          name="routerType.id"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                        >
-                          {routerTypeList.map((type) => (
-                            <option key={type.id} value={type.id}>
-                              {type.name}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormSelect
+                        label="Loại thiết bị TD"
+                        name="transmissionDeviceType.id"
+                        options={transmissionDeviceTypeList || []}
+                        getOptionLabel={(option) => option.name}
+                        useVirtualization={false}
+                      />
+                      <FormSelect
+                        label="Loại Router"
+                        name="routerType.id"
+                        options={routerTypeList || []}
+                        getOptionLabel={(option) => option.name}
+                        useVirtualization={false}
+                      />
                     </div>
 
                     {/* Ghi chú */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
                         Ghi chú
                       </Typography>
                       <Field
@@ -1015,7 +923,7 @@ function RouterList() {
                   </CustomButton>
                   <CustomButton 
                     type="submit" 
-                    color="blue"                    
+                    className="bg-[#0d47a1] hover:bg-[#0a3a82]"
                     size="sm"
                   >
                     <div className="flex items-center gap-2">
@@ -1046,16 +954,16 @@ function RouterList() {
           </Typography>
         </div>
         
-        <DialogBody className="p-6">
-          <Typography variant="paragraph" color="blue-gray" className="font-normal">
-            Bạn có chắc chắn muốn xóa thông tin thiết bị <span className="font-bold text-gray-900">{deleteRouterName}</span>? 
+        <DialogBody className="p-6 text-blue-gray-700">
+          <Typography variant="paragraph" color="blue-gray" className="font-medium">
+            Bạn có chắc chắn muốn xóa thiết bị <span className="font-bold text-gray-900">{deleteRouterName}</span>? 
           </Typography>
-          <Typography variant="small" color="gray" className="mt-2 italic">
+          <Typography variant="small" color="gray" className="mt-3 italic">
             Hành động này không thể hoàn tác và dữ liệu sẽ bị xóa vĩnh viễn khỏi hệ thống.
           </Typography>
         </DialogBody>
         
-        <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
+        <DialogFooter className="bg-gray-50/50 px-4 py-3 gap-2 border-t border-gray-200">
           <CustomButton
             variant="text"
             color="blue-gray"
@@ -1072,7 +980,7 @@ function RouterList() {
             className="flex items-center gap-2 shadow-md shadow-red-500/20"
           >
             <TrashIcon className="h-4 w-4" />
-            Xác nhận xóa
+            <span>Xác nhận xóa</span>
           </CustomButton>
         </DialogFooter>
       </Dialog>
