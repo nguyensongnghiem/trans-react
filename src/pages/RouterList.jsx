@@ -596,27 +596,29 @@ function RouterList() {
       <Dialog
         open={openCreate}
         handler={handleOpenCreate}
-        className="overflow-hidden"
+        className="overflow-hidden rounded-lg bg-white shadow-xl"
         size="sm"
       >
-        <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
               Thêm mới thiết bị
             </Typography>
-            <Typography className="mt-1 font-normal text-gray-600">
-              Đảm bảo dữ liệu đồng bộ
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Nhập thông tin chi tiết cho thiết bị mới
             </Typography>
-            <IconButton
-              size="sm"
-              variant="text"
-              className="!absolute right-3.5 top-3.5"
-              onClick={handleOpenCreate}
-            >
-              <XMarkIcon className="h-4 w-4 stroke-2" />
-            </IconButton>
-          </DialogHeader>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={handleOpenCreate}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
 
+        <div className="max-h-[80vh] overflow-y-auto">
           <Formik
             onSubmit={handleCreate}
             initialValues={{
@@ -636,146 +638,166 @@ function RouterList() {
             })}
           >
             {({ setFieldValue, getFieldProps, values, setErrors }) => (
-              <Form className="flex flex-initial flex-shrink flex-col">
-                <DialogBody className="space-y-4 pb-6">
-                  <Card className="shadow-none">
-                    <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Tên thiết bị
-                        </label>
+              <Form className="flex flex-col">
+                <DialogBody className="p-6">
+                  <div className="grid grid-cols-1 gap-5">
+                    
+                    {/* Tên thiết bị */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        Tên thiết bị <span className="text-red-500">*</span>
+                      </Typography>
+                      <Field
+                        name="name"
+                        placeholder="VD: R_HNI_001"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                      />
+                      <ErrorMessage
+                        name="name"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
 
+                    {/* Site ID */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        Site ID <span className="text-red-500">*</span>
+                      </Typography>
+                      <Select
+                        placeholder="Chọn Site ID..."
+                        value={
+                          simpleSiteList
+                            ? simpleSiteList.find((option) => option.id === getFieldProps("site.id"))
+                            : ""
+                        }
+                        onChange={(selectedOption) => {
+                          setFieldValue("site.id", selectedOption.id);
+                        }}
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            minHeight: '38px',
+                            borderRadius: '0.375rem',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                            '&:hover': { borderColor: state.isFocused ? '#3b82f6' : '#9ca3af' }
+                          }),
+                          input: (base) => ({ ...base, fontSize: '0.875rem' }),
+                          placeholder: (base) => ({ ...base, fontSize: '0.875rem', color: '#9ca3af' }),
+                          singleValue: (base) => ({ ...base, fontSize: '0.875rem', color: '#111827' }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                        }}
+                        components={{ MenuList: CustomMenuList }}
+                        isSearchable={true}
+                        options={simpleSiteList}
+                        menuPortalTarget={document.body}
+                        name="site.id"
+                        getOptionLabel={(option) => option.siteId}
+                        isLoading={false}
+                        loadingMessage={() => "Đang tải..."}
+                        noOptionsMessage={() => "Không tìm thấy Site ID"}
+                      />
+                      <ErrorMessage
+                        name="site.id"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
+
+                    {/* IP Quản lý */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        IP quản lý <span className="text-red-500">*</span>
+                      </Typography>
+                      <Field
+                        name="ip"
+                        placeholder="VD: 192.168.1.1"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all font-mono"
+                      />
+                      <ErrorMessage
+                        name="ip"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Loại thiết bị truyền dẫn */}
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                          Loại thiết bị TD
+                        </Typography>
                         <Field
-                          name="name"
-                          placeholder="Nhập tên thiết bị"
-                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="name"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Site ID
-                        </label>
-                        <Select
-                          placeholder="Site ID"
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("site.id", selectedOption.id);
-                          }}
-                          classNames={{
-                            control: (state) =>
-                              state.isFocused
-                                ? "border-blue-500"
-                                : "border-grey-300",
-                          }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
-                          isSearchable={true}
-                          options={simpleSiteList}
-                          name="site.id"
-                          getOptionLabel={(option) => option.siteId}
-                          isLoading={false}
-                          loadingMessage={() => "Đang lấy thông tin trạm..."}
-                          noOptionsMessage={() => "Site ID không tìm thấy"}
-                        />
-
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="site.id"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          IP quản lý
-                        </label>
-                        <Field
-                          name="ip"
-                          placeholder="Nhập IP quản ý"
-                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="ip"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Loại thiết bị truyền dẫn
-                        </label>
-                        <Field
-                          className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                           as="select"
                           name="transmissionDeviceType.id"
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                         >
-                          {transmissionDeviceTypeList.map((transDeviceType) => {
-                            return (
-                              <option
-                                key={transDeviceType.id}
-                                value={transDeviceType.id}
-                              >
-                                {transDeviceType.name}
-                              </option>
-                            );
-                          })}
-                        </Field>
-                      </div>
-                      {/* <p className="col-span-full text-2xl text-blue-600">Vị trí</p> */}
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Loại thiết bị Router
-                        </label>
-                        <Field
-                          className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          as="select"
-                          name="routerType.id"
-                        >
-                          {routerTypeList.map((routerType) => {
-                            return (
-                              <option key={routerType.id} value={routerType.id}>
-                                {routerType.name}
-                              </option>
-                            );
-                          })}
+                          {transmissionDeviceTypeList.map((type) => (
+                            <option key={type.id} value={type.id}>
+                              {type.name}
+                            </option>
+                          ))}
                         </Field>
                       </div>
 
-                      <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
-                        <label className="text-slate-400 font-semibold">
-                          Ghi chú
-                        </label>
+                      {/* Loại Router */}
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                          Loại Router
+                        </Typography>
                         <Field
-                          className="h-24 h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          as="textarea"
-                          name="note"
-                        ></Field>
+                          as="select"
+                          name="routerType.id"
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        >
+                          {routerTypeList.map((type) => (
+                            <option key={type.id} value={type.id}>
+                              {type.name}
+                            </option>
+                          ))}
+                        </Field>
                       </div>
                     </div>
-                  </Card>
+
+                    {/* Ghi chú */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        Ghi chú
+                      </Typography>
+                      <Field
+                        as="textarea"
+                        name="note"
+                        rows={3}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all resize-none"
+                        placeholder="Nhập ghi chú thêm..."
+                      />
+                    </div>
+                  </div>
                 </DialogBody>
-                <DialogFooter>
-                  <CustomButton size="sm" type="submit" color="blue">
-                    Thêm mới
+                
+                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                  <CustomButton 
+                    variant="text" 
+                    color="blue-gray" 
+                    onClick={handleOpenCreate}
+                    size="sm"
+                  >
+                    Hủy bỏ
+                  </CustomButton>
+                  <CustomButton 
+                    type="submit" 
+                    color="blue"
+                    size="sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <PlusIcon className="h-4 w-4" />
+                      <span>Thêm mới</span>
+                    </div>
                   </CustomButton>
                 </DialogFooter>
               </Form>
             )}
-            {/* <img src={MySvg} alt="" className="flex-initial p-5" /> */}
           </Formik>
         </div>
       </Dialog>
@@ -784,27 +806,29 @@ function RouterList() {
       <Dialog
         open={openEdit}
         handler={handleOpenEdit}
-        className="overflow-hidden"
+        className="overflow-hidden rounded-lg bg-white shadow-xl"
         size="sm"
       >
-        <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block">
-            <Typography variant="h4" color="blue">
-              Cập nhật thông tin thiết bị
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Cập nhật thiết bị
             </Typography>
-            <Typography className="mt-1 font-normal text-gray-700">
-              Cập nhật dữ liệu thiết bị đảm bảo thực tế
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Chỉnh sửa thông tin thiết bị
             </Typography>
-            <IconButton
-              size="sm"
-              variant="text"
-              className="!absolute right-3.5 top-3.5"
-              onClick={handleOpenEdit}
-            >
-              <XMarkIcon className="h-4 w-4 stroke-2" />
-            </IconButton>
-          </DialogHeader>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={handleOpenEdit}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
 
+        <div className="max-h-[80vh] overflow-y-auto">
           <Formik
             onSubmit={handleEditSubmit}
             initialValues={{
@@ -819,161 +843,185 @@ function RouterList() {
             })}
           >
             {({ setFieldValue, getFieldProps, values, setErrors }) => (
-              <Form className="flex flex-initial flex-shrink flex-col">
-                <DialogBody className="space-y-4 pb-6">
-                  <Card className="shadow-none">
-                    <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex justify-end gap-2">
-                        {/*<label className="text-slate-400 font-semibold">*/}
-                        {/*  Trạng thái*/}
-                        {/*</label>*/}
-                        <Field
-                          as={Switch}
-                          name="active"
-                          color="green"
-                          label={
-                            <Typography variant="h6">
-                              {values.active
-                                ? "Đang hoạt động"
-                                : "Không hoạt động"}
-                            </Typography>
-                          }
-                          checked={values.active}
-                          onChange={({ target }) =>
-                            setFieldValue("active", target.checked)
-                          } // Thiết lập giá trị true/false
-                        />
+              <Form className="flex flex-col">
+                <DialogBody className="p-6">
+                  <div className="grid grid-cols-1 gap-5">
+                    
+                    {/* Trạng thái Switch */}
+                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="font-medium">
+                          Trạng thái hoạt động
+                        </Typography>
+                        <Typography variant="small" className="text-gray-500 text-xs font-normal">
+                          Bật/tắt để thay đổi trạng thái thiết bị
+                        </Typography>
                       </div>
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Tên thiết bị
-                        </label>
-                        <Field
-                          name="name"
-                          placeholder="Nhập tên thiết bị"
-                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="name"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
+                      <Switch
+                        name="active"
+                        color="green"
+                        checked={values.active}
+                        onChange={({ target }) => setFieldValue("active", target.checked)}
+                        className="scale-90"
+                        circleProps={{
+                          className: "border-none",
+                        }}
+                      />
+                    </div>
 
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Site ID
-                        </label>
-                        <Select
-                          placeholder="Site ID"
-                          defaultValue={simpleSiteList.find(
-                            ({ id }) => id === values.site.id,
-                          )}
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("site.id", selectedOption.id);
-                          }}
-                          classNames={{
-                            control: (state) =>
-                              state.isFocused
-                                ? "border-blue-300"
-                                : "border-grey-300",
-                          }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
-                          isSearchable={true}
-                          options={simpleSiteList}
-                          name="site.id"
-                          getOptionLabel={(option) => option.siteId}
-                          isLoading={false}
-                          loadingMessage={() => "Đang lấy thông tin trạm..."}
-                          noOptionsMessage={() => "Không có thông tin trạm"}
-                        />
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="site.siteId"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          IP quản lý
-                        </label>
-                        <Field
-                          name="ip"
-                          placeholder="Nhập IP quản lý"
-                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="ip"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
+                    {/* Tên thiết bị */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        Tên thiết bị <span className="text-red-500">*</span>
+                      </Typography>
+                      <Field
+                        name="name"
+                        placeholder="VD: R_HNI_001"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                      />
+                      <ErrorMessage
+                        name="name"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
 
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Loại thiết bị truyền dẫn
-                        </label>
+                    {/* Site ID */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        Site ID <span className="text-red-500">*</span>
+                      </Typography>
+                      <Select
+                        placeholder="Chọn Site ID..."
+                        defaultValue={simpleSiteList.find(({ id }) => id === values.site.id)}
+                        value={
+                          simpleSiteList
+                            ? simpleSiteList.find((option) => option.id === getFieldProps("site.id"))
+                            : ""
+                        }
+                        onChange={(selectedOption) => {
+                          setFieldValue("site.id", selectedOption.id);
+                        }}
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            minHeight: '38px',
+                            borderRadius: '0.375rem',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                            '&:hover': { borderColor: state.isFocused ? '#3b82f6' : '#9ca3af' }
+                          }),
+                          input: (base) => ({ ...base, fontSize: '0.875rem' }),
+                          placeholder: (base) => ({ ...base, fontSize: '0.875rem', color: '#9ca3af' }),
+                          singleValue: (base) => ({ ...base, fontSize: '0.875rem', color: '#111827' }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                        }}
+                        components={{ MenuList: CustomMenuList }}
+                        isSearchable={true}
+                        options={simpleSiteList}
+                        menuPortalTarget={document.body}
+                        name="site.id"
+                        getOptionLabel={(option) => option.siteId}
+                        isLoading={false}
+                        loadingMessage={() => "Đang tải..."}
+                        noOptionsMessage={() => "Không tìm thấy Site ID"}
+                      />
+                      <ErrorMessage
+                        name="site.siteId"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
+
+                    {/* IP Quản lý */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        IP quản lý <span className="text-red-500">*</span>
+                      </Typography>
+                      <Field
+                        name="ip"
+                        placeholder="VD: 192.168.1.1"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all font-mono"
+                      />
+                      <ErrorMessage
+                        name="ip"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Loại thiết bị truyền dẫn */}
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                          Loại thiết bị TD
+                        </Typography>
                         <Field
-                          className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                           as="select"
                           name="transmissionDeviceType.id"
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                         >
-                          {transmissionDeviceTypeList.map((transDeviceType) => {
-                            return (
-                              <option
-                                key={transDeviceType.id}
-                                value={transDeviceType.id}
-                              >
-                                {transDeviceType.name}
-                              </option>
-                            );
-                          })}
+                          {transmissionDeviceTypeList.map((type) => (
+                            <option key={type.id} value={type.id}>
+                              {type.name}
+                            </option>
+                          ))}
                         </Field>
                       </div>
-                      {/* <p className="col-span-full text-2xl text-blue-600">Vị trí</p> */}
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Loại thiết bị Router
-                        </label>
+
+                      {/* Loại Router */}
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                          Loại Router
+                        </Typography>
                         <Field
-                          className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                           as="select"
                           name="routerType.id"
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                         >
-                          {routerTypeList.map((routerType) => {
-                            return (
-                              <option key={routerType.id} value={routerType.id}>
-                                {routerType.name}
-                              </option>
-                            );
-                          })}
+                          {routerTypeList.map((type) => (
+                            <option key={type.id} value={type.id}>
+                              {type.name}
+                            </option>
+                          ))}
                         </Field>
                       </div>
-                      <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
-                        <label className="text-slate-400 font-semibold">
-                          Ghi chú
-                        </label>
-                        <Field
-                          className="h-24 h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          as="textarea"
-                          name="note"
-                        ></Field>
-                      </div>
                     </div>
-                  </Card>
+
+                    {/* Ghi chú */}
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-medium">
+                        Ghi chú
+                      </Typography>
+                      <Field
+                        as="textarea"
+                        name="note"
+                        rows={3}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all resize-none"
+                        placeholder="Nhập ghi chú thêm..."
+                      />
+                    </div>
+                  </div>
                 </DialogBody>
-                <DialogFooter>
-                  <CustomButton size="sm" type="submit" color="blue">
-                    Cập nhật dữ liệu
+                
+                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                  <CustomButton 
+                    variant="text" 
+                    color="blue-gray" 
+                    onClick={handleOpenEdit}
+                    size="sm"
+                  >
+                    Hủy bỏ
+                  </CustomButton>
+                  <CustomButton 
+                    type="submit" 
+                    color="blue"                    
+                    size="sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <PencilIcon className="h-4 w-4" />
+                      <span>Cập nhật</span>
+                    </div>
                   </CustomButton>
                 </DialogFooter>
               </Form>
@@ -983,26 +1031,48 @@ function RouterList() {
       </Dialog>
 
       {/*Modal confirm xóa site*/}
-      <Dialog open={openDelete} handler={handleOpenDelete} size="md">
-        <DialogHeader>Xác nhận xóa router khỏi cơ sở dữ liệu</DialogHeader>
-        <DialogBody>
-          Bạn muốn xóa thông tin trạm <span>{deleteRouterName}</span> ?
+      <Dialog 
+        open={openDelete} 
+        handler={handleOpenDelete} 
+        size="xs"
+        className="rounded-lg overflow-hidden shadow-xl"
+      >
+        <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+          <div className="bg-red-100 p-2 rounded-full">
+            <TrashIcon className="h-5 w-5 text-red-600" />
+          </div>
+          <Typography variant="h5" color="red" className="font-semibold">
+            Xác nhận xóa
+          </Typography>
+        </div>
+        
+        <DialogBody className="p-6">
+          <Typography variant="paragraph" color="blue-gray" className="font-normal">
+            Bạn có chắc chắn muốn xóa thông tin thiết bị <span className="font-bold text-gray-900">{deleteRouterName}</span>? 
+          </Typography>
+          <Typography variant="small" color="gray" className="mt-2 italic">
+            Hành động này không thể hoàn tác và dữ liệu sẽ bị xóa vĩnh viễn khỏi hệ thống.
+          </Typography>
         </DialogBody>
-        <DialogFooter>
+        
+        <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
           <CustomButton
             variant="text"
-            color="gray"
+            color="blue-gray"
             onClick={handleOpenDelete}
-            className="mr-1"
+            size="sm"
           >
-            <span>Hủy</span>
+            Hủy bỏ
           </CustomButton>
           <CustomButton
             variant="filled"
             color="red"
             onClick={handleDeleteSubmit}
+            size="sm"
+            className="flex items-center gap-2 shadow-md shadow-red-500/20"
           >
-            <span>Xóa</span>
+            <TrashIcon className="h-4 w-4" />
+            Xác nhận xóa
           </CustomButton>
         </DialogFooter>
       </Dialog>
