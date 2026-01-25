@@ -28,6 +28,7 @@ import {
   DialogFooter,
   Input,
   IconButton as MTIconButton,
+  Switch,
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
@@ -43,7 +44,7 @@ function SiteList2() {
   const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
   const [siteOwnerList, setSiteOwnerList] = useState([]);
   const [provinces, setProvinces] = useState([]);
-  
+
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
@@ -61,22 +62,35 @@ function SiteList2() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
-  
+
   const axiosInstance = useAxiosPrivate();
 
   const filteredSites = useMemo(() => {
     return siteListFull.filter((site) => {
-      const matchProvince = !filters.province || site.province?.id === filters.province.id;
-      const matchTransOwner = !filters.transmissionOwner || site.transmissionOwner?.id === filters.transmissionOwner.id;
-      const matchSiteTransType = !filters.siteTransmissionType || site.siteTransmissionType?.id === filters.siteTransmissionType.id;
-      const matchSiteOwner = !filters.siteOwner || site.siteOwner?.id === filters.siteOwner.id;
-      const matchSearch = !filters.search || 
-        (site.siteId?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (site.siteId2?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (site.siteName?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (site.note?.toLowerCase().includes(filters.search.toLowerCase()));
+      const matchProvince =
+        !filters.province || site.province?.id === filters.province.id;
+      const matchTransOwner =
+        !filters.transmissionOwner ||
+        site.transmissionOwner?.id === filters.transmissionOwner.id;
+      const matchSiteTransType =
+        !filters.siteTransmissionType ||
+        site.siteTransmissionType?.id === filters.siteTransmissionType.id;
+      const matchSiteOwner =
+        !filters.siteOwner || site.siteOwner?.id === filters.siteOwner.id;
+      const matchSearch =
+        !filters.search ||
+        site.siteId?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        site.siteId2?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        site.siteName?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        site.note?.toLowerCase().includes(filters.search.toLowerCase());
 
-      return matchProvince && matchTransOwner && matchSiteTransType && matchSiteOwner && matchSearch;
+      return (
+        matchProvince &&
+        matchTransOwner &&
+        matchSiteTransType &&
+        matchSiteOwner &&
+        matchSearch
+      );
     });
   }, [siteListFull, filters]);
 
@@ -92,7 +106,7 @@ function SiteList2() {
 
   const onBtnExport = () => {
     const dataToExport = filteredSites.map((site) => ({
-      "Tỉnh": site.province?.name,
+      Tỉnh: site.province?.name,
       "Site ID": site.siteId,
       "Site ID 2": site.siteId2,
       "Tên trạm": site.siteName,
@@ -121,79 +135,34 @@ function SiteList2() {
   };
 
   useEffect(() => {
-    const getAllSiteFull = async () => {
-      try {
-        const sites = await axiosInstance.get("sites");
-        setSiteListFull(sites.data || []);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getAllSiteFull();
-  }, []);
-
-  useEffect(() => {
-    const getAllSiteOwner = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
-        const siteOwnerList = await axiosInstance.get("siteOwners");
-        setSiteOwnerList(siteOwnerList.data || []);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getAllSiteOwner();
-  }, []);
+        // Load Sites
+        const sitesRes = await axiosInstance.get("sites");
+        setSiteListFull(sitesRes.data || []);
 
-  useEffect(() => {
-    const getAllTransmissionOwner = async () => {
-      setIsLoading(true);
-      try {
-        const transOwnerList = await axiosInstance.get("transmissionOwners");
-        setTransmissionOwnerList(transOwnerList.data || []);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getAllTransmissionOwner();
-  }, []);
+        // Load Metadata concurrently
+        const [ownersRes, transOwnersRes, provincesRes, transTypesRes] =
+          await Promise.all([
+            axiosInstance.get("siteOwners"),
+            axiosInstance.get("transmissionOwners"),
+            axiosInstance.get("provinces"),
+            axiosInstance.get("site-transmission-types"),
+          ]);
 
-  useEffect(() => {
-    const getAllProvince = async () => {
-      setIsLoading(true);
-      try {
-        const provinces = await axiosInstance.get("provinces");
-        setProvinces(provinces.data || []);
+        setSiteOwnerList(ownersRes.data || []);
+        setTransmissionOwnerList(transOwnersRes.data || []);
+        setProvinces(provincesRes.data || []);
+        setSiteTransmissionTypeList(transTypesRes.data || []);
       } catch (error) {
         console.log(error);
+        toast.error("Lỗi tải dữ liệu.");
       } finally {
         setIsLoading(false);
       }
     };
-    getAllProvince();
-  }, []);
-
-  useEffect(() => {
-    const getAllSiteTransmissionType = async () => {
-      setIsLoading(true);
-      try {
-        const siteTransTypeList = await axiosInstance.get(
-          "site-transmission-types"
-        );
-        setSiteTransmissionTypeList(siteTransTypeList.data || []);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getAllSiteTransmissionType();
+    loadData();
   }, []);
 
   // Xử lý thêm mới
@@ -201,20 +170,39 @@ function SiteList2() {
     setOpenCreate(!openCreate);
   };
 
-  const handleCreate = async (site, { setErrors }) => {
-    site.latitude = +site.latitude;
-    site.longitude = +site.longitude;
-    console.log(site);
+  // Helper: Map Formik values (Nested) to Backend DTO (Flat)
+  const mapFormToRequest = (values) => {
+    return {
+      id: values.id,
+      siteId: values.siteId,
+      siteId2: values.siteId2,
+      siteName: values.siteName,
+      latitude: +values.latitude,
+      longitude: +values.longitude,
+      note: values.note,
+      active: values.active,
+      provinceId: values.province?.id || null,
+      siteOwnerId: values.siteOwner?.id || null,
+      siteTransmissionTypeId: values.siteTransmissionType?.id || null,
+      transmissionOwnerId: values.transmissionOwner?.id || null,
+    };
+  };
 
+  const handleCreate = async (values, { setErrors }) => {
+    console.log("Giá trị từ Form:" + values);
+    const payload = mapFormToRequest(values);
     try {
-      await axiosInstance.post("sites", site);
+      const response = await axiosInstance.post("sites", payload);
+      const newSite = response.data;
       toast.success("Đã thêm mới trạm thành công.");
-      const updatedSites = await axiosInstance.get("sites");
-      setSiteListFull(updatedSites.data || []);
+      setSiteListFull((prevState) => [newSite, ...prevState]);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi thêm mới", {
-        zIndex: 9999,
-      });
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi thêm mới",
+        {
+          zIndex: 9999,
+        },
+      );
     } finally {
       setOpenCreate(!openCreate);
     }
@@ -222,31 +210,35 @@ function SiteList2() {
 
   // Xử lý Edit
 
-  const handleEdit = async (editId) => {
-    const getSiteById = async (editId) => {
-      try {
-        const site = await axiosInstance.get(`sites/${editId}`);
-        setEditSite({ ...site.data });
-        handleOpenEdit();
-        console.log(site.data);
-      } catch (error) {
-        console.log("Lỗi api:");
-        console.log(error);
-      }
-    };
-    getSiteById(editId);
+  const handleEdit = async (id) => {
+    try {
+      const response = await axiosInstance.get(`sites/${id}`);
+      const site = response.data;
+      console.log("site cần edit:" + site);
+      setEditId(id);
+      setEditSite({ ...site });
+      handleOpenEdit();
+    } catch (error) {
+      console.log("Lỗi api:", error);
+      toast.error("Không thể lấy thông tin trạm");
+    }
   };
 
   const handleOpenEdit = () => {
     setOpenEdit(!openEdit);
   };
-  const handleEditSubmit = async (site) => {
-    site.latitude = +site.latitude;
-    site.longitude = +site.longitude;
+
+  const handleEditSubmit = async (values) => {
+    console.log("Giá trị từ Form:" + values);
+    const payload = mapFormToRequest(values);
+
+    console.log("payload:" + payload);
     try {
-      await axiosInstance.put(`sites/${site.id}`, site);
+      const response = await axiosInstance.put(`sites/${values.id}`, payload);
+      const updatedSite = response.data;
       setSiteListFull((prevState) =>
-        prevState.map((s) => (s.id === site.id ? site : s))
+        // Update local state optimistically or refetch
+        prevState.map((s) => (s.id === updatedSite.id ? updatedSite : s)),
       );
       toast.success("Đã cập nhật thành công trạm");
     } catch (error) {
@@ -259,7 +251,6 @@ function SiteList2() {
     } finally {
       setOpenEdit(!openEdit);
     }
-    // await getAllSites();
   };
 
   // Xử lý Xóa
@@ -276,8 +267,9 @@ function SiteList2() {
       await axiosInstance.delete("sites/" + deleteId);
       toast.success("Đã xóa thành công trạm");
       setSiteListFull((prevState) =>
-        prevState.filter((site) => site.id !== deleteId)
+        prevState.filter((site) => site.id !== deleteId),
       );
+      setDeleteId(null);
     } catch (e) {
       console.log(e);
       toast.error("Có lỗi xảy ra khi xóa trạm");
@@ -288,7 +280,7 @@ function SiteList2() {
 
   let deleteSiteId;
   if (deleteId != null) {
-    deleteSiteId = siteListFull.find((site) => site.id === deleteId).siteId;
+    deleteSiteId = siteListFull.find((site) => site.id === deleteId)?.siteId;
     console.log(deleteSiteId);
   }
 
@@ -308,7 +300,11 @@ function SiteList2() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Danh sách trạm</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Tổng số: <span className="font-semibold text-blue-600">{filteredSites.length}</span> / {siteListFull.length} trạm
+            Tổng số:{" "}
+            <span className="font-semibold text-blue-600">
+              {filteredSites.length}
+            </span>{" "}
+            / {siteListFull.length} trạm
           </p>
         </div>
         <div className="flex gap-2">
@@ -335,9 +331,15 @@ function SiteList2() {
       <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
         <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
           <FunnelIcon className="h-5 w-5" />
-          <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
-          {(filters.province || filters.transmissionOwner || filters.siteTransmissionType || filters.siteOwner || filters.search) && (
-            <button 
+          <span className="font-bold text-sm uppercase tracking-wider">
+            Bộ lọc tìm kiếm
+          </span>
+          {(filters.province ||
+            filters.transmissionOwner ||
+            filters.siteTransmissionType ||
+            filters.siteOwner ||
+            filters.search) && (
+            <button
               onClick={handleResetFilters}
               className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
             >
@@ -348,7 +350,9 @@ function SiteList2() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tỉnh</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tỉnh
+            </span>
             <Select
               isClearable
               placeholder="Tất cả tỉnh"
@@ -357,22 +361,26 @@ function SiteList2() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.province}
-              onChange={(val) => setFilters(prev => ({ ...prev, province: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, province: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Sở hữu truyền dẫn</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Sở hữu truyền dẫn
+            </span>
             <Select
               isClearable
               placeholder="Tất cả đơn vị"
@@ -381,22 +389,26 @@ function SiteList2() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.transmissionOwner}
-              onChange={(val) => setFilters(prev => ({ ...prev, transmissionOwner: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, transmissionOwner: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Loại truyền dẫn</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Loại truyền dẫn
+            </span>
             <Select
               isClearable
               placeholder="Tất cả loại"
@@ -405,22 +417,26 @@ function SiteList2() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.siteTransmissionType}
-              onChange={(val) => setFilters(prev => ({ ...prev, siteTransmissionType: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, siteTransmissionType: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Chủ nhà trạm</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Chủ nhà trạm
+            </span>
             <Select
               isClearable
               placeholder="Tất cả chủ nhà"
@@ -429,22 +445,26 @@ function SiteList2() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.siteOwner}
-              onChange={(val) => setFilters(prev => ({ ...prev, siteOwner: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, siteOwner: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tìm kiếm nhanh</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tìm kiếm nhanh
+            </span>
             <Input
               icon={<MagnifyingGlassIcon className="h-4 w-4" />}
               placeholder="Site ID, Tên, Ghi chú..."
@@ -453,9 +473,11 @@ function SiteList2() {
                 className: "before:content-none after:content-none",
               }}
               value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value }))
+              }
               containerProps={{
-                className: "min-w-0"
+                className: "min-w-0",
               }}
             />
           </div>
@@ -468,61 +490,152 @@ function SiteList2() {
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tỉnh</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tỉnh
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Site ID</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Site ID
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Site ID 2</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Site ID 2
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tên trạm</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tên trạm
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Truyền dẫn</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Truyền dẫn
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Vị trí</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Vị trí
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Ghi chú</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Ghi chú
+                  </Typography>
                 </th>
                 <th className="p-4 text-center">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tác động</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tác động
+                  </Typography>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {paginatedSites.map((site) => (
-                <tr key={site.id} className="hover:bg-gray-50/80 transition-colors">
+                <tr
+                  key={site.id}
+                  className="hover:bg-gray-50/80 transition-colors"
+                >
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">{site.province?.name}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {site.province?.name}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-bold">{site.siteId}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold"
+                    >
+                      {site.siteId}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">{site.siteId2 || "-"}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {site.siteId2 || "-"}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-medium">{site.siteName}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-medium"
+                    >
+                      {site.siteName}
+                    </Typography>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <Typography variant="small" color="blue-gray" className="font-normal">{site.siteTransmissionType?.name}</Typography>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
+                      >
+                        {site.siteTransmissionType?.name}
+                      </Typography>
                       {site.transmissionOwner?.name && (
                         <OwnerChip name={site.transmissionOwner.name} />
                       )}
                     </div>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal text-xs italic">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal text-xs italic"
+                    >
                       {site.latitude?.toFixed(4)}, {site.longitude?.toFixed(4)}
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal opacity-70 italic max-w-[200px] truncate">{site.note || "-"}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal opacity-70 italic max-w-[200px] truncate"
+                    >
+                      {site.note || "-"}
+                    </Typography>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center justify-center gap-1">
@@ -550,19 +663,28 @@ function SiteList2() {
           </table>
           {filteredSites.length === 0 && (
             <div className="py-20 text-center">
-              <Typography variant="h6" color="blue-gray" className="opacity-40">Không tìm thấy trạm nào khớp với bộ lọc</Typography>
+              <Typography variant="h6" color="blue-gray" className="opacity-40">
+                Không tìm thấy trạm nào khớp với bộ lọc
+              </Typography>
             </div>
           )}
         </div>
-        
+
         {/* Pagination Controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-4">
-            <Typography variant="small" color="blue-gray" className="font-normal">
-              Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages || 1}</span>
+            <Typography
+              variant="small"
+              color="blue-gray"
+              className="font-normal"
+            >
+              Trang <span className="font-bold">{currentPage}</span> /{" "}
+              <span className="font-bold">{totalPages || 1}</span>
             </Typography>
             <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
-              <span className="text-xs text-blue-gray-400 font-medium">Hiển thị:</span>
+              <span className="text-xs text-blue-gray-400 font-medium">
+                Hiển thị:
+              </span>
               <select
                 value={rowsPerPage}
                 onChange={(e) => {
@@ -571,8 +693,10 @@ function SiteList2() {
                 }}
                 className="text-xs border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-blue-500 transition-colors"
               >
-                {[5, 10, 15, 20, 50, 100].map(val => (
-                  <option key={val} value={val}>{val} dòng</option>
+                {[5, 10, 15, 20, 50, 100].map((val) => (
+                  <option key={val} value={val}>
+                    {val} dòng
+                  </option>
                 ))}
               </select>
             </div>
@@ -591,7 +715,9 @@ function SiteList2() {
               variant="outlined"
               size="sm"
               disabled={currentPage === totalPages || totalPages === 0}
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               className="rounded-md border-gray-300"
             >
               <ChevronRightIcon strokeWidth={2} className="h-4 w-4" />
@@ -609,7 +735,11 @@ function SiteList2() {
       >
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+            <Typography
+              variant="h5"
+              color="blue-gray"
+              className="font-semibold text-gray-900"
+            >
               Thêm mới trạm
             </Typography>
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
@@ -640,6 +770,7 @@ function SiteList2() {
               siteTransmissionType: { id: 1 },
               siteOwner: { id: 1 },
               note: "",
+              active: true,
             }}
             validationSchema={Yup.object(validate)}
           >
@@ -647,10 +778,35 @@ function SiteList2() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    
+                    {/* Trạng thái Switch */}
+                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                      <div>
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-bold"
+                        >
+                          Trạng thái hoạt động
+                        </Typography>
+                      </div>
+                      <Switch
+                        name="active"
+                        color="green"
+                        checked={values.active}
+                        onChange={({ target }) =>
+                          setFieldValue("active", target.checked)
+                        }
+                        className="scale-90"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Site ID <span className="text-red-500">*</span>
                         </Typography>
                         <Field
@@ -658,10 +814,18 @@ function SiteList2() {
                           placeholder="VD: DN_001"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                         />
-                        <ErrorMessage name="siteId" component="div" className="mt-1 text-xs text-red-600 font-medium" />
+                        <ErrorMessage
+                          name="siteId"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Site ID khác
                         </Typography>
                         <Field
@@ -673,7 +837,11 @@ function SiteList2() {
                     </div>
 
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Tên trạm <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -702,7 +870,11 @@ function SiteList2() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Vĩ độ <span className="text-red-500">*</span>
                         </Typography>
                         <Field
@@ -710,10 +882,18 @@ function SiteList2() {
                           placeholder="VD: 21.0285"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all font-mono text-xs"
                         />
-                        <ErrorMessage name="latitude" component="div" className="mt-1 text-xs text-red-600 font-medium" />
+                        <ErrorMessage
+                          name="latitude"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Kinh độ <span className="text-red-500">*</span>
                         </Typography>
                         <Field
@@ -721,7 +901,11 @@ function SiteList2() {
                           placeholder="VD: 105.8542"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all font-mono text-xs"
                         />
-                        <ErrorMessage name="longitude" component="div" className="mt-1 text-xs text-red-600 font-medium" />
+                        <ErrorMessage
+                          name="longitude"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                     </div>
 
@@ -743,7 +927,11 @@ function SiteList2() {
                     </div>
 
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Ghi chú
                       </Typography>
                       <Field
@@ -756,18 +944,18 @@ function SiteList2() {
                     </div>
                   </div>
                 </DialogBody>
-                
+
                 <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
-                  <CustomButton 
-                    variant="text" 
-                    color="blue-gray" 
+                  <CustomButton
+                    variant="text"
+                    color="blue-gray"
                     onClick={handleOpenCreate}
                     size="sm"
                   >
                     Hủy bỏ
                   </CustomButton>
-                  <CustomButton 
-                    type="submit" 
+                  <CustomButton
+                    type="submit"
                     className="bg-[#0d47a1] hover:bg-[#0a3a82]"
                     size="sm"
                   >
@@ -792,7 +980,11 @@ function SiteList2() {
       >
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+            <Typography
+              variant="h5"
+              color="blue-gray"
+              className="font-semibold text-gray-900"
+            >
               Cập nhật trạm
             </Typography>
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
@@ -821,10 +1013,28 @@ function SiteList2() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    
+                    {/* Trạng thái Switch */}
+                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                      <div>
+                        <Typography variant="small" color="blue-gray" className="font-bold">
+                          Trạng thái hoạt động
+                        </Typography>
+                      </div>
+                      <Switch
+                        name="active"
+                        color="green"
+                        checked={values.active}
+                        onChange={({ target }) => setFieldValue("active", target.checked)}
+                        className="scale-90"
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Site ID <span className="text-red-500">*</span>
                         </Typography>
                         <Field
@@ -832,10 +1042,18 @@ function SiteList2() {
                           placeholder="VD: DN_001"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                         />
-                        <ErrorMessage name="siteId" component="div" className="mt-1 text-xs text-red-600 font-medium" />
+                        <ErrorMessage
+                          name="siteId"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Site ID khác
                         </Typography>
                         <Field
@@ -847,7 +1065,11 @@ function SiteList2() {
                     </div>
 
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Tên trạm <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -876,7 +1098,11 @@ function SiteList2() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Vĩ độ <span className="text-red-500">*</span>
                         </Typography>
                         <Field
@@ -884,10 +1110,18 @@ function SiteList2() {
                           placeholder="VD: 21.0285"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all font-mono text-xs"
                         />
-                        <ErrorMessage name="latitude" component="div" className="mt-1 text-xs text-red-600 font-medium" />
+                        <ErrorMessage
+                          name="latitude"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                       <div>
-                        <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
                           Kinh độ <span className="text-red-500">*</span>
                         </Typography>
                         <Field
@@ -895,7 +1129,11 @@ function SiteList2() {
                           placeholder="VD: 105.8542"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all font-mono text-xs"
                         />
-                        <ErrorMessage name="longitude" component="div" className="mt-1 text-xs text-red-600 font-medium" />
+                        <ErrorMessage
+                          name="longitude"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                     </div>
 
@@ -917,7 +1155,11 @@ function SiteList2() {
                     </div>
 
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Ghi chú
                       </Typography>
                       <Field
@@ -930,18 +1172,18 @@ function SiteList2() {
                     </div>
                   </div>
                 </DialogBody>
-                
+
                 <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
-                  <CustomButton 
-                    variant="text" 
-                    color="blue-gray" 
+                  <CustomButton
+                    variant="text"
+                    color="blue-gray"
                     onClick={handleOpenEdit}
                     size="sm"
                   >
                     Hủy bỏ
                   </CustomButton>
-                  <CustomButton 
-                    type="submit" 
+                  <CustomButton
+                    type="submit"
                     className="bg-[#0d47a1] hover:bg-[#0a3a82]"
                     size="sm"
                   >
@@ -958,9 +1200,9 @@ function SiteList2() {
       </Dialog>
 
       {/* Modal confirm xóa site */}
-      <Dialog 
-        open={openDelete} 
-        handler={handleOpenDelete} 
+      <Dialog
+        open={openDelete}
+        handler={handleOpenDelete}
         size="xs"
         className="rounded-lg overflow-hidden shadow-xl"
       >
@@ -972,16 +1214,22 @@ function SiteList2() {
             Xác nhận xóa
           </Typography>
         </div>
-        
+
         <DialogBody className="p-6 text-blue-gray-700">
-          <Typography variant="paragraph" color="blue-gray" className="font-medium">
-            Bạn có chắc chắn muốn xóa trạm <span className="font-bold text-gray-900">{deleteSiteId}</span>? 
+          <Typography
+            variant="paragraph"
+            color="blue-gray"
+            className="font-medium"
+          >
+            Bạn có chắc chắn muốn xóa trạm{" "}
+            <span className="font-bold text-gray-900">{deleteSiteId}</span>?
           </Typography>
           <Typography variant="small" color="gray" className="mt-3 italic">
-            Hành động này không thể hoàn tác và dữ liệu sẽ bị xóa vĩnh viễn khỏi hệ thống.
+            Hành động này không thể phục hồi và dữ liệu sẽ bị xóa vĩnh viễn khỏi
+            hệ thống.
           </Typography>
         </DialogBody>
-        
+
         <DialogFooter className="bg-gray-50/50 px-4 py-3 gap-2 border-t border-gray-200">
           <CustomButton
             variant="text"
