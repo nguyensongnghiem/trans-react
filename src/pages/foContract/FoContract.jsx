@@ -142,8 +142,8 @@ function FoContract() {
   const filteredContracts = useMemo(() => {
     return contractList.filter((contract) => {
       const matchOwner =
-        !filters.transmissionOwner ||
-        contract.transmissionOwner?.id === filters.transmissionOwner.id;
+        !filters.transmissionOwner || // Nếu không có bộ lọc owner được chọn
+        Number(contract.transmissionOwner?.id) === Number(filters.transmissionOwner.id); // So sánh ID dưới dạng số
       const matchYear =
         !filters.year ||
         new Date(contract.signedDate).getFullYear() === filters.year.value;
@@ -414,6 +414,18 @@ function FoContract() {
       .map((y) => ({ label: y, value: y }));
   }, [contractList]);
 
+  const customSelectStyles = {
+    control: (provided) => ({
+      ...provided,
+      height: "40px", // Match material-tailwind Input height
+      minHeight: "40px",
+    }),
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 50, // Ensure dropdown is above sticky table header (z-10)
+    }),
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-4">
@@ -490,6 +502,8 @@ function FoContract() {
             onChange={(val) =>
               setFilters((prev) => ({ ...prev, transmissionOwner: val }))
             }
+            styles={customSelectStyles}
+            menuPortalTarget={document.body}
           />
           {/* Year Filter */}
           <Select
@@ -498,6 +512,8 @@ function FoContract() {
             options={yearOptions}
             value={filters.year}
             onChange={(val) => setFilters((prev) => ({ ...prev, year: val }))}
+            styles={customSelectStyles}
+            menuPortalTarget={document.body}
           />
           {/* Status Filter */}
           <Select
@@ -509,6 +525,8 @@ function FoContract() {
             ]}
             value={filters.status}
             onChange={(val) => setFilters((prev) => ({ ...prev, status: val }))}
+            styles={customSelectStyles}
+            menuPortalTarget={document.body}
           />
         </div>
       </div>
@@ -1187,7 +1205,7 @@ function FoContract() {
       </Dialog>
 
       {/* Drawer Edit (Render độc lập, không nằm trong Modal) */}
-      
+
       {openEdit && detailId && (
         <FoContractEditDrawer
           id={detailId}
