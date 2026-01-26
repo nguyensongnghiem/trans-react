@@ -19,7 +19,7 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import FoContractDocuments from "./FoContractDocuments";
-import InfoCard from "./component/InfoCard.jsx";
+import InfoCard from "./component/InfoCard.jsx"; 
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid/index.js";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
@@ -41,6 +41,11 @@ function FoConTractDetail(props) {
   }), []);
   const [openEditLine, setOpenEditLine] = useState(false);
   const [editLine, setEditLine] = useState(null);
+
+  // ==== STATE QUẢN LÝ XÓA PDF ====== //
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleEdit = useCallback(async (lineId) => {
     try {
@@ -190,6 +195,32 @@ function FoConTractDetail(props) {
     return totalAmountBeforeTax + totalVat;
   }, [totalAmountBeforeTax, totalVat]);
     const [open, setOpen] = useState(false);
+
+  const handleDeletePdf = (file) => {
+    setFileToDelete(file);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeletePdf = async () => {
+    if (!fileToDelete) return;
+
+    try {
+      setDeleting(true);
+      await axiosInstance.delete(
+        `/contract/${contractDetail.id}/pdf/${encodeURIComponent(fileToDelete)}`
+      );
+      toast.success(`Đã xóa file: ${fileToDelete}`);
+      // Update state to reflect deletion
+      setPdfList((prev) => prev.filter((f) => f !== fileToDelete));
+    } catch (err) {
+      console.error(err);
+      toast.error("Xóa file thất bại");
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+      setFileToDelete(null);
+    }
+  };
 
 
 
@@ -404,6 +435,29 @@ function FoConTractDetail(props) {
 
   return (
     <>
+      <Dialog open={showDeleteModal} handler={() => setShowDeleteModal(false)} size="xs">
+        <DialogHeader>Xác nhận xóa file</DialogHeader>
+        <DialogBody>
+          Bạn có chắc chắn muốn xóa file: <span className="font-bold break-all">{fileToDelete}</span>?
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="text"
+            color="blue-gray"
+            onClick={() => setShowDeleteModal(false)}
+            className="mr-1"
+            disabled={deleting}
+          >
+            <span>Hủy</span>
+          </Button>
+          <Button variant="gradient" color="red" onClick={confirmDeletePdf} disabled={deleting}>
+            <span>{deleting ? "Đang xóa..." : "Xóa"}</span>
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+
+
       <div className="mt-6 rounded-none text-blue-gray-600 flex flex-col h-full">
         <div className="mb-3 flex items-center justify-start gap-2 border-b">
           <div className="flex items-center gap-1 border-b-2 border-blue-600 pb-1 pr-1 uppercase text-blue-gray-600">
@@ -736,65 +790,85 @@ function FoConTractDetail(props) {
                       </div>
 
                       <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Tải lên văn bản hợp đồng
-                        </label>
-                        {contractDetail.contractUrl && (
-                          <Typography color="blue-gray">
+                          <label className="text-slate-400 font-semibold">
                             Văn bản hợp đồng
-                          </Typography>
-                        )}
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          multiple
-                          className="w-full cursor-pointer rounded border bg-white text-sm
-                                    file:mr-4 file:border-0 file:bg-gray-100
-                                    file:px-4 file:py-2 file:text-gray-600"
-                          onChange={(e) => {
-                            const selectedFiles = Array.from(e.target.files || []);
+                          </label>
 
-                            setPdfFiles((prev) => [
-                              ...prev,
-                              ...selectedFiles.filter(
-                                f => !prev.some(p => p.name === f.name)
-                              )
-                            ]);
-
-                            e.target.value = null; // ⭐ cho phép chọn lại file cùng tên
-                          }}
-                        ></input>
-                        {pdfFiles.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            {pdfFiles.map((file, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between rounded bg-green-100 px-3 py-2 text-sm"
-                              >
-                                <span className="truncate">
-                                  📄 {file.name}
-                                </span>
-
-                                <button
-                                  type="button"
-                                  className="ml-2 text-red-500 hover:text-red-700"
-                                  onClick={() =>
-                                    setPdfFiles(prev =>
-                                      prev.filter((_, i) => i !== index)
-                                    )
-                                  }
+                          {/* ===== DANH SÁCH FILE HIỆN CÓ ===== */}
+                          {pdfList.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              <Typography variant="small" className="font-semibold text-gray-600">
+                                Các file hiện có:
+                              </Typography>
+                              {pdfList.map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between rounded bg-blue-50 border border-blue-200 px-3 py-2 text-sm"
                                 >
-                                  ❌
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="contractUrl"
-                          component="span"
-                        ></ErrorMessage>
+                                  <span className="truncate text-blue-gray-800">
+                                    📄 {file}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="ml-2 text-red-500 hover:text-red-700"
+                                    onClick={() => handleDeletePdf(file)}
+                                    title={`Xóa file ${file}`}
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* ===== INPUT TẢI FILE MỚI ===== */}
+                          <label className="text-slate-400 font-semibold mt-4">
+                            Tải lên file mới
+                          </label>
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            multiple
+                            className="w-full cursor-pointer rounded border bg-white text-sm
+                                      file:mr-4 file:border-0 file:bg-gray-100
+                                      file:px-4 file:py-2 file:text-gray-600"
+                            onChange={(e) => {
+                              const selectedFiles = Array.from(e.target.files || []);
+                              setPdfFiles((prev) => [
+                                ...prev,
+                                ...selectedFiles.filter(
+                                  f => !prev.some(p => p.name === f.name)
+                                )
+                              ]);
+                              e.target.value = null; // ⭐ cho phép chọn lại file cùng tên
+                            }}
+                          />
+
+                          {/* ===== DANH SÁCH FILE MỚI CHỌN ===== */}
+                          {pdfFiles.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              <Typography variant="small" className="font-semibold text-gray-600">
+                                Các file mới tải lên:
+                              </Typography>
+                              {pdfFiles.map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between rounded bg-green-100 px-3 py-2 text-sm"
+                                >
+                                  <span className="truncate">
+                                    📄 {file.name}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="ml-2 text-red-500 hover:text-red-700"
+                                    onClick={() => setPdfFiles(prev => prev.filter((_, i) => i !== index))}
+                                  >
+                                    ❌
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     </div>
                     <div className="col-span-full flex flex-col gap-2">
