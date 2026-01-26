@@ -1,8 +1,19 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
-import { ArrowRightCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  EyeIcon,
+  PlusIcon,
+  TrashIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import React from "react";
@@ -10,13 +21,11 @@ import { ErrorMessage, Field, Form, Formik } from "formik";
 import * as Yup from "yup";
 import { checkExcelImport } from "../../services/FoContractService.jsx";
 import * as XLSX from "xlsx";
-import { PlusIcon } from "@heroicons/react/24/outline";
 import {
   Stepper,
   Step,
   Button,
   Card,
-  CardHeader,
   Typography,
   List,
   ListItem,
@@ -31,18 +40,21 @@ import {
   DialogBody,
   DialogHeader,
   DialogFooter,
+  IconButton as MTIconButton,
 } from "@material-tailwind/react";
-import { HashtagIcon } from "@heroicons/react/24/solid";
 import {
-  MagnifyingGlassIcon,
   CogIcon,
   UserIcon,
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
 import FoConTractDetail from "./FoConTractDetail.jsx";
+import FoContractEditDrawer from "./FoContractEditDrawer.jsx";
+import Select from "react-select";
+import StatusChip from "../../components/StatusChip.jsx";
+import CustomButton from "../../components/CustomButton.jsx";
+import { DateTime } from "luxon";
 
 function FoContract() {
-  const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [contractList, setContractList] = useState([]);
   const [newContract, setNewContract] = useState({
     contractNumber: "",
@@ -55,10 +67,27 @@ function FoContract() {
   });
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [open, setOpen] = React.useState({});
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedId, setSelectedId] = useState();
+
+  // Dialog states
   const [openCreate, setOpenCreate] = useState(false);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [detailId, setDetailId] = useState(null);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [startInEditMode, setStartInEditMode] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+
+  // Filter and pagination states
+  const [filters, setFilters] = useState({
+    search: "",
+    transmissionOwner: null,
+    year: null,
+    status: null,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+
+  // Stepper states for creation
   const [activeStep, setActiveStep] = React.useState(0);
   const [isLastStep, setIsLastStep] = React.useState(false);
   const [isFirstStep, setIsFirstStep] = React.useState(false);
@@ -74,8 +103,6 @@ function FoContract() {
   const [excelRows, setExcelRows] = useState([]); // dữ liệu excel hợp lệ
   const [saving, setSaving] = useState(false);
 
-
-
   const axiosInstance = useAxiosPrivate();
   useEffect(() => {
     const getAllTransmissionOwner = async () => {
@@ -89,7 +116,6 @@ function FoContract() {
     };
     getAllTransmissionOwner();
   }, []);
-
 
   const loadContractList = async () => {
     setIsLoading(true);
@@ -106,59 +132,49 @@ function FoContract() {
     loadContractList();
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const siteList = await axiosInstance.get("sites/simple-list");
-        setSimpleSiteList(siteList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
+  // Filtering and Pagination Logic
+  const filteredContracts = useMemo(() => {
+    return contractList.filter((contract) => {
+      const matchOwner =
+        !filters.transmissionOwner ||
+        contract.transmissionOwner?.id === filters.transmissionOwner.id;
+      const matchYear =
+        !filters.year ||
+        new Date(contract.signedDate).getFullYear() === filters.year.value;
+      const matchStatus =
+        !filters.status || contract.active === filters.status.value;
+      const matchSearch =
+        !filters.search ||
+        contract.contractNumber
+          ?.toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        contract.contractName
+          ?.toLowerCase()
+          .includes(filters.search.toLowerCase());
 
-  const handleOpen = (year) => {
-    setOpen(
-      Object.keys(open).includes(String(year))
-        ? { ...open, [year]: !open[year] }
-        : { ...open, [year]: true }
-    );
+      return matchOwner && matchYear && matchStatus && matchSearch;
+    });
+  }, [contractList, filters]);
+
+  const totalPages = Math.ceil(filteredContracts.length / rowsPerPage);
+  const paginatedContracts = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredContracts.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredContracts, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const handleResetFilters = () => {
+    setFilters({
+      search: "",
+      transmissionOwner: null,
+      year: null,
+      status: null,
+    });
   };
 
-  function handleContractSearch(e) {
-    setSearchTerm(e.target.value);
-  }
-
-  const contractListWithSearch = [...contractList]
-    .sort((a, b) => {
-      const diffDate = new Date(a.signedDate) - new Date(b.signedDate);
-      if (diffDate === 0)
-        return a.contractNumber.localeCompare(b.contractNumber);
-      return diffDate;
-    })
-    .filter((contract) =>
-      contract.contractNumber.includes(searchTerm)
-    );
-
-
-  const contractByYearWithSearch = contractListWithSearch.reduce(
-    (acc, contract) => {
-      const year = new Date(contract.signedDate).getFullYear();
-      if (!acc[year]) {
-        acc[year] = 0;
-      }
-      acc[year]++;
-      return acc;
-    },
-    {}
-  );
-  const contractArrayByYearWithSearch = Object.entries(
-    contractByYearWithSearch
-  ).map(([year, count]) => ({
-    year: parseInt(year),
-    count,
-  }));
   // Xử lý thêm mới
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
@@ -173,7 +189,6 @@ function FoContract() {
     }
   };
 
-
   // ----- Hàm Check File Excel -----
   const handleCheckExcel = async (contractNumber) => {
     if (!excelFile) {
@@ -182,7 +197,11 @@ function FoContract() {
     }
 
     try {
-      const res = await checkExcelImport(axiosInstance, excelFile, contractNumber);
+      const res = await checkExcelImport(
+        axiosInstance,
+        excelFile,
+        contractNumber,
+      );
 
       setExcelErrors({});
       setExcelSuccess(true);
@@ -225,9 +244,9 @@ function FoContract() {
           endDate: values.endDate,
           note: values.note,
           transmissionOwner: {
-            id: values.transmissionOwner.id
-          }
-        })
+            id: values.transmissionOwner.id,
+          },
+        }),
       );
 
       // PDF
@@ -235,45 +254,26 @@ function FoContract() {
         formData.append("pdfFiles", file);
       });
 
-
-
       // EXCEL (file gốc đã upload ở step 2)
       formData.append("excelFile", excelFile);
 
       // 🚫 KHÔNG headers
-      const res = await axiosInstance.post(
-        "/contract/full-create",
-        formData
-      );
-      console.log(res.data)
+      const res = await axiosInstance.post("/contract/full-create", formData);
+      console.log(res.data);
 
       toast.success("🎉 Tạo hợp đồng thành công");
       await loadContractList();
 
-      // ✅ TỰ ĐỘNG MỞ HỢP ĐỒNG VỪA TẠO
-      setSelectedId(res.data.id);
-
-      // Đợi render list xong
-      setTimeout(() => {
-        setSelectedId(res.data.id);
-      }, 0);
-
-      // ✅ MỞ ĐÚNG NĂM
-      const year = new Date(res.data.signedDate).getFullYear();
-      setOpen((prev) => ({
-        ...prev,
-        [year]: true,
-      }));
+      // Close create modal and open detail modal for the new contract
       setOpenCreate(false);
-      setActiveStep(0);
-
+      handleOpenDetail(res.data.id);
     } catch (err) {
       const status = err?.response?.status;
       const data = err?.response?.data;
 
       if (status === 409) {
         toast.error(data?.message || "Số hợp đồng đã tồn tại");
-        setActiveStep(0);           // quay lại bước nhập thông tin
+        setActiveStep(0); // quay lại bước nhập thông tin
         return;
       }
 
@@ -288,8 +288,6 @@ function FoContract() {
       setSaving(false);
     }
   };
-
-
 
   const validateStep1 = Yup.object({
     contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
@@ -311,7 +309,7 @@ function FoContract() {
       "Ghi chú",
     ];
 
-    const dataToExport = contractList.map((contract) => ({
+    const dataToExport = filteredContracts.map((contract) => ({
       "Số hợp đồng": contract.contractNumber,
       "Tên hợp đồng": contract.contractName,
       "Ngày ký": contract.signedDate,
@@ -320,7 +318,9 @@ function FoContract() {
       "Ghi chú": contract.note,
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, {
+      header: headers,
+    });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Contracts");
     XLSX.writeFile(workbook, "ContractList.xlsx");
@@ -328,146 +328,219 @@ function FoContract() {
 
   // const handleNext = () => !isLastStep && setActiveStep((cur) => cur + 1);
   const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
-  const handleNext = async (values, { validateForm, setErrors, setTouched }) => {
+  const handleNext = async (
+    values,
+    { validateForm, setErrors, setTouched },
+  ) => {
     console.log(values);
     const errors = await validateForm();
     console.log(errors);
     if (Object.keys(errors).length === 0) {
       !isLastStep && setActiveStep((cur) => cur + 1);
-    }
-    else {
+    } else {
       setTouched({
         contractNumber: true,
         contractName: true,
         signedDate: true,
         endDate: true,
         contractUrl: true,
-        transmissionOwner: { id: true }
+        transmissionOwner: { id: true },
       });
-      setErrors(errors)
+      setErrors(errors);
     }
   };
-  // if (isLoading) return <Spinner />;
+
+  const handleOpenDetail = (id) => {
+    setStartInEditMode(false);
+    setDetailId(id);
+    setOpenDetail(true);
+    setOpenEdit(false);
+  };
+
+  const handleOpenEdit = (id) => {
+    setStartInEditMode(true);
+    setDetailId(id);
+    setOpenEdit(true);
+    setOpenDetail(false);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailId(null);
+    setOpenDetail(false);
+    setStartInEditMode(false);
+  };
+
+  const handleCloseEdit = () => {
+    setDetailId(null);
+    setOpenEdit(false);
+    setStartInEditMode(false);
+  };
+
+  const handleDelete = (id) => {
+    setDeleteId(id);
+    setOpenDelete(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await axiosInstance.delete(`/contract/${deleteId}`);
+      toast.success("Xóa hợp đồng thành công!");
+      loadContractList();
+    } catch (error) {
+      toast.error("Lỗi khi xóa hợp đồng.");
+    } finally {
+      setOpenDelete(false);
+      setDeleteId(null);
+    }
+  };
+
+  const yearOptions = useMemo(() => {
+    const years = new Set(
+      contractList.map((c) => new Date(c.signedDate).getFullYear()),
+    );
+    return Array.from(years)
+      .sort((a, b) => b - a)
+      .map((y) => ({ label: y, value: y }));
+  }, [contractList]);
+
   return (
-    <div className={`flex gap-2 p-3`}>
-      <div className="flex-shrink-0">
-        <div className="h-[calc(100vh-2rem)] max-w-max overflow-y-auto border-r-2 border-r-gray-300 p-1">
-          <div className="mb-1 flex items-center gap-2 justify-between">
-            <Typography variant="h6" color="blue-gray">
-              Danh mục hợp đồng
-            </Typography>
-
-            <div className="flex gap-2">
-              {/* Nút thêm mới: icon + giống code mới */}
-              <Button
-                variant="gradient"
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={handleOpenCreate}
-              >
-                <PlusIcon className="h-4 w-4" />
-              </Button>
-
-              {/* Nút xuất Excel giống code mới */}
-              <Button
-                variant="gradient"
-                size="sm"
-                color="green"
-                className="flex items-center gap-2"
-                onClick={onBtnExport}
-              >
-                Xuất Excel
-              </Button>
-            </div>
-          </div>
-
-          <div className="p-0">
-            <Input
-              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
-              variant="standard"
-              label="Tìm theo tên hợp đồng"
-              onChange={handleContractSearch}
-              value={searchTerm}
-            />
-          </div>
-
-          {/* Danh sách hợp đồng theo năm */}
-          <List className="p-0">
-            {contractArrayByYearWithSearch.map((item) => (
-              <Accordion
-                key={item.year}
-                open={!!open[item.year]}
-                icon={
-                  <Chip
-                    value={item.count}
-                    variant="ghost"
-                    size="sm"
-                    color="blue"
-                    className="rounded-full"
-                  />
-                }
-              >
-                <ListItem className="p-0">
-                  <AccordionHeader
-                    onClick={() => handleOpen(item.year)}
-                    className="border-b-0 p-2"
-                  >
-                    <ListItemPrefix>
-                      <HashtagIcon className="h-3 w-3" />
-                    </ListItemPrefix>
-                    <Typography color="blue" className="mr-auto font-semibold text-sm">
-                      {item.year}
-                    </Typography>
-                  </AccordionHeader>
-                </ListItem>
-
-                <AccordionBody className="py-0.5">
-                  <List className="p-0">
-                    {contractListWithSearch
-                      .filter(
-                        (contract) =>
-                          new Date(contract.signedDate).getFullYear() === item.year
-                      )
-                      .map((contract) => (
-                        <ListItem
-                          key={contract.id}
-                          selected={contract.id === selectedId}
-                          onClick={() => setSelectedId(contract.id)}
-                        >
-                          <ListItemPrefix>
-                            <ArrowRightCircleIcon strokeWidth={2} className="h-2 w-2" />
-                          </ListItemPrefix>
-                          <Typography color="blue-gray" className="text-sm">
-                            {contract.contractNumber}
-                          </Typography>
-                        </ListItem>
-                      ))}
-                  </List>
-                </AccordionBody>
-              </Accordion>
-            ))}
-          </List>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Danh sách hợp đồng
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tổng số:{" "}
+            <span className="font-semibold text-blue-600">
+              {filteredContracts.length}
+            </span>{" "}
+            / {contractList.length} hợp đồng
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <CustomButton
+            className="flex items-center gap-2 bg-[#0d47a1] hover:bg-[#0a3a82]"
+            size="sm"
+            onClick={handleOpenCreate}
+          >
+            <PlusIcon className="h-4 w-4" />
+            Thêm mới
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
+            size="sm"
+            onClick={onBtnExport}
+          >
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            Xuất Excel
+          </CustomButton>
         </div>
       </div>
-      <div className="flex-grow">
-        {selectedId && (
-          <FoConTractDetail
-            id={selectedId}
-            onUpdated={async (updatedContract) => {
-              // refresh lại danh mục hợp đồng
-              await loadContractList();
 
-              // (tuỳ chọn) đảm bảo năm của hợp đồng đang mở
-              if (updatedContract?.signedDate) {
-                const year = new Date(updatedContract.signedDate).getFullYear();
-                setOpen((prev) => ({ ...prev, [year]: true }));
-              }
-            }}
+      {/* Filter Bar */}
+      <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
+        <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
+          <FunnelIcon className="h-5 w-5" />
+          <span className="font-bold text-sm uppercase tracking-wider">
+            Bộ lọc tìm kiếm
+          </span>
+          {(filters.search ||
+            filters.transmissionOwner ||
+            filters.year ||
+            filters.status) && (
+            <button
+              onClick={handleResetFilters}
+              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+            >
+              <ArrowPathIcon className="h-3 w-3" />
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search Input */}
+          <Input
+            icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+            placeholder="Số/Tên hợp đồng..."
+            value={filters.search}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
           />
-        )}
+          {/* Transmission Owner Filter */}
+          <Select
+            isClearable
+            placeholder="Nhà cung cấp"
+            options={transmissionOwnerList}
+            getOptionLabel={(o) => o.name}
+            getOptionValue={(o) => o.id}
+            value={filters.transmissionOwner}
+            onChange={(val) =>
+              setFilters((prev) => ({ ...prev, transmissionOwner: val }))
+            }
+          />
+          {/* Year Filter */}
+          <Select
+            isClearable
+            placeholder="Năm ký"
+            options={yearOptions}
+            value={filters.year}
+            onChange={(val) => setFilters((prev) => ({ ...prev, year: val }))}
+          />
+          {/* Status Filter */}
+          <Select
+            isClearable
+            placeholder="Trạng thái"
+            options={[
+              { label: "Còn hiệu lực", value: true },
+              { label: "Đã thanh lý", value: false },
+            ]}
+            value={filters.status}
+            onChange={(val) => setFilters((prev) => ({ ...prev, status: val }))}
+          />
+        </div>
       </div>
-      {/* Modal Thêm mới */}
 
+      {/* Contracts Table */}
+      <Card className="w-full overflow-hidden border border-gray-200 shadow-sm rounded-xl">
+        <div className="overflow-auto max-h-[70vh]">
+          <table className="w-full min-w-max table-auto text-left">
+            {/* Table Header */}
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
+                {["Số HĐ", "Tên hợp đồng", "Nhà cung cấp", "Ngày ký", "Ngày hết hạn", "Trạng thái", "Tác động"].map(head => (
+                  <th key={head} className="p-4"><Typography variant="small" color="blue-gray" className="font-bold leading-none">{head}</Typography></th>
+                ))}
+              </tr>
+            </thead>
+            {/* Table Body */}
+            <tbody className="divide-y divide-gray-100">
+              {paginatedContracts.map((contract) => (
+                <tr key={contract.id} className="hover:bg-gray-50/80 transition-colors">
+                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-bold">{contract.contractNumber}</Typography></td>
+                  <td className="p-4 max-w-xs truncate"><Typography variant="small" color="blue-gray" className="font-normal">{contract.contractName}</Typography></td>
+                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{contract.transmissionOwner?.name}</Typography></td>
+                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{DateTime.fromISO(contract.signedDate).toFormat("dd/MM/yyyy")}</Typography></td>
+                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{DateTime.fromISO(contract.endDate).toFormat("dd/MM/yyyy")}</Typography></td>
+                  <td className="p-4"><StatusChip active={contract.active} labelOn="Còn hiệu lực" labelOff="Đã thanh lý" /></td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-1">
+                      <IconButton variant="text" size="sm" color="gray" onClick={() => handleOpenDetail(contract.id)}><EyeIcon className="h-4 w-4" /></IconButton>
+                      <IconButton variant="text" size="sm" color="blue" onClick={() => handleOpenEdit(contract.id)}><PencilIcon className="h-4 w-4" /></IconButton>
+                      <IconButton variant="text" size="sm" color="red" onClick={() => handleDelete(contract.id)}><TrashIcon className="h-4 w-4" /></IconButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* Pagination Controls */}
+        {/* ... (Copy from SiteList2.jsx) ... */}
+      </Card>
+
+      {/* Modal Thêm mới */}
       <Dialog
         open={openCreate}
         handler={handleOpenCreate}
@@ -539,7 +612,12 @@ function FoContract() {
                   enableReinitialize
                 >
                   {({ setFieldValue, values, setErrors, isSubmitting, validateForm, setTouched }) => (
-                    <Form className="flex flex-initial flex-shrink flex-col">
+                    <Form
+                      className="flex flex-initial flex-shrink flex-col"
+                      onSubmit={(e) => {
+                        e.preventDefault(); // Prevent default form submission
+                      }}
+                    >
                       <div className="space-y-4 pb-6 overflow-visible">
                         {activeStep === 0 && (
                           <Card className="shadow-none">
@@ -914,15 +992,52 @@ function FoContract() {
             </div>
           </div>
 
-          {/* <div className="mt-32 flex justify-between">
-            <Button onClick={handlePrev} disabled={isFirstStep}>
-              Prev
-            </Button>
-            <Button onClick={handleNext} disabled={isLastStep}>
-              Next
-            </Button>
-          </div> */}
         </div>
+      </Dialog>
+
+      {/* Modal Chi tiết */}
+      <Dialog open={openDetail} handler={handleCloseDetail} size="xl">
+        <DialogHeader className="justify-between">
+          <Typography variant="h5" color="blue-gray">
+            Chi tiết hợp đồng
+          </Typography>
+          <IconButton color="blue-gray" size="sm" variant="text" onClick={handleCloseDetail}>
+            <XMarkIcon strokeWidth={2} className="h-5 w-5" />
+          </IconButton>
+        </DialogHeader>
+        <DialogBody className="overflow-y-auto max-h-[80vh]">
+          {detailId && (
+            <FoConTractDetail
+              id={detailId}
+              onUpdated={async () => {
+                await loadContractList();
+              }}
+              onTriggerEdit={(idToEdit) => {
+                handleCloseDetail();
+                handleOpenEdit(idToEdit);
+              }}
+            />
+          )}
+        </DialogBody>
+      </Dialog>
+
+      {/* Drawer Edit (Render độc lập, không nằm trong Modal) */}
+      {openEdit && detailId && (
+        <FoContractEditDrawer
+          id={detailId}
+          onUpdated={() => {
+            loadContractList();
+            handleCloseEdit();
+          }}
+          onClose={handleCloseEdit}
+        />
+      )}
+
+      {/* Modal Xóa */}
+      <Dialog open={openDelete} handler={() => setOpenDelete(false)} size="sm">
+        <DialogHeader>Xác nhận xóa</DialogHeader>
+        <DialogBody>Bạn có chắc chắn muốn xóa hợp đồng này?</DialogBody>
+        <DialogFooter><Button variant="text" color="gray" onClick={() => setOpenDelete(false)}>Hủy</Button><Button color="red" onClick={confirmDelete}>Xóa</Button></DialogFooter>
       </Dialog>
     </div>
   );

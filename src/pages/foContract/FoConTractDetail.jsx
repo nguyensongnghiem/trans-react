@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback  } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Select from "react-select";
 import { DateTime } from "luxon";
 import { CustomMenuList } from "../CustomList.jsx"; 
@@ -13,7 +13,6 @@ import {
   DialogBody,
   DialogFooter,
   DialogHeader,
-  Drawer,
   IconButton,
   Switch,
   Typography,
@@ -24,14 +23,12 @@ import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid/index.js";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-material.css"; // Optional Theme applied to the Data Grid
-import "ag-grid-community/styles/ag-theme-quartz.css";
-import * as Yup from "yup";
-import { ErrorMessage, Field, Form, Formik } from "formik";
+import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import { toast } from "react-toastify"; // Optional Theme applied to the Data Grid
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import "../../Styles/aggrid.css";
 function FoConTractDetail(props) {
-  const { id, onUpdated } = props;
+  const { id, onUpdated, onTriggerEdit } = props;
   const [contractDetail, setContractDetail] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const axiosInstance = useAxiosPrivate();
@@ -194,12 +191,6 @@ function FoConTractDetail(props) {
   const totalAmountAfterTax = useMemo(() => {
     return totalAmountBeforeTax + totalVat;
   }, [totalAmountBeforeTax, totalVat]);
-    const [open, setOpen] = useState(false);
-
-  const handleDeletePdf = (file) => {
-    setFileToDelete(file);
-    setShowDeleteModal(true);
-  };
 
   const confirmDeletePdf = async () => {
     if (!fileToDelete) return;
@@ -221,15 +212,6 @@ function FoConTractDetail(props) {
       setFileToDelete(null);
     }
   };
-
-
-
-  const [owners, setOwners] = useState([]);
-  useEffect(() => {
-    axiosInstance.get("/transmission-owner/all")
-      .then(res => setOwners(res.data))
-      .catch(err => console.error(err));
-  }, []);
 
   // ==== STATE Up file PDF ====== //
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -264,18 +246,7 @@ function FoConTractDetail(props) {
     params.api.autoSizeColumns(colIds);
   };
 
-
-
-  const oldContractNumberRef = useRef();
-  useEffect(() => {
-    if (contractDetail?.contractNumber) {
-      oldContractNumberRef.current = contractDetail.contractNumber;
-    }
-  }, [contractDetail?.contractNumber]);
-
-
  // ==== Refresh web ====== //
-  const formikRef = useRef(null);
   const loadContract = async () => {
     setIsLoading(true);
     try {
@@ -292,25 +263,6 @@ function FoConTractDetail(props) {
     loadContract();
   }, [id]);
 
-  // const openDrawer = () => setOpen(true);
-  const closeDrawer = () => setOpen(false);
-
-  function handleOpenEditDrawer() {
-    if (formikRef.current) {
-      formikRef.current.resetForm({
-        values: {
-          id: contractDetail.id,
-          contractNumber: contractDetail.contractNumber,
-          contractName: contractDetail.contractName,
-          signedDate: contractDetail.signedDate,
-          endDate: contractDetail.endDate,
-          active: contractDetail.active,
-          contractUrl: null,
-        }
-      });
-    }
-    setOpen(true);
-  }
   const [simpleSiteList, setSimpleSiteList] = useState([]);
 
   useEffect(() => {
@@ -355,109 +307,12 @@ function FoConTractDetail(props) {
     }
   }, [axiosInstance, contractDetail?.id, loadContract]);
 
-
-  const handleUpdateContract = async (values) => {
-    try {
-      const oldNumber = oldContractNumberRef.current;
-      const newNumber = values.contractNumber;
-
-      // 1️⃣ NẾU ĐỔI SỐ HỢP ĐỒNG → RENAME FOLDER
-      if (oldNumber !== newNumber) {
-        await axiosInstance.put(`/contract/${id}/change-number`, {
-          contractNumber: newNumber
-        });
-      }
-
-      // 2️⃣ update các field khác
-      await axiosInstance.put(`/contract/${id}`, {
-        contractNumber: values.contractNumber, 
-        contractName: values.contractName,
-        signedDate: values.signedDate,
-        endDate: values.endDate,
-        active: values.active,
-        note: values.note,
-        transmissionOwnerId: values.transmissionOwnerId
-      });
-
-      // 3️⃣ UPLOAD PDF (NẾU CÓ)
-      if (pdfFiles.length > 0) {
-        const formData = new FormData();
-        pdfFiles.forEach((file) => {
-          formData.append("files", file);
-        });
-
-        await axiosInstance.post(
-          `/contract/${values.id}/upload-pdfs`,
-          formData
-        );
-      }
-
-      toast.success("Cập nhật thành công");
-      setPdfFiles([]);
-      closeDrawer();
-      await loadContract();
-      // refresh luôn danh mục hợp đồng bên trái
-      if (typeof onUpdated === "function") {
-        onUpdated({
-          id: values.id,
-          contractNumber: values.contractNumber,
-          signedDate: values.signedDate,
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Cập nhật thất bại");
-    }
-  };
-
-
-
-  function handleCloseEditDrawer(resetForm) {
-    if (typeof resetForm === "function") {
-      resetForm();
-    }
-    setPdfFiles([]);
-    closeDrawer();
-  }
-
-
-
   if (!contractDetail) return <p>Không có thông tin </p>;
-
-  function handleDismissEditDrawer(resetForm) {
-    resetForm();
-    setPdfFiles([]); // 🔴 BẮT BUỘC
-    closeDrawer();
-  }
-
   
   const hasPdf = (pdfList?.length ?? 0) > 0;
 
   return (
     <>
-      <Dialog open={showDeleteModal} handler={() => setShowDeleteModal(false)} size="xs">
-        <DialogHeader>Xác nhận xóa file</DialogHeader>
-        <DialogBody>
-          Bạn có chắc chắn muốn xóa file: <span className="font-bold break-all">{fileToDelete}</span>?
-        </DialogBody>
-        <DialogFooter>
-          <Button
-            variant="text"
-            color="blue-gray"
-            onClick={() => setShowDeleteModal(false)}
-            className="mr-1"
-            disabled={deleting}
-          >
-            <span>Hủy</span>
-          </Button>
-          <Button variant="gradient" color="red" onClick={confirmDeletePdf} disabled={deleting}>
-            <span>{deleting ? "Đang xóa..." : "Xóa"}</span>
-          </Button>
-        </DialogFooter>
-      </Dialog>
-
-
-
       <div className="mt-6 rounded-none text-blue-gray-600 flex flex-col h-full">
         <div className="mb-3 flex items-center justify-start gap-2 border-b">
           <div className="flex items-center gap-1 border-b-2 border-blue-600 pb-1 pr-1 uppercase text-blue-gray-600">
@@ -507,7 +362,7 @@ function FoConTractDetail(props) {
           </Button>
           <Button
             className="flex gap-1 p-1.5 transition-all duration-300"
-            onClick={handleOpenEditDrawer}
+            onClick={() => onTriggerEdit(id)}
             variant="text"
             color="blue"
           >
@@ -609,295 +464,8 @@ function FoConTractDetail(props) {
             onFirstDataRendered={onFirstDataRendered} 
           />
           </div>
-      </CardBody>
-      {/*   Drawer edit hợp đồng */}
-
-      <React.Fragment>
-        <Drawer
-          open={open}
-          onClose={() =>
-            handleCloseEditDrawer(formikRef.current?.resetForm)
-          }
-          placement="right"
-          className="pt-4"
-          size={500}
-          dismiss={{ enabled: false }}
-        >
-
-          <Formik
-            innerRef={formikRef}
-            initialValues={{
-              id: contractDetail.id,
-              contractNumber: contractDetail.contractNumber,
-              contractName: contractDetail.contractName,
-              signedDate: contractDetail.signedDate,
-              endDate: contractDetail.endDate,
-              active: contractDetail.active,
-              contractUrl: null, // 🔥 FILE LUÔN LUÔN NULL
-              transmissionOwnerId: contractDetail.transmissionOwner?.id || "",
-              note: contractDetail.note || "",
-            }}
-
-            enableReinitialize={true}
-            onSubmit={handleUpdateContract}
-            validationSchema={Yup.object({
-              contractNumber: Yup.string().required("Yêu cầu nhập số hợp đồng"),
-              contractName: Yup.string().required("Yêu cầu nhập tên hợp đồng"),
-              signedDate: Yup.date().required("Yêu cầu nhập ngày ký hợp đồng"),
-              contractUrl: Yup.mixed().nullable(),
-              endDate: Yup.string().required(
-                "Yêu cầu nhập ngày kết thúc hợp đồng",
-              ),
-            })}
-          >
-            {({
-              values,
-              resetForm,
-              errors,
-              isSubmitting,
-              isValid,
-              setFieldValue,
-              handleChange,
-            }) => (
-              <Form className="flex flex-initial flex-shrink flex-col">
-                <div className="flex items-center justify-between px-4 pb-2">
-                  <Typography variant="h4" color="blue">
-                    Cập nhật thông tin hợp đồng
-                  </Typography>
-
-                  <IconButton
-                    variant="text"
-                    color="blue-gray"
-                    onClick={() => handleDismissEditDrawer(resetForm)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </IconButton>
-                </div>
-                <div className="mb-5 px-4">
-                  <Typography variant="small" color="gray" className="font-normal">
-                    Cập nhật thông tin cơ bản của hợp đồng
-                  </Typography>
-                </div>
-                <DialogBody className="space-y-4 pb-6">
-                  <Card className="shadow-none">
-                    <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex justify-end gap-3 items-center">
-                        <Typography variant="h6" className="text-blue-gray-600">
-                          {values.active ? "Còn hiệu lực" : "Đã thanh lý"}
-                        </Typography>
-
-                        <Switch
-                          checked={values.active}
-                          color="green"
-                          onChange={() => setFieldValue("active", !values.active)}
-                        />
-                      </div>
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Số hợp đồng
-                        </label>
-                        <Field
-                          name="contractNumber"
-                          placeholder="Nhập số hợp đồng"
-                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="contractNumber"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Tên hợp đồng
-                        </label>
-                        <Field
-                          name="contractName"
-                          placeholder="Nhập tên hợp đồng"
-                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="contractName"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Nhà cung cấp
-                        </label>
-
-                        <select
-                          name="transmissionOwnerId"
-                          value={values.transmissionOwnerId}
-                          onChange={handleChange}
-                          className="rounded border border-gray-300 px-2 py-1"
-                        >
-                          <option value="">-- Chọn nhà cung cấp --</option>
-                          {owners.map(o => (
-                            <option key={o.id} value={o.id}>
-                              {o.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                     
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Ngày ký
-                        </label>
-                        <Field
-                          name="signedDate"
-                          type="date"
-                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="signedDate"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-                      
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Ngày kết thúc
-                        </label>
-                        <Field
-                          name="endDate"
-                          type="date"
-                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="endDate"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                          <label className="text-slate-400 font-semibold">
-                            Văn bản hợp đồng
-                          </label>
-
-                          {/* ===== DANH SÁCH FILE HIỆN CÓ ===== */}
-                          {pdfList.length > 0 && (
-                            <div className="mt-2 space-y-2">
-                              <Typography variant="small" className="font-semibold text-gray-600">
-                                Các file hiện có:
-                              </Typography>
-                              {pdfList.map((file, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between rounded bg-blue-50 border border-blue-200 px-3 py-2 text-sm"
-                                >
-                                  <span className="truncate text-blue-gray-800">
-                                    📄 {file}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="ml-2 text-red-500 hover:text-red-700"
-                                    onClick={() => handleDeletePdf(file)}
-                                    title={`Xóa file ${file}`}
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* ===== INPUT TẢI FILE MỚI ===== */}
-                          <label className="text-slate-400 font-semibold mt-4">
-                            Tải lên file mới
-                          </label>
-                          <input
-                            type="file"
-                            accept="application/pdf"
-                            multiple
-                            className="w-full cursor-pointer rounded border bg-white text-sm
-                                      file:mr-4 file:border-0 file:bg-gray-100
-                                      file:px-4 file:py-2 file:text-gray-600"
-                            onChange={(e) => {
-                              const selectedFiles = Array.from(e.target.files || []);
-                              setPdfFiles((prev) => [
-                                ...prev,
-                                ...selectedFiles.filter(
-                                  f => !prev.some(p => p.name === f.name)
-                                )
-                              ]);
-                              e.target.value = null; // ⭐ cho phép chọn lại file cùng tên
-                            }}
-                          />
-
-                          {/* ===== DANH SÁCH FILE MỚI CHỌN ===== */}
-                          {pdfFiles.length > 0 && (
-                            <div className="mt-2 space-y-2">
-                              <Typography variant="small" className="font-semibold text-gray-600">
-                                Các file mới tải lên:
-                              </Typography>
-                              {pdfFiles.map((file, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between rounded bg-green-100 px-3 py-2 text-sm"
-                                >
-                                  <span className="truncate">
-                                    📄 {file.name}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="ml-2 text-red-500 hover:text-red-700"
-                                    onClick={() => setPdfFiles(prev => prev.filter((_, i) => i !== index))}
-                                  >
-                                    ❌
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                    <div className="col-span-full flex flex-col gap-2">
-                      <label className="text-slate-400 font-semibold">
-                        Ghi chú
-                      </label>
-                      <Field
-                        as="textarea"
-                        name="note"
-                        rows={3}
-                        placeholder="Nhập ghi chú"
-                        className="rounded border border-gray-300 px-2 py-1 focus:ring-2 focus:ring-blue-200"
-                      />
-                    </div>
-                  </Card>
-                </DialogBody>
-                <DialogFooter>
-                  <Button
-                    size="md"
-                    type="submit"
-                    color="red"
-                  >
-                    Cập nhật dữ liệu
-                  </Button>
-                </DialogFooter>
-              </Form>
-            )}
-          </Formik>
-        </Drawer>
+        </CardBody>
+      </div>
       {/* ===== DRAWER VĂN BẢN HỢP ĐỒNG ===== */}
       {openDocuments && (
         <Drawer
@@ -1120,8 +688,6 @@ function FoConTractDetail(props) {
         </div>
       </Dialog>
 
-      </React.Fragment>
-      </div> 
     </>
   );
 }
