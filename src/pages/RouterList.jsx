@@ -11,7 +11,13 @@ import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
-import { MagnifyingGlassIcon, FunnelIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
 import { Input, IconButton as MTIconButton } from "@material-tailwind/react";
 
 import {
@@ -33,13 +39,14 @@ import useSimpleSites from "../hooks/useSimpleSites";
 import useRouters from "../hooks/useRouters"; // Import your custom hook for routers
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import FormSelect from "../components/FormSelect";
 function RouterList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
   const [routerTypeList, setRouterTypeList] = useState([]);
   const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
-    [],
+    []
   );
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
@@ -90,7 +97,7 @@ function RouterList() {
     const loadData = async () => {
       try {
         const transDeviceTypeList = await axiosInstance.get(
-          "transmission-device-types",
+          "transmission-device-types"
         );
         setTransmissionDeviceTypeList(transDeviceTypeList.data);
       } catch (error) {
@@ -100,62 +107,109 @@ function RouterList() {
     loadData();
   }, []);
 
-
   // Linked Filter Logic: Derive options from current filtered result (ignoring own filter)
   const filterOptions = useMemo(() => {
     const getUnique = (arr, keyPath) => {
       const seen = new Set();
-      return arr.reduce((acc, item) => {
-        const val = keyPath.split('.').reduce((o, i) => o?.[i], item);
-        if (val && !seen.has(val.id)) {
-          seen.add(val.id);
-          acc.push(val);
-        }
-        return acc;
-      }, []).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      return arr
+        .reduce((acc, item) => {
+          const val = keyPath.split(".").reduce((o, i) => o?.[i], item);
+          if (val && !seen.has(val.id)) {
+            seen.add(val.id);
+            acc.push(val);
+          }
+          return acc;
+        }, [])
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     };
 
     // Helper to filter routers by all filters EXCEPT specialized ones
     const getFilteredFor = (excludeKey) => {
-      return routerList.filter(r => {
-        if (excludeKey !== 'province' && filters.province && r.site?.province?.id !== filters.province.id) return false;
-        if (excludeKey !== 'vendor' && filters.vendor && r.routerType?.vendor?.id !== filters.vendor.id) return false;
-        if (excludeKey !== 'routerType' && filters.routerType && r.routerType?.id !== filters.routerType.id) return false;
-        if (excludeKey !== 'transDeviceType' && filters.transDeviceType && r.transmissionDeviceType?.id !== filters.transDeviceType.id) return false;
-        if (excludeKey !== 'status' && filters.status && r.active !== filters.status.value) return false;
-        if (excludeKey !== 'search' && filters.search) {
+      return routerList.filter((r) => {
+        if (
+          excludeKey !== "province" &&
+          filters.province &&
+          r.site?.province?.id !== filters.province.id
+        )
+          return false;
+        if (
+          excludeKey !== "vendor" &&
+          filters.vendor &&
+          r.routerType?.vendor?.id !== filters.vendor.id
+        )
+          return false;
+        if (
+          excludeKey !== "routerType" &&
+          filters.routerType &&
+          r.routerType?.id !== filters.routerType.id
+        )
+          return false;
+        if (
+          excludeKey !== "transDeviceType" &&
+          filters.transDeviceType &&
+          r.transmissionDeviceType?.id !== filters.transDeviceType.id
+        )
+          return false;
+        if (
+          excludeKey !== "status" &&
+          filters.status &&
+          r.active !== filters.status.value
+        )
+          return false;
+        if (excludeKey !== "search" && filters.search) {
           const search = filters.search.toLowerCase();
-          return (r.name?.toLowerCase().includes(search)) ||
-                 (r.ip?.toLowerCase().includes(search)) ||
-                 (r.site?.siteId?.toLowerCase().includes(search)) ||
-                 (r.note?.toLowerCase().includes(search));
+          return (
+            r.name?.toLowerCase().includes(search) ||
+            r.ip?.toLowerCase().includes(search) ||
+            r.site?.siteId?.toLowerCase().includes(search) ||
+            r.note?.toLowerCase().includes(search)
+          );
         }
         return true;
       });
     };
 
     return {
-      provinces: getUnique(getFilteredFor('province'), 'site.province'),
-      vendors: getUnique(getFilteredFor('vendor'), 'routerType.vendor'),
-      routerTypes: getUnique(getFilteredFor('routerType'), 'routerType'),
-      transDeviceTypes: getUnique(getFilteredFor('transDeviceType'), 'transmissionDeviceType'),
+      provinces: getUnique(getFilteredFor("province"), "site.province"),
+      vendors: getUnique(getFilteredFor("vendor"), "routerType.vendor"),
+      routerTypes: getUnique(getFilteredFor("routerType"), "routerType"),
+      transDeviceTypes: getUnique(
+        getFilteredFor("transDeviceType"),
+        "transmissionDeviceType"
+      ),
     };
   }, [routerList, filters]);
 
   const filteredRouters = useMemo(() => {
     return routerList.filter((router) => {
-      const matchProvince = !filters.province || router.site?.province?.id === filters.province.id;
-      const matchVendor = !filters.vendor || router.routerType?.vendor?.id === filters.vendor.id;
-      const matchRouterType = !filters.routerType || router.routerType?.id === filters.routerType.id;
-      const matchTransDeviceType = !filters.transDeviceType || router.transmissionDeviceType?.id === filters.transDeviceType.id;
-      const matchStatus = !filters.status || router.active === filters.status.value;
-      const matchSearch = !filters.search || 
-        (router.name?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (router.ip?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (router.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (router.note?.toLowerCase().includes(filters.search.toLowerCase()));
+      const matchProvince =
+        !filters.province || router.site?.province?.id === filters.province.id;
+      const matchVendor =
+        !filters.vendor || router.routerType?.vendor?.id === filters.vendor.id;
+      const matchRouterType =
+        !filters.routerType || router.routerType?.id === filters.routerType.id;
+      const matchTransDeviceType =
+        !filters.transDeviceType ||
+        router.transmissionDeviceType?.id === filters.transDeviceType.id;
+      const matchStatus =
+        !filters.status || router.active === filters.status.value;
+      const matchSearch =
+        !filters.search ||
+        router.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        router.ip?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        router.site?.siteId
+          ?.toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        router.note?.toLowerCase().includes(filters.search.toLowerCase());
 
-      return matchProvince && matchVendor && matchRouterType && matchTransDeviceType && matchStatus && matchSearch;
+      return (
+        matchProvince &&
+        matchVendor &&
+        matchRouterType &&
+        matchTransDeviceType &&
+        matchStatus &&
+        matchSearch
+      );
     });
   }, [routerList, filters]);
 
@@ -230,7 +284,7 @@ function RouterList() {
   // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
     const dataToExport = filteredRouters.map((router) => ({
-      "Tỉnh": router.site?.province?.name,
+      Tỉnh: router.site?.province?.name,
       "Site ID": router.site?.siteId,
       "Tên thiết bị": router.name,
       "Loại Router": router.routerType?.name,
@@ -262,9 +316,15 @@ function RouterList() {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Danh sách thiết bị</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Danh sách thiết bị
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Tổng số: <span className="font-semibold text-blue-600">{filteredRouters.length}</span> / {routerList.length} thiết bị
+            Tổng số:{" "}
+            <span className="font-semibold text-blue-600">
+              {filteredRouters.length}
+            </span>{" "}
+            / {routerList.length} thiết bị
           </p>
         </div>
         <div className="flex gap-2">
@@ -291,9 +351,16 @@ function RouterList() {
       <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
         <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
           <FunnelIcon className="h-5 w-5" />
-          <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
-          {(filters.province || filters.vendor || filters.routerType || filters.transDeviceType || filters.status || filters.search) && (
-            <button 
+          <span className="font-bold text-sm uppercase tracking-wider">
+            Bộ lọc tìm kiếm
+          </span>
+          {(filters.province ||
+            filters.vendor ||
+            filters.routerType ||
+            filters.transDeviceType ||
+            filters.status ||
+            filters.search) && (
+            <button
               onClick={handleResetFilters}
               className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
             >
@@ -302,10 +369,12 @@ function RouterList() {
             </button>
           )}
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tỉnh</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tỉnh
+            </span>
             <Select
               isClearable
               placeholder="Tất cả tỉnh"
@@ -314,22 +383,26 @@ function RouterList() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.province}
-              onChange={(val) => setFilters(prev => ({ ...prev, province: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, province: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Nhà sản xuất</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Nhà sản xuất
+            </span>
             <Select
               isClearable
               placeholder="Tất cả hãng"
@@ -338,22 +411,26 @@ function RouterList() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.vendor}
-              onChange={(val) => setFilters(prev => ({ ...prev, vendor: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, vendor: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Loại Router</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Loại Router
+            </span>
             <Select
               isClearable
               placeholder="Tất cả loại"
@@ -362,22 +439,26 @@ function RouterList() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.routerType}
-              onChange={(val) => setFilters(prev => ({ ...prev, routerType: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, routerType: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Thiết bị TD</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Thiết bị TD
+            </span>
             <Select
               isClearable
               placeholder="Tất cả thiết bị"
@@ -386,22 +467,26 @@ function RouterList() {
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.transDeviceType}
-              onChange={(val) => setFilters(prev => ({ ...prev, transDeviceType: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, transDeviceType: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Trạng thái</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Trạng thái
+            </span>
             <Select
               isClearable
               placeholder="Tất cả trạng thái"
@@ -411,22 +496,26 @@ function RouterList() {
                 { label: "Không hoạt động", value: false },
               ]}
               value={filters.status}
-              onChange={(val) => setFilters(prev => ({ ...prev, status: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, status: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
                   ...base,
-                  minHeight: '40px',
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
                 }),
-                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
               }}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tìm kiếm nhanh</span>
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tìm kiếm nhanh
+            </span>
             <Input
               icon={<MagnifyingGlassIcon className="h-4 w-4" />}
               placeholder="Site ID, Tên, IP..."
@@ -435,9 +524,11 @@ function RouterList() {
                 className: "before:content-none after:content-none",
               }}
               value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value }))
+              }
               containerProps={{
-                className: "min-w-0"
+                className: "min-w-0",
               }}
             />
           </div>
@@ -449,70 +540,181 @@ function RouterList() {
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tỉnh</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tỉnh
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Site ID</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Site ID
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tên thiết bị</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tên thiết bị
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Loại Router</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Loại Router
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Nhà sản xuất</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Nhà sản xuất
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Loại thiết bị TD</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Loại thiết bị TD
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">IP quản lý</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    IP quản lý
+                  </Typography>
                 </th>
                 <th className="p-4">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Ghi chú</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Ghi chú
+                  </Typography>
                 </th>
                 <th className="p-4 text-center">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Trạng thái</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Trạng thái
+                  </Typography>
                 </th>
                 <th className="p-4 text-center">
-                  <Typography variant="small" color="blue-gray" className="font-bold leading-none">Tác động</Typography>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Tác động
+                  </Typography>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paginatedRouters.map((router) => (
-                <tr key={router.id} className="hover:bg-gray-50/80 transition-colors">
+                <tr
+                  key={router.id}
+                  className="hover:bg-gray-50/80 transition-colors"
+                >
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">{router.site?.province?.name}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {router.site?.province?.name}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-bold">{router.site?.siteId}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold"
+                    >
+                      {router.site?.siteId}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-medium">{router.name}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-medium"
+                    >
+                      {router.name}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">{router.routerType?.name}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {router.routerType?.name}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">{router.routerType?.vendor?.name || "-"}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {router.routerType?.vendor?.name || "-"}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">{router.transmissionDeviceType?.name}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {router.transmissionDeviceType?.name}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal font-mono text-xs">{router.ip}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal font-mono text-xs"
+                    >
+                      {router.ip}
+                    </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal opacity-70 italic max-w-[200px] truncate">{router.note || "-"}</Typography>
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal opacity-70 italic max-w-[200px] truncate"
+                    >
+                      {router.note || "-"}
+                    </Typography>
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center">
-                      <StatusChip 
-                        active={router.active} 
-                        labelOn="Hoạt động" 
-                        labelOff="Không hoạt động" 
+                      <StatusChip
+                        active={router.active}
+                        labelOn="Hoạt động"
+                        labelOff="Không hoạt động"
                       />
                     </div>
                   </td>
@@ -542,19 +744,28 @@ function RouterList() {
           </table>
           {filteredRouters.length === 0 && (
             <div className="py-20 text-center">
-              <Typography variant="h6" color="blue-gray" className="opacity-40">Không tìm thấy thiết bị nào khớp với bộ lọc</Typography>
+              <Typography variant="h6" color="blue-gray" className="opacity-40">
+                Không tìm thấy thiết bị nào khớp với bộ lọc
+              </Typography>
             </div>
           )}
         </div>
-        
+
         {/* Pagination Controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-4">
-            <Typography variant="small" color="blue-gray" className="font-normal">
-              Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages || 1}</span>
+            <Typography
+              variant="small"
+              color="blue-gray"
+              className="font-normal"
+            >
+              Trang <span className="font-bold">{currentPage}</span> /{" "}
+              <span className="font-bold">{totalPages || 1}</span>
             </Typography>
             <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
-              <span className="text-xs text-blue-gray-400 font-medium">Hiển thị:</span>
+              <span className="text-xs text-blue-gray-400 font-medium">
+                Hiển thị:
+              </span>
               <select
                 value={rowsPerPage}
                 onChange={(e) => {
@@ -563,8 +774,10 @@ function RouterList() {
                 }}
                 className="text-xs border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-blue-500 transition-colors"
               >
-                {[5, 10, 15, 20, 50, 100].map(val => (
-                  <option key={val} value={val}>{val} dòng</option>
+                {[5, 10, 15, 20, 50, 100].map((val) => (
+                  <option key={val} value={val}>
+                    {val} dòng
+                  </option>
                 ))}
               </select>
             </div>
@@ -583,7 +796,9 @@ function RouterList() {
               variant="outlined"
               size="sm"
               disabled={currentPage === totalPages || totalPages === 0}
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               className="rounded-md border-gray-300"
             >
               <ChevronRightIcon strokeWidth={2} className="h-4 w-4" />
@@ -601,7 +816,11 @@ function RouterList() {
       >
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+            <Typography
+              variant="h5"
+              color="blue-gray"
+              className="font-semibold text-gray-900"
+            >
               Thêm mới thiết bị
             </Typography>
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
@@ -642,14 +861,20 @@ function RouterList() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    
                     {/* Trạng thái Switch */}
                     <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-bold"
+                        >
                           Trạng thái hoạt động
                         </Typography>
-                        <Typography variant="small" className="text-gray-500 text-xs font-normal">
+                        <Typography
+                          variant="small"
+                          className="text-gray-500 text-xs font-normal"
+                        >
                           Bật/tắt để thiết lập trạng thái ban đầu
                         </Typography>
                       </div>
@@ -657,17 +882,23 @@ function RouterList() {
                         name="active"
                         color="green"
                         checked={values.active}
-                        onChange={({ target }) => setFieldValue("active", target.checked)}
+                        onChange={({ target }) =>
+                          setFieldValue("active", target.checked)
+                        }
                         className="scale-90"
                         circleProps={{
                           className: "border-none",
                         }}
                       />
                     </div>
-                    
+
                     {/* Tên thiết bị */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Tên thiết bị <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -694,7 +925,11 @@ function RouterList() {
 
                     {/* IP Quản lý */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         IP quản lý <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -728,7 +963,11 @@ function RouterList() {
 
                     {/* Ghi chú */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Ghi chú
                       </Typography>
                       <Field
@@ -741,18 +980,18 @@ function RouterList() {
                     </div>
                   </div>
                 </DialogBody>
-                
+
                 <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
-                  <CustomButton 
-                    variant="text" 
-                    color="blue-gray" 
+                  <CustomButton
+                    variant="text"
+                    color="blue-gray"
                     onClick={handleOpenCreate}
                     size="sm"
                   >
                     Hủy bỏ
                   </CustomButton>
-                  <CustomButton 
-                    type="submit" 
+                  <CustomButton
+                    type="submit"
                     className="bg-[#0d47a1] hover:bg-[#0a3a82]"
                     size="sm"
                   >
@@ -777,7 +1016,11 @@ function RouterList() {
       >
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+            <Typography
+              variant="h5"
+              color="blue-gray"
+              className="font-semibold text-gray-900"
+            >
               Cập nhật thiết bị
             </Typography>
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
@@ -812,14 +1055,20 @@ function RouterList() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    
                     {/* Trạng thái Switch */}
                     <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                       <div>
-                        <Typography variant="small" color="blue-gray" className="font-bold">
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-bold"
+                        >
                           Trạng thái hoạt động
                         </Typography>
-                        <Typography variant="small" className="text-gray-500 text-xs font-normal">
+                        <Typography
+                          variant="small"
+                          className="text-gray-500 text-xs font-normal"
+                        >
                           Bật/tắt để thay đổi trạng thái thiết bị
                         </Typography>
                       </div>
@@ -827,7 +1076,9 @@ function RouterList() {
                         name="active"
                         color="green"
                         checked={values.active}
-                        onChange={({ target }) => setFieldValue("active", target.checked)}
+                        onChange={({ target }) =>
+                          setFieldValue("active", target.checked)
+                        }
                         className="scale-90"
                         circleProps={{
                           className: "border-none",
@@ -837,7 +1088,11 @@ function RouterList() {
 
                     {/* Tên thiết bị */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Tên thiết bị <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -864,7 +1119,11 @@ function RouterList() {
 
                     {/* IP Quản lý */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         IP quản lý <span className="text-red-500">*</span>
                       </Typography>
                       <Field
@@ -898,7 +1157,11 @@ function RouterList() {
 
                     {/* Ghi chú */}
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
                         Ghi chú
                       </Typography>
                       <Field
@@ -911,18 +1174,18 @@ function RouterList() {
                     </div>
                   </div>
                 </DialogBody>
-                
+
                 <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
-                  <CustomButton 
-                    variant="text" 
-                    color="blue-gray" 
+                  <CustomButton
+                    variant="text"
+                    color="blue-gray"
                     onClick={handleOpenEdit}
                     size="sm"
                   >
                     Hủy bỏ
                   </CustomButton>
-                  <CustomButton 
-                    type="submit" 
+                  <CustomButton
+                    type="submit"
                     className="bg-[#0d47a1] hover:bg-[#0a3a82]"
                     size="sm"
                   >
@@ -938,52 +1201,16 @@ function RouterList() {
         </div>
       </Dialog>
 
-      {/*Modal confirm xóa site*/}
-      <Dialog 
-        open={openDelete} 
-        handler={handleOpenDelete} 
-        size="xs"
-        className="rounded-lg overflow-hidden shadow-xl"
-      >
-        <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
-          <div className="bg-red-100 p-2 rounded-full">
-            <TrashIcon className="h-5 w-5 text-red-600" />
-          </div>
-          <Typography variant="h5" color="red" className="font-semibold">
-            Xác nhận xóa
-          </Typography>
-        </div>
-        
-        <DialogBody className="p-6 text-blue-gray-700">
-          <Typography variant="paragraph" color="blue-gray" className="font-medium">
-            Bạn có chắc chắn muốn xóa thiết bị <span className="font-bold text-gray-900">{deleteRouterName}</span>? 
-          </Typography>
-          <Typography variant="small" color="gray" className="mt-3 italic">
-            Hành động này không thể hoàn tác và dữ liệu sẽ bị xóa vĩnh viễn khỏi hệ thống.
-          </Typography>
-        </DialogBody>
-        
-        <DialogFooter className="bg-gray-50/50 px-4 py-3 gap-2 border-t border-gray-200">
-          <CustomButton
-            variant="text"
-            color="blue-gray"
-            onClick={handleOpenDelete}
-            size="sm"
-          >
-            Hủy bỏ
-          </CustomButton>
-          <CustomButton
-            variant="filled"
-            color="red"
-            onClick={handleDeleteSubmit}
-            size="sm"
-            className="flex items-center gap-2 shadow-md shadow-red-500/20"
-          >
-            <TrashIcon className="h-4 w-4" />
-            <span>Xác nhận xóa</span>
-          </CustomButton>
-        </DialogFooter>
-      </Dialog>
+      {/* Reusable Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={openDelete}
+        handler={handleOpenDelete}
+        onConfirm={handleDeleteSubmit}
+        itemName={deleteRouterName}
+        title="Xác nhận xóa thiết bị"
+        message="Bạn có chắc chắn muốn xóa thiết bị"
+        confirmText="Xác nhận xóa"
+      />
     </div>
   );
 }

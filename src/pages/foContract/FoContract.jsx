@@ -54,6 +54,7 @@ import FoContractDocuments from "./FoContractDocuments.jsx";
 import Select from "react-select";
 import StatusChip from "../../components/StatusChip.jsx";
 import CustomButton from "../../components/CustomButton.jsx";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal.jsx";
 import { DateTime } from "luxon";
 
 function FoContract() {
@@ -1242,22 +1243,16 @@ function FoContract() {
       </Dialog>
 
       {/* Modal Xóa */}
-      <Dialog open={openDelete} handler={() => setOpenDelete(false)} size="sm">
-        <DialogHeader>Xác nhận xóa</DialogHeader>
-        <DialogBody>Bạn có chắc chắn muốn xóa hợp đồng này?</DialogBody>
-        <DialogFooter>
-          <Button
-            variant="text"
-            color="gray"
-            onClick={() => setOpenDelete(false)}
-          >
-            Hủy
-          </Button>
-          <Button color="red" onClick={confirmDelete}>
-            Xóa
-          </Button>
-        </DialogFooter>
-      </Dialog>
+      <DeleteConfirmationModal
+        open={openDelete}
+        handler={() => setOpenDelete(false)}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa hợp đồng FO"
+        message="Bạn có chắc chắn muốn xóa hợp  này không?"
+        confirmText="Xác nhận xóa"
+      >
+        
+      </DeleteConfirmationModal>
     </div>
   );
 }
