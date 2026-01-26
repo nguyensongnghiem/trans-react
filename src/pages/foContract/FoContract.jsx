@@ -13,6 +13,7 @@ import {
   PlusIcon,
   TrashIcon,
   XMarkIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
@@ -49,6 +50,7 @@ import {
 } from "@heroicons/react/24/outline";
 import FoConTractDetail from "./FoConTractDetail.jsx";
 import FoContractEditDrawer from "./FoContractEditDrawer.jsx";
+import FoContractDocuments from "./FoContractDocuments.jsx";
 import Select from "react-select";
 import StatusChip from "../../components/StatusChip.jsx";
 import CustomButton from "../../components/CustomButton.jsx";
@@ -76,6 +78,10 @@ function FoContract() {
   const [openDelete, setOpenDelete] = useState(false);
   const [startInEditMode, setStartInEditMode] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+
+  // Document Drawer state
+  const [openDocuments, setOpenDocuments] = useState(false);
+  const [documentId, setDocumentId] = useState(null);
 
   // Filter and pagination states
   const [filters, setFilters] = useState({
@@ -200,7 +206,7 @@ function FoContract() {
       const res = await checkExcelImport(
         axiosInstance,
         excelFile,
-        contractNumber,
+        contractNumber
       );
 
       setExcelErrors({});
@@ -224,9 +230,7 @@ function FoContract() {
     const key = (contractNumber || "").trim();
     if (!key) return false;
 
-    return contractList.some(
-      (c) => (c.contractNumber || "").trim() === key
-    );
+    return contractList.some((c) => (c.contractNumber || "").trim() === key);
   };
 
   const handleFinish = async (values) => {
@@ -246,7 +250,7 @@ function FoContract() {
           transmissionOwner: {
             id: values.transmissionOwner.id,
           },
-        }),
+        })
       );
 
       // PDF
@@ -330,7 +334,7 @@ function FoContract() {
   const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
   const handleNext = async (
     values,
-    { validateForm, setErrors, setTouched },
+    { validateForm, setErrors, setTouched }
   ) => {
     console.log(values);
     const errors = await validateForm();
@@ -380,7 +384,14 @@ function FoContract() {
     setDeleteId(id);
     setOpenDelete(true);
   };
-
+  const handleOpenDocuments = (id) => {
+    setDocumentId(id);
+    setOpenDocuments(true);
+  };
+  const handleCloseDocuments = () => {
+    setDocumentId(null);
+    setOpenDocuments(false);
+  };
   const confirmDelete = async () => {
     try {
       await axiosInstance.delete(`/contract/${deleteId}`);
@@ -396,7 +407,7 @@ function FoContract() {
 
   const yearOptions = useMemo(() => {
     const years = new Set(
-      contractList.map((c) => new Date(c.signedDate).getFullYear()),
+      contractList.map((c) => new Date(c.signedDate).getFullYear())
     );
     return Array.from(years)
       .sort((a, b) => b - a)
@@ -509,26 +520,125 @@ function FoContract() {
             {/* Table Header */}
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
-                {["Số HĐ", "Tên hợp đồng", "Nhà cung cấp", "Ngày ký", "Ngày hết hạn", "Trạng thái", "Tác động"].map(head => (
-                  <th key={head} className="p-4"><Typography variant="small" color="blue-gray" className="font-bold leading-none">{head}</Typography></th>
+                {[
+                  "Số HĐ",
+                  "Tên hợp đồng",
+                  "Nhà cung cấp",
+                  "Ngày ký",
+                  "Ngày hết hạn",
+                  "Trạng thái",
+                  "Tác động",
+                ].map((head) => (
+                  <th key={head} className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold leading-none"
+                    >
+                      {head}
+                    </Typography>
+                  </th>
                 ))}
               </tr>
             </thead>
             {/* Table Body */}
             <tbody className="divide-y divide-gray-100">
               {paginatedContracts.map((contract) => (
-                <tr key={contract.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-bold">{contract.contractNumber}</Typography></td>
-                  <td className="p-4 max-w-xs truncate"><Typography variant="small" color="blue-gray" className="font-normal">{contract.contractName}</Typography></td>
-                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{contract.transmissionOwner?.name}</Typography></td>
-                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{DateTime.fromISO(contract.signedDate).toFormat("dd/MM/yyyy")}</Typography></td>
-                  <td className="p-4"><Typography variant="small" color="blue-gray" className="font-normal">{DateTime.fromISO(contract.endDate).toFormat("dd/MM/yyyy")}</Typography></td>
-                  <td className="p-4"><StatusChip active={contract.active} labelOn="Còn hiệu lực" labelOff="Đã thanh lý" /></td>
+                <tr
+                  key={contract.id}
+                  className="hover:bg-gray-50/80 transition-colors"
+                >
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold"
+                    >
+                      {contract.contractNumber}
+                    </Typography>
+                  </td>
+                  <td className="p-4 max-w-xs truncate">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {contract.contractName}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {contract.transmissionOwner?.name}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {DateTime.fromISO(contract.signedDate).toFormat(
+                        "dd/MM/yyyy"
+                      )}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {DateTime.fromISO(contract.endDate).toFormat(
+                        "dd/MM/yyyy"
+                      )}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <StatusChip
+                      active={contract.active}
+                      labelOn="Còn hiệu lực"
+                      labelOff="Đã thanh lý"
+                    />
+                  </td>
                   <td className="p-4">
                     <div className="flex items-center justify-center gap-1">
-                      <IconButton variant="text" size="sm" color="gray" onClick={() => handleOpenDetail(contract.id)}><EyeIcon className="h-4 w-4" /></IconButton>
-                      <IconButton variant="text" size="sm" color="blue" onClick={() => handleOpenEdit(contract.id)}><PencilIcon className="h-4 w-4" /></IconButton>
-                      <IconButton variant="text" size="sm" color="red" onClick={() => handleDelete(contract.id)}><TrashIcon className="h-4 w-4" /></IconButton>
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="blue-gray"
+                        title="Văn bản hợp đồng"
+                        onClick={() => handleOpenDocuments(contract.id)}
+                      >
+                        <DocumentTextIcon className="h-4 w-4" />
+                      </IconButton>
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="gray"
+                        onClick={() => handleOpenDetail(contract.id)}
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </IconButton>
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="blue"
+                        onClick={() => handleOpenEdit(contract.id)}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </IconButton>
+                      <IconButton
+                        variant="text"
+                        size="sm"
+                        color="red"
+                        onClick={() => handleDelete(contract.id)}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </IconButton>
                     </div>
                   </td>
                 </tr>
@@ -541,11 +651,7 @@ function FoContract() {
       </Card>
 
       {/* Modal Thêm mới */}
-      <Dialog
-        open={openCreate}
-        handler={handleOpenCreate}
-        size="lg"
-      >
+      <Dialog open={openCreate} handler={handleOpenCreate} size="lg">
         <div className="max-h-[90vh] overflow-y-auto p-3">
           <DialogHeader className="relative m-0 block">
             <Typography variant="h4" color="blue">
@@ -599,7 +705,6 @@ function FoContract() {
                     color={activeStep === 2 ? "blue-gray" : "gray"}
                   >
                     Tổng hợp & phê duyệt dữ liệu
-
                   </Typography>
                 </div>
               </Step>
@@ -611,7 +716,14 @@ function FoContract() {
                   validationSchema={validateStep1}
                   enableReinitialize
                 >
-                  {({ setFieldValue, values, setErrors, isSubmitting, validateForm, setTouched }) => (
+                  {({
+                    setFieldValue,
+                    values,
+                    setErrors,
+                    isSubmitting,
+                    validateForm,
+                    setTouched,
+                  }) => (
                     <Form
                       className="flex flex-initial flex-shrink flex-col"
                       onSubmit={(e) => {
@@ -714,21 +826,27 @@ function FoContract() {
                                   type="file"
                                   name="contractUrl"
                                   accept=".pdf"
-                                  multiple                 // ⭐ cho phép chọn nhiều
+                                  multiple // ⭐ cho phép chọn nhiều
                                   className="w-full cursor-pointer rounded border bg-white text-sm font-semibold text-gray-400
                                             file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-3 file:text-gray-500"
                                   onChange={(e) => {
-                                    const files = Array.from(e.target.files || []);
+                                    const files = Array.from(
+                                      e.target.files || []
+                                    );
 
                                     if (files.length > 0) {
                                       setPdfFiles((prev) => [
                                         ...prev,
                                         ...files.filter(
-                                          f => !prev.some(p => p.name === f.name) // tránh trùng
+                                          (f) =>
+                                            !prev.some((p) => p.name === f.name) // tránh trùng
                                         ),
                                       ]);
 
-                                      setFieldValue("contractUrl", files[0].name); // chỉ để validate
+                                      setFieldValue(
+                                        "contractUrl",
+                                        files[0].name
+                                      ); // chỉ để validate
                                     }
 
                                     e.target.value = null; // cho phép chọn lại cùng file
@@ -749,7 +867,7 @@ function FoContract() {
                                           type="button"
                                           className="text-red-500 hover:text-red-700"
                                           onClick={() =>
-                                            setPdfFiles(prev =>
+                                            setPdfFiles((prev) =>
                                               prev.filter((_, i) => i !== index)
                                             )
                                           }
@@ -781,10 +899,8 @@ function FoContract() {
                         )}
                         {activeStep === 1 && (
                           <Card className="shadow-none">
-
                             {/* ===== GRID: Upload + Button ===== */}
                             <div className="grid grid-cols-12 gap-3 p-2">
-
                               {/* Upload Excel */}
                               <div className="col-span-full mt-6 flex flex-col gap-2">
                                 <label className="text-slate-400 font-semibold">
@@ -826,80 +942,91 @@ function FoContract() {
                                 <Button
                                   type="button"
                                   color="blue"
-                                  onClick={() => handleCheckExcel(values.contractNumber)}
+                                  onClick={() =>
+                                    handleCheckExcel(values.contractNumber)
+                                  }
                                 >
                                   KIỂM TRA DỮ LIỆU EXCEL
                                 </Button>
 
                                 {excelSuccess && (
                                   <div className="mt-3 rounded border border-green-300 bg-green-50 p-3 text-green-700">
-                                    ✔ File Excel hợp lệ, bạn có thể tiếp tục bước tiếp theo
+                                    ✔ File Excel hợp lệ, bạn có thể tiếp tục
+                                    bước tiếp theo
                                   </div>
                                 )}
                               </div>
                             </div>
 
                             {/* ===== ERROR BOX – NGOÀI GRID ===== */}
-                            {activeStep === 1 && excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
+                            {activeStep === 1 &&
+                              excelChecked &&
+                              !excelSuccess &&
+                              Object.keys(excelErrors).length > 0 && (
+                                <div className="mt-6 w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
+                                  {/* Header */}
+                                  <div className="mb-3 text-lg font-semibold text-red-600">
+                                    ❌ Dữ liệu Excel không hợp lệ
+                                  </div>
+                                  {/* Total lỗi */}
+                                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                    Tổng số dòng lỗi
+                                    <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
+                                      {Object.keys(excelErrors).length}
+                                    </span>
+                                  </div>
 
-                              <div className="mt-6 w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
+                                  {/* Scroll bên trong */}
+                                  <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
+                                    {Object.entries(excelErrors).map(
+                                      ([row, rowError]) => (
+                                        <div
+                                          key={row}
+                                          className="rounded border border-red-200 bg-white p-4"
+                                        >
+                                          <div className="mb-2 font-semibold text-red-700">
+                                            ⚠️ Dòng {row}
+                                          </div>
 
-                                {/* Header */}
-                                <div className="mb-3 text-lg font-semibold text-red-600">
-                                  ❌ Dữ liệu Excel không hợp lệ
+                                          <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
+                                            {rowError.errors.map((err, idx) => (
+                                              <li key={idx}>
+                                                <span className="font-semibold text-red-600">
+                                                  {err.column}:
+                                                </span>{" "}
+                                                {err.message}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
                                 </div>
-                                {/* Total lỗi */}
-                                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                                  Tổng số dòng lỗi
-                                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
-                                    {Object.keys(excelErrors).length}
-                                  </span>
-                                </div>
-
-                                {/* Scroll bên trong */}
-                                <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
-
-                                  {Object.entries(excelErrors).map(([row, rowError]) => (
-                                    <div
-                                      key={row}
-                                      className="rounded border border-red-200 bg-white p-4"
-                                    >
-                                      <div className="mb-2 font-semibold text-red-700">
-                                        ⚠️ Dòng {row}
-                                      </div>
-
-                                      <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
-                                        {rowError.errors.map((err, idx) => (
-                                          <li key={idx}>
-                                            <span className="font-semibold text-red-600">
-                                              {err.column}:
-                                            </span>{" "}
-                                            {err.message}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
+                              )}
                           </Card>
                         )}
                         {activeStep === 2 && (
                           <Card className="shadow-none">
                             <div className="p-4 space-y-4">
-
                               <Typography variant="h5" color="blue-gray">
                                 Xác nhận dữ liệu trước khi lưu
                               </Typography>
 
                               {/* ===== Thông tin hợp đồng ===== */}
                               <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div><b>Số hợp đồng:</b> {values.contractNumber}</div>
-                                <div><b>Tên hợp đồng:</b> {values.contractName}</div>
-                                <div><b>Ngày ký:</b> {values.signedDate}</div>
-                                <div><b>Ngày hết hạn:</b> {values.endDate}</div>
+                                <div>
+                                  <b>Số hợp đồng:</b> {values.contractNumber}
+                                </div>
+                                <div>
+                                  <b>Tên hợp đồng:</b> {values.contractName}
+                                </div>
+                                <div>
+                                  <b>Ngày ký:</b> {values.signedDate}
+                                </div>
+                                <div>
+                                  <b>Ngày hết hạn:</b> {values.endDate}
+                                </div>
                               </div>
 
                               {/* ===== Danh sách tuyến FO ===== */}
@@ -909,31 +1036,54 @@ function FoContract() {
                                     <tr>
                                       <th className="border px-2 py-1">#</th>
                                       {/* <th className="border px-2 py-1">Tỉnh</th> */}
-                                      <th className="border px-2 py-1">Trạm đầu</th>
-                                      <th className="border px-2 py-1">Trạm cuối</th>
+                                      <th className="border px-2 py-1">
+                                        Trạm đầu
+                                      </th>
+                                      <th className="border px-2 py-1">
+                                        Trạm cuối
+                                      </th>
                                       <th className="border px-2 py-1">Core</th>
-                                      <th className="border px-2 py-1">Thiết kế</th>
-                                      <th className="border px-2 py-1">Thực tế</th>
-                                      <th className="border px-2 py-1">Đơn giá</th>
+                                      <th className="border px-2 py-1">
+                                        Thiết kế
+                                      </th>
+                                      <th className="border px-2 py-1">
+                                        Thực tế
+                                      </th>
+                                      <th className="border px-2 py-1">
+                                        Đơn giá
+                                      </th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {excelRows.map((r, i) => (
                                       <tr key={i}>
-                                        <td className="border px-2 py-1">{i + 1}</td>
+                                        <td className="border px-2 py-1">
+                                          {i + 1}
+                                        </td>
                                         {/* <td className="border px-2 py-1">{r.provinceName}</td> */}
-                                        <td className="border px-2 py-1">{r.nearSite}</td>
-                                        <td className="border px-2 py-1">{r.farSite}</td>
-                                        <td className="border px-2 py-1">{r.coreQuantity}</td>
-                                        <td className="border px-2 py-1">{r.designedDistance}</td>
-                                        <td className="border px-2 py-1">{r.finalDistance}</td>
-                                        <td className="border px-2 py-1">{r.cost}</td>
+                                        <td className="border px-2 py-1">
+                                          {r.nearSite}
+                                        </td>
+                                        <td className="border px-2 py-1">
+                                          {r.farSite}
+                                        </td>
+                                        <td className="border px-2 py-1">
+                                          {r.coreQuantity}
+                                        </td>
+                                        <td className="border px-2 py-1">
+                                          {r.designedDistance}
+                                        </td>
+                                        <td className="border px-2 py-1">
+                                          {r.finalDistance}
+                                        </td>
+                                        <td className="border px-2 py-1">
+                                          {r.cost}
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
                               </div>
-
                             </div>
                           </Card>
                         )}
@@ -945,15 +1095,19 @@ function FoContract() {
                           Quay lại
                         </Button>
 
-                        {!isLastStep ?
+                        {!isLastStep ? (
                           <Button
                             size="md"
                             color="blue"
                             onClick={() => {
-
                               // ✅ STEP 1: CHẶN TRÙNG SỐ HỢP ĐỒNG NGAY TỪ BƯỚC 0
-                              if (activeStep === 0 && isDuplicateContractNumber(values.contractNumber)) {
-                                toast.error("Số hợp đồng đã tồn tại, vui lòng nhập tên khác!");
+                              if (
+                                activeStep === 0 &&
+                                isDuplicateContractNumber(values.contractNumber)
+                              ) {
+                                toast.error(
+                                  "Số hợp đồng đã tồn tại, vui lòng nhập tên khác!"
+                                );
                                 return;
                               }
 
@@ -965,17 +1119,24 @@ function FoContract() {
 
                               // 🚫 STEP 2 CÓ LỖI
                               if (activeStep === 1 && !excelSuccess) {
-                                toast.error("File Excel còn lỗi, không thể tiếp tục");
+                                toast.error(
+                                  "File Excel còn lỗi, không thể tiếp tục"
+                                );
                                 return;
                               }
 
                               // ✅ OK → qua step tiếp
-                              handleNext(values, { validateForm, setErrors, setTouched });
+                              handleNext(values, {
+                                validateForm,
+                                setErrors,
+                                setTouched,
+                              });
                             }}
                           >
                             Tiếp theo
                           </Button>
-                          : <Button
+                        ) : (
+                          <Button
                             size="md"
                             color="green"
                             disabled={saving}
@@ -983,7 +1144,7 @@ function FoContract() {
                           >
                             {saving ? "Đang lưu..." : "Hoàn thành"}
                           </Button>
-                        }
+                        )}
                       </div>
                     </Form>
                   )}
@@ -991,7 +1152,6 @@ function FoContract() {
               </div>
             </div>
           </div>
-
         </div>
       </Dialog>
 
@@ -1001,7 +1161,12 @@ function FoContract() {
           <Typography variant="h5" color="blue-gray">
             Chi tiết hợp đồng
           </Typography>
-          <IconButton color="blue-gray" size="sm" variant="text" onClick={handleCloseDetail}>
+          <IconButton
+            color="blue-gray"
+            size="sm"
+            variant="text"
+            onClick={handleCloseDetail}
+          >
             <XMarkIcon strokeWidth={2} className="h-5 w-5" />
           </IconButton>
         </DialogHeader>
@@ -1022,6 +1187,7 @@ function FoContract() {
       </Dialog>
 
       {/* Drawer Edit (Render độc lập, không nằm trong Modal) */}
+      
       {openEdit && detailId && (
         <FoContractEditDrawer
           id={detailId}
@@ -1033,11 +1199,46 @@ function FoContract() {
         />
       )}
 
+      {/* Modal Documents (Thay thế Drawer) */}
+      <Dialog
+        open={openDocuments}
+        handler={() => setOpenDocuments(false)}
+        size="xl"
+        className="flex flex-col h-[90vh]"
+      >
+        <DialogHeader className="justify-between border-b">
+          <Typography variant="h4" color="blue">
+            📄 Văn bản hợp đồng
+          </Typography>
+          <IconButton
+            variant="text"
+            color="blue-gray"
+            onClick={() => setOpenDocuments(false)}
+          >
+            <XMarkIcon strokeWidth={2} className="h-5 w-5" />
+          </IconButton>
+        </DialogHeader>
+        <DialogBody className="flex-1 p-0 overflow-hidden">
+          {documentId && <FoContractDocuments contractId={documentId} />}
+        </DialogBody>
+      </Dialog>
+
       {/* Modal Xóa */}
       <Dialog open={openDelete} handler={() => setOpenDelete(false)} size="sm">
         <DialogHeader>Xác nhận xóa</DialogHeader>
         <DialogBody>Bạn có chắc chắn muốn xóa hợp đồng này?</DialogBody>
-        <DialogFooter><Button variant="text" color="gray" onClick={() => setOpenDelete(false)}>Hủy</Button><Button color="red" onClick={confirmDelete}>Xóa</Button></DialogFooter>
+        <DialogFooter>
+          <Button
+            variant="text"
+            color="gray"
+            onClick={() => setOpenDelete(false)}
+          >
+            Hủy
+          </Button>
+          <Button color="red" onClick={confirmDelete}>
+            Xóa
+          </Button>
+        </DialogFooter>
       </Dialog>
     </div>
   );
