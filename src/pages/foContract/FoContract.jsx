@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+import { useNavigate } from "react-router-dom";
 import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
@@ -48,7 +49,6 @@ import {
   UserIcon,
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
-import FoConTractDetail from "./FoConTractDetail.jsx";
 import FoContractEditDrawer from "./FoContractEditDrawer.jsx";
 import FoContractDocuments from "./FoContractDocuments.jsx";
 import Select from "react-select";
@@ -72,8 +72,8 @@ function FoContract() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Dialog states
+  const navigate = useNavigate();
   const [openCreate, setOpenCreate] = useState(false);
-  const [openDetail, setOpenDetail] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
@@ -144,7 +144,8 @@ function FoContract() {
     return contractList.filter((contract) => {
       const matchOwner =
         !filters.transmissionOwner || // Nếu không có bộ lọc owner được chọn
-        Number(contract.transmissionOwner?.id) === Number(filters.transmissionOwner.id); // So sánh ID dưới dạng số
+        Number(contract.transmissionOwner?.id) ===
+          Number(filters.transmissionOwner.id); // So sánh ID dưới dạng số
       const matchYear =
         !filters.year ||
         new Date(contract.signedDate).getFullYear() === filters.year.value;
@@ -207,7 +208,7 @@ function FoContract() {
       const res = await checkExcelImport(
         axiosInstance,
         excelFile,
-        contractNumber
+        contractNumber,
       );
 
       setExcelErrors({});
@@ -251,7 +252,7 @@ function FoContract() {
           transmissionOwner: {
             id: values.transmissionOwner.id,
           },
-        })
+        }),
       );
 
       // PDF
@@ -335,7 +336,7 @@ function FoContract() {
   const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
   const handleNext = async (
     values,
-    { validateForm, setErrors, setTouched }
+    { validateForm, setErrors, setTouched },
   ) => {
     console.log(values);
     const errors = await validateForm();
@@ -356,23 +357,13 @@ function FoContract() {
   };
 
   const handleOpenDetail = (id) => {
-    setStartInEditMode(false);
-    setDetailId(id);
-    setOpenDetail(true);
-    setOpenEdit(false);
+    navigate(`/fo-contract/${id}`);
   };
 
   const handleOpenEdit = (id) => {
     setStartInEditMode(true);
     setDetailId(id);
     setOpenEdit(true);
-    setOpenDetail(false);
-  };
-
-  const handleCloseDetail = () => {
-    setDetailId(null);
-    setOpenDetail(false);
-    setStartInEditMode(false);
   };
 
   const handleCloseEdit = () => {
@@ -408,7 +399,7 @@ function FoContract() {
 
   const yearOptions = useMemo(() => {
     const years = new Set(
-      contractList.map((c) => new Date(c.signedDate).getFullYear())
+      contractList.map((c) => new Date(c.signedDate).getFullYear()),
     );
     return Array.from(years)
       .sort((a, b) => b - a)
@@ -601,7 +592,7 @@ function FoContract() {
                       className="font-normal"
                     >
                       {DateTime.fromISO(contract.signedDate).toFormat(
-                        "dd/MM/yyyy"
+                        "dd/MM/yyyy",
                       )}
                     </Typography>
                   </td>
@@ -612,7 +603,7 @@ function FoContract() {
                       className="font-normal"
                     >
                       {DateTime.fromISO(contract.endDate).toFormat(
-                        "dd/MM/yyyy"
+                        "dd/MM/yyyy",
                       )}
                     </Typography>
                   </td>
@@ -850,7 +841,7 @@ function FoContract() {
                                             file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-3 file:text-gray-500"
                                   onChange={(e) => {
                                     const files = Array.from(
-                                      e.target.files || []
+                                      e.target.files || [],
                                     );
 
                                     if (files.length > 0) {
@@ -858,13 +849,15 @@ function FoContract() {
                                         ...prev,
                                         ...files.filter(
                                           (f) =>
-                                            !prev.some((p) => p.name === f.name) // tránh trùng
+                                            !prev.some(
+                                              (p) => p.name === f.name,
+                                            ), // tránh trùng
                                         ),
                                       ]);
 
                                       setFieldValue(
                                         "contractUrl",
-                                        files[0].name
+                                        files[0].name,
                                       ); // chỉ để validate
                                     }
 
@@ -887,7 +880,9 @@ function FoContract() {
                                           className="text-red-500 hover:text-red-700"
                                           onClick={() =>
                                             setPdfFiles((prev) =>
-                                              prev.filter((_, i) => i !== index)
+                                              prev.filter(
+                                                (_, i) => i !== index,
+                                              ),
                                             )
                                           }
                                         >
@@ -1018,7 +1013,7 @@ function FoContract() {
                                             ))}
                                           </ul>
                                         </div>
-                                      )
+                                      ),
                                     )}
                                   </div>
                                 </div>
@@ -1125,7 +1120,7 @@ function FoContract() {
                                 isDuplicateContractNumber(values.contractNumber)
                               ) {
                                 toast.error(
-                                  "Số hợp đồng đã tồn tại, vui lòng nhập tên khác!"
+                                  "Số hợp đồng đã tồn tại, vui lòng nhập tên khác!",
                                 );
                                 return;
                               }
@@ -1139,7 +1134,7 @@ function FoContract() {
                               // 🚫 STEP 2 CÓ LỖI
                               if (activeStep === 1 && !excelSuccess) {
                                 toast.error(
-                                  "File Excel còn lỗi, không thể tiếp tục"
+                                  "File Excel còn lỗi, không thể tiếp tục",
                                 );
                                 return;
                               }
@@ -1172,37 +1167,6 @@ function FoContract() {
             </div>
           </div>
         </div>
-      </Dialog>
-
-      {/* Modal Chi tiết */}
-      <Dialog open={openDetail} handler={handleCloseDetail} size="xl">
-        <DialogHeader className="justify-between">
-          <Typography variant="h5" color="blue-gray">
-            Chi tiết hợp đồng
-          </Typography>
-          <IconButton
-            color="blue-gray"
-            size="sm"
-            variant="text"
-            onClick={handleCloseDetail}
-          >
-            <XMarkIcon strokeWidth={2} className="h-5 w-5" />
-          </IconButton>
-        </DialogHeader>
-        <DialogBody className="overflow-y-auto max-h-[80vh]">
-          {detailId && (
-            <FoConTractDetail
-              id={detailId}
-              onUpdated={async () => {
-                await loadContractList();
-              }}
-              onTriggerEdit={(idToEdit) => {
-                handleCloseDetail();
-                handleOpenEdit(idToEdit);
-              }}
-            />
-          )}
-        </DialogBody>
       </Dialog>
 
       {/* Drawer Edit (Render độc lập, không nằm trong Modal) */}
@@ -1250,9 +1214,7 @@ function FoContract() {
         title="Xác nhận xóa hợp đồng FO"
         message="Bạn có chắc chắn muốn xóa hợp  này không?"
         confirmText="Xác nhận xóa"
-      >
-        
-      </DeleteConfirmationModal>
+      ></DeleteConfirmationModal>
     </div>
   );
 }

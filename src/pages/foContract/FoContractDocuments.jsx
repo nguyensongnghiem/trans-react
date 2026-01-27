@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
+
 /* ================= ENV ================= */
 const API_BASE = import.meta.env.VITE_BE_API_URL;
 
@@ -29,12 +30,15 @@ export default function FoContractDocuments({ contractId, onClose }) {
 
     axios
       .get(`/contract/${contractId}/pdfs`)
+    axios.get(`/contract/${contractId}/pdfs`)
       .then(res => {
         setPdfList(res.data || []);
+        setPdfList(res.data || [])
       })
       .catch(() => {
         setPdfList([]);
         setError("Không tải được danh sách PDF");
+
       })
       .finally(() => setLoading(false));
   }, [contractId]);
