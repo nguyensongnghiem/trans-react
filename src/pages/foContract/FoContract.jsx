@@ -1185,7 +1185,7 @@ function FoContract() {
       {/* Modal Documents (Thay thế Drawer) */}
       <Dialog
         open={openDocuments}
-        handler={() => setOpenDocuments(false)}
+        handler={handleCloseDocuments}
         size="xl"
         className="flex flex-col h-[90vh]"
       >
@@ -1196,13 +1196,13 @@ function FoContract() {
           <IconButton
             variant="text"
             color="blue-gray"
-            onClick={() => setOpenDocuments(false)}
+            onClick={handleCloseDocuments}
           >
             <XMarkIcon strokeWidth={2} className="h-5 w-5" />
           </IconButton>
         </DialogHeader>
         <DialogBody className="flex-1 p-0 overflow-hidden">
-          {documentId && <FoContractDocuments contractId={documentId} />}
+          {openDocuments && documentId && <FoContractDocuments contractId={documentId} />}
         </DialogBody>
       </Dialog>
 
