@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Polygon } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
@@ -25,7 +25,8 @@ function FitBounds({ bounds }) {
 }
 
 const KmlMap = ({ foId }) => {
-  const [positions, setPositions] = useState([]);
+  const [features, setFeatures] = useState([]);
+  const [mapBounds, setMapBounds] = useState([]);
   const [center, setCenter] = useState([21.0285, 105.8542]); // Mặc định Hà Nội
   const axiosInstance = useAxiosPrivate();
 
@@ -58,27 +59,68 @@ const KmlMap = ({ foId }) => {
         const parser = new DOMParser();
         const kml = parser.parseFromString(kmlText, "text/xml");
         
-        // Lấy thẻ <coordinates> (thường dùng trong LineString của KML)
-        const coordinatesTags = kml.getElementsByTagName("coordinates");
-        const newPositions = [];
-        
-        // KML format: lon,lat,alt (cách nhau bởi khoảng trắng hoặc xuống dòng)
-        for (let i = 0; i < coordinatesTags.length; i++) {
-            const coordsStr = coordinatesTags[i].textContent.trim();
-            const points = coordsStr.split(/\s+/);
-            
-            points.forEach(point => {
-                const parts = point.split(",");
-                if (parts.length >= 2) {
-                    // Leaflet format: [lat, lon]
-                    newPositions.push([parseFloat(parts[1]), parseFloat(parts[0])]);
+        const placemarks = kml.getElementsByTagName("Placemark");
+        const newFeatures = [];
+        const allCoords = [];
+
+        const parseCoordinates = (str) => {
+          return str.trim().split(/\s+/).map(item => {
+            const [lon, lat] = item.split(",").map(parseFloat);
+            return [lat, lon];
+          }).filter(pos => !isNaN(pos[0]) && !isNaN(pos[1]));
+        };
+
+        Array.from(placemarks).forEach((placemark, idx) => {
+            const name = placemark.getElementsByTagName("name")[0]?.textContent || `Object ${idx + 1}`;
+            const description = placemark.getElementsByTagName("description")[0]?.textContent || "";
+
+            // Handle Points
+            Array.from(placemark.getElementsByTagName("Point")).forEach(point => {
+                const coordsStr = point.getElementsByTagName("coordinates")[0]?.textContent;
+                if (coordsStr) {
+                    const coords = parseCoordinates(coordsStr);
+                    if (coords.length > 0) {
+                        newFeatures.push({ type: "Point", position: coords[0], name, description });
+                        allCoords.push(coords[0]);
+                    }
                 }
             });
-        }
 
-        if (newPositions.length > 0) {
-            setPositions(newPositions);
-            setCenter(newPositions[0]);
+            // Handle LineStrings
+            Array.from(placemark.getElementsByTagName("LineString")).forEach(line => {
+                const coordsStr = line.getElementsByTagName("coordinates")[0]?.textContent;
+                if (coordsStr) {
+                    const coords = parseCoordinates(coordsStr);
+                    if (coords.length > 0) {
+                        newFeatures.push({ type: "LineString", positions: coords, name, description });
+                        coords.forEach(c => allCoords.push(c));
+                    }
+                }
+            });
+
+            // Handle Polygons
+            Array.from(placemark.getElementsByTagName("Polygon")).forEach(poly => {
+                const outer = poly.getElementsByTagName("outerBoundaryIs")[0];
+                if (outer) {
+                    const coordsStr = outer.getElementsByTagName("coordinates")[0]?.textContent;
+                    if (coordsStr) {
+                        const coords = parseCoordinates(coordsStr);
+                        if (coords.length > 0) {
+                            newFeatures.push({ type: "Polygon", positions: coords, name, description });
+                            coords.forEach(c => allCoords.push(c));
+                        }
+                    }
+                }
+            });
+        });
+
+        if (newFeatures.length > 0) {
+            setFeatures(newFeatures);
+        }
+        
+        if (allCoords.length > 0) {
+            setMapBounds(allCoords);
+            setCenter(allCoords[0]);
         }
       } catch (error) {
         console.error("Lỗi khi tải hoặc parse KML:", error);
@@ -90,7 +132,7 @@ const KmlMap = ({ foId }) => {
     }
   }, [foId, axiosInstance]);
 
-  if (positions.length === 0) return <div className="flex items-center justify-center h-full text-gray-500">Đang tải bản đồ...</div>;
+  if (features.length === 0) return <div className="flex items-center justify-center h-full text-gray-500">Đang tải bản đồ hoặc không có dữ liệu...</div>;
 
   return (
     <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
@@ -98,14 +140,42 @@ const KmlMap = ({ foId }) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <Polyline positions={positions} color="blue" weight={4} />
-      <Marker position={positions[0]}>
-        <Popup>Điểm đầu</Popup>
-      </Marker>
-      <Marker position={positions[positions.length - 1]}>
-        <Popup>Điểm cuối</Popup>
-      </Marker>
-      <FitBounds bounds={positions} />
+      
+      {features.map((feature, index) => {
+          if (feature.type === "Point") {
+              return (
+                  <Marker key={index} position={feature.position}>
+                      <Popup>
+                          <div className="font-bold">{feature.name}</div>
+                          <div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} />
+                      </Popup>
+                  </Marker>
+              );
+          }
+          if (feature.type === "LineString") {
+              return (
+                  <Polyline key={index} positions={feature.positions} color="blue" weight={4}>
+                      <Popup>
+                          <div className="font-bold">{feature.name}</div>
+                          <div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} />
+                      </Popup>
+                  </Polyline>
+              );
+          }
+          if (feature.type === "Polygon") {
+              return (
+                  <Polygon key={index} positions={feature.positions} color="purple">
+                      <Popup>
+                          <div className="font-bold">{feature.name}</div>
+                          <div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} />
+                      </Popup>
+                  </Polygon>
+              );
+          }
+          return null;
+      })}
+
+      <FitBounds bounds={mapBounds} />
     </MapContainer>
   );
 };
