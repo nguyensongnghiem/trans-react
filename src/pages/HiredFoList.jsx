@@ -37,6 +37,7 @@ import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
+import OwnerChip from "../components/OwnerChip";
 function HiredFoList() {
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [hiredFoList, setHiredFoList] = useState([]);
@@ -70,6 +71,8 @@ function HiredFoList() {
     search: "",
     contract: null,
     status: null,
+    province: null,
+    supplier: null,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
@@ -77,15 +80,29 @@ function HiredFoList() {
   // Filter Logic
   const filterOptions = useMemo(() => {
     const contracts = new Set();
+    const provinces = new Set();
+    const suppliers = new Set();
     hiredFoList.forEach((item) => {
       if (item.foContract?.contractNumber) {
         contracts.add(item.foContract.contractNumber);
+      }
+      if (item.nearSite?.province?.name) {
+        provinces.add(item.nearSite.province.name);
+      }
+      if (item.foContract?.transmissionOwner?.name) {
+        suppliers.add(item.foContract.transmissionOwner.name);
       }
     });
     return {
       contracts: Array.from(contracts)
         .sort()
         .map((c) => ({ value: c, label: c })),
+      provinces: Array.from(provinces)
+        .sort()
+        .map((p) => ({ value: p, label: p })),
+      suppliers: Array.from(suppliers)
+        .sort()
+        .map((s) => ({ value: s, label: s })),
     };
   }, [hiredFoList]);
 
@@ -96,6 +113,12 @@ function HiredFoList() {
         item.foContract?.contractNumber === filters.contract.value;
       const matchStatus =
         !filters.status || item.active === filters.status.value;
+      const matchProvince =
+        !filters.province ||
+        item.nearSite?.province?.name === filters.province.value;
+      const matchSupplier =
+        !filters.supplier ||
+        item.foContract?.transmissionOwner?.name === filters.supplier.value;
       const matchSearch =
         !filters.search ||
         (item.nearSite?.siteId + " - " + item.farSite?.siteId)
@@ -106,7 +129,13 @@ function HiredFoList() {
           ?.toLowerCase()
           .includes(filters.search.toLowerCase());
 
-      return matchContract && matchStatus && matchSearch;
+      return (
+        matchContract &&
+        matchStatus &&
+        matchSearch &&
+        matchProvince &&
+        matchSupplier
+      );
     });
   }, [hiredFoList, filters]);
 
@@ -125,6 +154,8 @@ function HiredFoList() {
       search: "",
       contract: null,
       status: null,
+      province: null,
+      supplier: null,
     });
   };
 
@@ -133,6 +164,7 @@ function HiredFoList() {
       try {
         setIsLoading(true);
         const hiredFoList = await axiosInstance.get("hired-fos");
+        console.log(hiredFoList.data);
         setHiredFoList(hiredFoList.data);
       } catch (error) {
         console.log(error);
@@ -459,11 +491,13 @@ function HiredFoList() {
   // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
     const dataToExport = filteredHiredFos.map((item) => ({
+      Tỉnh: item.nearSite?.province?.name,
       "Tên tuyến": `${item.nearSite?.siteId} - ${item.farSite?.siteId}`,
       "Khoảng cách (km)": item.finalDistance,
       "Số core": item.coreQuantity,
       "Đơn giá (VNĐ)": item.cost,
       "Số hợp đồng": item.foContract?.contractNumber,
+      "Nhà cung cấp": item.foContract?.transmissionOwner?.name,
       "Trạng thái": item.active ? "Hoạt động" : "Không hoạt động",
       "Ghi chú": item.note,
     }));
@@ -473,11 +507,13 @@ function HiredFoList() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "HiredFo");
     XLSX.writeFile(workbook, "HiredFo.xlsx");
   };
-    return (
+  return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Danh sách FO thuê</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Danh sách FO thuê
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
             Tổng số:{" "}
             <span className="font-semibold text-blue-600">
@@ -511,7 +547,11 @@ function HiredFoList() {
           <span className="font-bold text-sm uppercase tracking-wider">
             Bộ lọc tìm kiếm
           </span>
-          {(filters.search || filters.contract || filters.status) && (
+          {(filters.search ||
+            filters.contract ||
+            filters.status ||
+            filters.province ||
+            filters.supplier) && (
             <button
               onClick={handleResetFilters}
               className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
@@ -522,7 +562,59 @@ function HiredFoList() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tỉnh
+            </span>
+            <Select
+              isClearable
+              placeholder="Tất cả tỉnh"
+              className="text-sm"
+              options={filterOptions.provinces}
+              value={filters.province}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, province: val }))
+              }
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Nhà cung cấp
+            </span>
+            <Select
+              isClearable
+              placeholder="Tất cả NCC"
+              className="text-sm"
+              options={filterOptions.suppliers}
+              value={filters.supplier}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, supplier: val }))
+              }
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
               Số hợp đồng
@@ -533,7 +625,9 @@ function HiredFoList() {
               className="text-sm"
               options={filterOptions.contracts}
               value={filters.contract}
-              onChange={(val) => setFilters((prev) => ({ ...prev, contract: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, contract: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
@@ -560,7 +654,9 @@ function HiredFoList() {
                 { label: "Không hoạt động", value: false },
               ]}
               value={filters.status}
-              onChange={(val) => setFilters((prev) => ({ ...prev, status: val }))}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, status: val }))
+              }
               menuPortalTarget={document.body}
               styles={{
                 control: (base) => ({
@@ -603,7 +699,19 @@ function HiredFoList() {
           <table className="w-full min-w-max table-auto text-left">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
-                {["STT", "Tên tuyến", "Khoảng cách", "Số core", "Đơn giá", "Số hợp đồng", "Trạng thái", "Ghi chú", "Tác động"].map((head) => (
+                {[
+                  "STT",
+                  "Tỉnh",
+                  "Tên tuyến",
+                  "Khoảng cách",
+                  "Số core",
+                  "Đơn giá",
+                  "Số hợp đồng",
+                  "Nhà cung cấp",
+                  "Trạng thái",
+                  "Ghi chú",
+                  "Tác động",
+                ].map((head) => (
                   <th key={head} className="p-4">
                     <Typography
                       variant="small"
@@ -618,42 +726,90 @@ function HiredFoList() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paginatedHiredFos.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                <tr
+                  key={item.id}
+                  className="hover:bg-gray-50/80 transition-colors"
+                >
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {(currentPage - 1) * rowsPerPage + index + 1}
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-bold">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {item.nearSite?.province?.name}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold"
+                    >
                       {item.nearSite?.siteId} - {item.farSite?.siteId}
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {item.finalDistance} km
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {item.coreQuantity}
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {VND.format(item.cost)}
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {item.foContract?.contractNumber}
                     </Typography>
+                  </td>
+                  <td className="p-4">
+                    {item.foContract?.transmissionOwner?.name && (
+                      <OwnerChip
+                        name={item.foContract.transmissionOwner.name}
+                        className="inline-block"
+                      />
+                    )}
                   </td>
                   <td className="p-4">
                     <StatusChip active={item.active} />
                   </td>
                   <td className="p-4 max-w-xs truncate">
-                    <Typography variant="small" color="blue-gray" className="font-normal italic opacity-70">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal italic opacity-70"
+                    >
                       {item.note}
                     </Typography>
                   </td>
@@ -697,7 +853,11 @@ function HiredFoList() {
         {/* Pagination Controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-4">
-            <Typography variant="small" color="blue-gray" className="font-normal">
+            <Typography
+              variant="small"
+              color="blue-gray"
+              className="font-normal"
+            >
               Trang <span className="font-bold">{currentPage}</span> /{" "}
               <span className="font-bold">{totalPages || 1}</span>
             </Typography>
@@ -745,9 +905,6 @@ function HiredFoList() {
           </div>
         </div>
       </Card>
-
-  
-
 
       {/* Modal Thêm mới */}
       <Dialog
