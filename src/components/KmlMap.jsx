@@ -4,8 +4,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import JSZip from "jszip";
-import { ChevronRightIcon, ChevronDownIcon, FolderIcon, DocumentIcon, ListBulletIcon } from "@heroicons/react/24/solid";
-import { Checkbox, Typography, Card, IconButton } from "@material-tailwind/react";
+import { ChevronRightIcon, ChevronDownIcon, FolderIcon, DocumentIcon, ListBulletIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { Checkbox, Typography, IconButton } from "@material-tailwind/react";
 
 // Fix lỗi icon mặc định của Leaflet trong React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -23,6 +23,18 @@ function FitBounds({ bounds }) {
       map.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [bounds, map]);
+  return null;
+}
+
+// Component để resize map khi sidebar thay đổi kích thước
+function MapResizer({ showTree }) {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300); // Đợi transition hoàn tất
+    return () => clearTimeout(timer);
+  }, [showTree, map]);
   return null;
 }
 
@@ -207,24 +219,10 @@ const KmlMap = ({ foId }) => {
   if (!treeData) return <div className="flex items-center justify-center h-full text-gray-500">Đang tải bản đồ...</div>;
 
   return (
-    <div className="relative h-full w-full">
-      {/* Tree View Overlay */}
-      <div className={`absolute top-2 right-2 z-[1000] flex flex-col items-end transition-all duration-300 ${showTree ? 'w-64' : 'w-auto'}`}>
-          <IconButton size="sm" color="white" className="shadow-md mb-2" onClick={() => setShowTree(!showTree)}>
-              <ListBulletIcon className="h-5 w-5 text-blue-gray-700" />
-          </IconButton>
-          
-          {showTree && (
-              <Card className="w-full max-h-[60vh] overflow-y-auto p-2 bg-white/90 backdrop-blur-sm shadow-xl border border-blue-gray-100">
-                  <Typography variant="small" className="font-bold mb-2 px-2 text-blue-gray-800">Danh sách lớp bản đồ</Typography>
-                  <div className="text-sm">
-                      <KmlTreeNode node={treeData} onToggleVisibility={handleToggleVisibility} onToggleCollapse={handleToggleCollapse} />
-                  </div>
-              </Card>
-          )}
-      </div>
-
-      <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
+    <div className="flex h-full w-full overflow-hidden relative">
+      <div className="flex-1 relative h-full w-full transition-all duration-300">
+        <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
+      <MapResizer showTree={showTree} />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -266,6 +264,31 @@ const KmlMap = ({ foId }) => {
 
       <FitBounds bounds={mapBounds} />
     </MapContainer>
+
+        {!showTree && (
+            <div className="absolute top-2 right-2 z-[1000]">
+                <IconButton size="sm" color="white" className="shadow-md" onClick={() => setShowTree(true)}>
+                    <ListBulletIcon className="h-5 w-5 text-blue-gray-700" />
+                </IconButton>
+            </div>
+        )}
+      </div>
+
+      {/* Sidebar */}
+      <div className={`flex flex-col bg-white border-l border-gray-200 shadow-xl z-[1000] transition-all duration-300 ease-in-out ${showTree ? 'w-80' : 'w-0 overflow-hidden'}`}>
+          <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50">
+              <Typography variant="small" className="font-bold text-blue-gray-800 uppercase">
+                  Danh sách lớp
+              </Typography>
+              <IconButton variant="text" size="sm" color="blue-gray" onClick={() => setShowTree(false)}>
+                  <XMarkIcon className="h-4 w-4" />
+              </IconButton>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-2">
+              <KmlTreeNode node={treeData} onToggleVisibility={handleToggleVisibility} onToggleCollapse={handleToggleCollapse} />
+          </div>
+      </div>
     </div>
   );
 };
