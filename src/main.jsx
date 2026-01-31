@@ -18,6 +18,7 @@ import Login from "./pages/Login.jsx";
 import Unauthorized from "./pages/Unauthorized.jsx";
 import LeaselineList from "./pages/LeaselineList.jsx";
 import HiredFoList from "./pages/HiredFoList.jsx";
+import OwnFoList from "./pages/OwnFoList.jsx";
 import FoContractCreate from "./pages/foContract/FoContractCreate.jsx";
 import FoReportBySupplierWithContracts from "./pages/foContract/FoReportBySupplierWithContracts.jsx";
 import FoReportByContracts from "./pages/foContract/FoReportByContracts.jsx";
@@ -71,6 +72,10 @@ const router = createBrowserRouter([
           {
             path: "/hired-fo",
             element: <HiredFoList />,
+          },
+          {
+            path: "/own-fo",
+            element: <OwnFoList />,
           },
           {
             path: "/router",

@@ -56,7 +56,7 @@ const menuConfig = [
     icon: BoltIcon,
     children: [
       { title: "Cáp quang thuê", path: "/hired-fo" },
-      { title: "Cáp quang đầu tư", path: "/under-construction/fiber-invest" },
+      { title: "Cáp quang đầu tư", path: "/own-fo" },
       {
         title: "Hạ tầng cột cống bể",
         path: "/under-construction/infrastructure",
