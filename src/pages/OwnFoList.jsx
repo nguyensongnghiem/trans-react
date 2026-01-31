@@ -7,6 +7,7 @@ import {
   GlobeAsiaAustraliaIcon,
   CloudArrowUpIcon,
   EyeIcon,
+  MapIcon,
 } from "@heroicons/react/24/solid";
 import {
   MagnifyingGlassIcon,
@@ -16,6 +17,7 @@ import {
   ChevronRightIcon,
   XMarkIcon,
   ExclamationTriangleIcon,
+
 } from "@heroicons/react/24/outline";
 import Select from "react-select";
 import * as Yup from "yup";
@@ -373,7 +375,7 @@ function OwnFoList() {
           <table className="w-full min-w-max table-auto text-left">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
-                {["STT", "Tỉnh", "Tên tuyến", "Khoảng cách", "Số core", "Loại cáp", "Trạng thái", "Ghi chú", "KML", "Tác động"].map((head) => (
+                {["STT", "Tỉnh", "Tên tuyến", "Khoảng cách", "Số core", "Loại cáp", "Trạng thái", "Ghi chú", "Bản đồ tuyến cáp", "Tác động"].map((head) => (
                   <th key={head} className="p-4">
                     <Typography variant="small" color="blue-gray" className="font-bold">{head}</Typography>
                   </th>
@@ -395,20 +397,32 @@ function OwnFoList() {
                   <td className="p-4 max-w-xs truncate italic opacity-70">{item.note}</td>
                   <td className="p-4">
                     <div className="flex gap-1">
-                      {item.kmlFileName && (
-                        <>
-                          <Tooltip content="Xem bản đồ">
-                            <IconButton variant="text" size="sm" color="blue" onClick={() => handleViewMap(item)}>
-                              <EyeIcon className="h-4 w-4" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip content="Download KML">
-                            <IconButton variant="text" size="sm" color="green" onClick={() => handleKmlDownload(item)}>
-                              <GlobeAsiaAustraliaIcon className="h-4 w-4" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
+                      <Tooltip content={item.kmlFileName ? "Xem bản đồ" : "Chưa có bản đồ"}>
+                        <span className="inline-block">
+                          <IconButton
+                            variant="text"
+                            size="sm"
+                            color="blue-gray"
+                            onClick={() => item.kmlFileName && handleViewMap(item)}
+                            disabled={!item.kmlFileName}
+                          >
+                            <MapIcon className="h-4 w-4" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip content={item.kmlFileName ? "Tải KML" : "Chưa có file KML"}>
+                        <span className="inline-block">
+                          <IconButton
+                            variant="text"
+                            size="sm"
+                            color="blue-gray"
+                            onClick={() => item.kmlFileName && handleKmlDownload(item)}
+                            disabled={!item.kmlFileName}
+                          >
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                     </div>
                   </td>
                   <td className="p-4">
