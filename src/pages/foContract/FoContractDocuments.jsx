@@ -164,7 +164,7 @@ export default function FoContractDocuments({ contractId }) {
           ) : (
             <>
               <div className="border-b px-4 py-2 text-sm font-semibold text-gray-700 bg-white shadow-sm flex justify-between items-center">
-                <span className="truncate">📄 {selectedPdf}</span>
+                <span className="truncate"> 📄 {selectedPdf}</span>
               </div>
 
               <iframe

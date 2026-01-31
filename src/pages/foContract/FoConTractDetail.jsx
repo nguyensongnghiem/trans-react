@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import Select from "react-select";
 import { DateTime } from "luxon";
 import { CustomMenuList } from "../CustomList.jsx";
-// import { contractDB } from "../../services/firebase/config.js";
 import { clsx } from "clsx";
 import {
   Button,
@@ -18,12 +17,25 @@ import {
   IconButton,
   Switch,
   Typography,
+  Tooltip,
 } from "@material-tailwind/react";
+import {
+  DocumentTextIcon,
+  BuildingOfficeIcon,
+  CalendarDaysIcon,
+  CurrencyDollarIcon,
+  MapIcon,
+  HashtagIcon,
+  PencilIcon,
+  TrashIcon,
+  ChevronLeftIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import FoContractDocuments from "./FoContractDocuments";
 import InfoCard from "./component/InfoCard.jsx";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid/index.js";
-import { ChevronLeftIcon, XMarkIcon } from "@heroicons/react/24/outline"; // Optional Theme applied to the Data Grid
-import { toast } from "react-toastify"; // Optional Theme applied to the Data Grid
+import StatusChip from "../../components/StatusChip";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
+import { toast } from "react-toastify";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import FoContractEditDrawer from "./FoContractEditDrawer.jsx";
 import "../../Styles/aggrid.css";
@@ -47,10 +59,10 @@ function FoConTractDetail() {
   const [editLine, setEditLine] = useState(null);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
 
-  // ==== STATE QUẢN LÝ XÓA PDF ====== //
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [fileToDelete, setFileToDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  // ==== STATE QUẢN LÝ XÓA LINE ====== //
+  const [showDeleteLineModal, setShowDeleteLineModal] = useState(false);
+  const [lineToDelete, setLineToDelete] = useState(null);
+  const [deletingLine, setDeletingLine] = useState(false);
 
   const handleEdit = useCallback(
     async (lineId) => {
@@ -67,8 +79,27 @@ function FoConTractDetail() {
   );
 
   const handleDeleteRouter = async (lineId) => {
-    console.log("delete", lineId);
-    // sau này gọi API delete ở đây
+    const line = contractDetail.hiredFoLineList.find((l) => l.id === lineId);
+    setLineToDelete(line);
+    setShowDeleteLineModal(true);
+  };
+
+  const confirmDeleteLine = async () => {
+    if (!lineToDelete) return;
+
+    try {
+      setDeletingLine(true);
+      await axiosInstance.delete(`/hired-fos/${lineToDelete.id}`);
+      toast.success("Đã xóa tuyến cáp thành công");
+      await loadContract(); // Refresh data
+    } catch (err) {
+      console.error(err);
+      toast.error("Xóa tuyến cáp thất bại");
+    } finally {
+      setDeletingLine(false);
+      setShowDeleteLineModal(false);
+      setLineToDelete(null);
+    }
   };
 
   const whiteSelectStyles = {
@@ -116,27 +147,6 @@ function FoConTractDetail() {
   const totalAmountAfterTax = useMemo(() => {
     return totalAmountBeforeTax + totalVat;
   }, [totalAmountBeforeTax, totalVat]);
-
-  const confirmDeletePdf = async () => {
-    if (!fileToDelete) return;
-
-    try {
-      setDeleting(true);
-      await axiosInstance.delete(
-        `/contract/${contractDetail.id}/pdf/${encodeURIComponent(fileToDelete)}`,
-      );
-      toast.success(`Đã xóa file: ${fileToDelete}`);
-      // Update state to reflect deletion
-      setPdfList((prev) => prev.filter((f) => f !== fileToDelete));
-    } catch (err) {
-      console.error(err);
-      toast.error("Xóa file thất bại");
-    } finally {
-      setDeleting(false);
-      setShowDeleteModal(false);
-      setFileToDelete(null);
-    }
-  };
 
   // ==== STATE Up file PDF ====== //
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -273,122 +283,103 @@ function FoConTractDetail() {
               {contractDetail.contractNumber}
             </Typography>
           </div>
-          <Button
-            title={hasPdf ? "Xem văn bản hợp đồng" : "Chưa có văn bản PDF"}
-            variant="text"
-            size="sm"
-            className={clsx(
-              "p-2.5 transition-all duration-200",
-              hasPdf
-                ? "text-blue-500 hover:bg-blue-50"
-                : "text-gray-400 cursor-not-allowed",
-            )}
-            onClick={() => {
-              if (!hasPdf) {
-                toast.info(
-                  "Hợp đồng chưa có văn bản PDF. Vui lòng cập nhập dữ liệu!",
-                );
-                return;
-              }
-              setOpenDocuments(true);
-            }}
+          <Tooltip
+            content={hasPdf ? "Xem văn bản hợp đồng" : "Chưa có văn bản PDF"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 512 512"
-              className="size-4"
-              fill="currentColor" // ⭐ QUAN TRỌNG
+            <IconButton
+              variant="text"
+              color="blue-gray"
+              disabled={!hasPdf}
+              onClick={() => {
+                if (!hasPdf) {
+                  toast.info(
+                    "Hợp đồng chưa có văn bản PDF. Vui lòng cập nhập dữ liệu!",
+                  );
+                  return;
+                }
+                setOpenDocuments(true);
+              }}
             >
-              <path d="M64 464l48 0 0 48-48 0c-35.3 0-64-28.7-64-64L0 64C0 28.7 28.7 0 64 0L229.5 0c17 0 33.3 6.7 45.3 18.7l90.5 90.5c12 12 18.7 28.3 18.7 45.3L384 304l-48 0 0-144-80 0c-17.7 0-32-14.3-32-32l0-80L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16zM176 352l32 0c30.9 0 56 25.1 56 56s-25.1 56-56 56l-16 0 0 32c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-48 0-80c0-8.8 7.2-16 16-16zm32 80c13.3 0 24-10.7 24-24s-10.7-24-24-24l-16 0 0 48 16 0zm96-80l32 0c26.5 0 48 21.5 48 48l0 64c0 26.5-21.5 48-48 48l-32 0c-8.8 0-16-7.2-16-16l0-128c0-8.8 7.2-16 16-16zm32 128c8.8 0 16-7.2 16-16l0-64c0-8.8-7.2-16-16-16l-16 0 0 96 16 0zm80-112c0-8.8 7.2-16 16-16l48 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 32 32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0 0 48c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-64 0-64z" />
-            </svg>
-          </Button>
-          <Button
-            className="flex gap-1 p-1.5 transition-all duration-300"
-            onClick={() => setShowEditDrawer(true)}
-            variant="text"
-            color="blue"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="size-4"
+              <DocumentTextIcon className="h-5 w-5" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Chỉnh sửa thông tin hợp đồng">
+            <IconButton
+              variant="text"
+              color="blue-gray"
+              onClick={() => setShowEditDrawer(true)}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-              />
-            </svg>
-          </Button>
-          <Chip
-            variant="ghost"
-            color={contractDetail.active ? "green" : "red"}
-            className="ml-auto"
-            size="sm"
-            value={contractDetail.active ? "Còn hiệu lực" : "Đã thanh lý"}
-            icon={
-              <span
-                className={clsx(
-                  "mx-auto mt-1 block h-2 w-2 rounded-full content-['']",
-                  contractDetail.active ? "bg-green-900" : "bg-red-900",
-                )}
-              />
-            }
+              <PencilIcon className="h-5 w-5" />
+            </IconButton>
+          </Tooltip>
+          <StatusChip
+            active={contractDetail.active}
+            labelOn="Còn hiệu lực"
+            labelOff="Đã thanh lý"
           />
         </div>
 
         {contractDetail.contractName && (
           <Typography variant="h6">{contractDetail.contractName}</Typography>
         )}
-        <CardBody>
-          <div className="mb-5 grid grid-cols-4 gap-2">
-            <div className="col-span-4 lg:col-span-2 xl:col-span-1">
-              <InfoCard
-                header="Số tuyến cáp"
-                content={contractDetail.hiredFoLineList.length}
-              />
-              <InfoCard
-                header="Tổng số KM"
-                content={`${totalKm.toFixed(2)} km`}
-              />
-            </div>
-            <div className="col-span-4 lg:col-span-2 xl:col-span-1">
-              <InfoCard
-                header="Nhà cung cấp"
-                content={contractDetail.transmissionOwner?.name || ""}
-              />
-              <InfoCard
-                header="Tổng giá trị hợp đồng (trước thuế)"
-                content={VND.format(totalAmountBeforeTax)}
-              />
-            </div>
-            <div className="col-span-4 lg:col-span-2 xl:col-span-1">
-              <InfoCard
-                header="Ngày ký hợp đồng"
-                content={DateTime.fromISO(contractDetail.signedDate)
-                  .setLocale("vn")
-                  .toFormat("dd-MM-yyyy")}
-              />
-              <InfoCard header="Thuế VAT %" content={VND.format(totalVat)} />
-            </div>
-            <div className="col-span-4 lg:col-span-2 xl:col-span-1">
-              <InfoCard
-                header="Ngày kết thúc hợp đồng"
-                content={DateTime.fromISO(contractDetail.endDate)
-                  .setLocale("vn")
-                  .toFormat("dd-MM-yyyy")}
-              />
-
-              <InfoCard
-                header="Tổng giá trị hợp đồng (sau thuế)"
-                content={VND.format(totalAmountAfterTax)}
-              />
-            </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <InfoCard
+              header="Số tuyến cáp"
+              content={contractDetail.hiredFoLineList.length}
+              icon={<HashtagIcon className="h-5 w-5" />}
+              color="blue"
+            />
+            <InfoCard
+              header="Tổng số KM"
+              content={`${totalKm.toFixed(2)} km`}
+              icon={<MapIcon className="h-5 w-5" />}
+              color="teal"
+            />
+            <InfoCard
+              header="Nhà cung cấp"
+              content={contractDetail.transmissionOwner?.name || ""}
+              icon={<BuildingOfficeIcon className="h-5 w-5" />}
+              color="purple"
+            />
+            <InfoCard
+              header="Giá trị (trước thuế)"
+              content={VND.format(totalAmountBeforeTax)}
+              icon={<CurrencyDollarIcon className="h-5 w-5" />}
+              color="green"
+            />
+            <InfoCard
+              header="Ngày ký hợp đồng"
+              content={DateTime.fromISO(contractDetail.signedDate)
+                .setLocale("vn")
+                .toFormat("dd-MM-yyyy")}
+              icon={<CalendarDaysIcon className="h-5 w-5" />}
+              color="blue"
+            />
+            <InfoCard
+              header="Ngày kết thúc"
+              content={DateTime.fromISO(contractDetail.endDate)
+                .setLocale("vn")
+                .toFormat("dd-MM-yyyy")}
+              icon={<CalendarDaysIcon className="h-5 w-5" />}
+              color="amber"
+            />
+            <InfoCard
+              header="Thuế VAT (10%)"
+              content={VND.format(totalVat)}
+              icon={<DocumentTextIcon className="h-5 w-5" />}
+              color="purple"
+            />
+            <InfoCard
+              header="Tổng giá trị (sau thuế)"
+              content={VND.format(totalAmountAfterTax)}
+              icon={<CurrencyDollarIcon className="h-5 w-5" />}
+              color="green"
+            />
           </div>
+        </div>
 
+        <CardBody>
           <div className="mt-8">
             <Typography variant="h5" color="blue-gray" className="mb-4">
               Danh sách tuyến cáp
@@ -453,43 +444,39 @@ function FoConTractDetail() {
                           </Typography>
                         </td>
                         <td className="p-4">
-                          <span
-                            className={`inline-flex items-center ${
-                              line.active
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            } text-xs font-medium px-2.5 py-0.5 rounded-full`}
-                          >
-                            <span
-                              className={`w-2 h-2 me-1 ${
-                                line.active ? "bg-green-500" : "bg-red-500"
-                              } rounded-full`}
-                            ></span>
-                            {line.active ? "Hoạt động" : "Không hoạt động"}
-                          </span>
+                          <div className="flex justify-center">
+                            <StatusChip
+                              active={line.active}
+                              labelOn="Hoạt động"
+                              labelOff="Không hoạt động"
+                            />
+                          </div>
                         </td>
                         <td className="p-4 max-w-xs truncate">
                           <Typography variant="small">{line.note}</Typography>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center justify-center">
-                            <IconButton
-                              variant="text"
-                              size="sm"
-                              onClick={() => handleEdit(line.id)}
-                            >
-                              <PencilIcon className="h-4 w-4 text-gray-900" />
-                            </IconButton>
-                            <IconButton
-                              variant="text"
-                              size="sm"
-                              onClick={() => handleDeleteRouter(line.id)}
-                            >
-                              <TrashIcon
-                                strokeWidth={3}
-                                className="h-4 w-4 text-gray-900"
-                              />
-                            </IconButton>
+                          <div className="flex items-center justify-center gap-1">
+                            <Tooltip content="Chỉnh sửa">
+                              <IconButton
+                                variant="text"
+                                size="sm"
+                                color="blue-gray"
+                                onClick={() => handleEdit(line.id)}
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip content="Xóa">
+                              <IconButton
+                                variant="text"
+                                size="sm"
+                                color="red"
+                                onClick={() => handleDeleteRouter(line.id)}
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </IconButton>
+                            </Tooltip>
                           </div>
                         </td>
                       </tr>
@@ -796,6 +783,22 @@ function FoConTractDetail() {
           }}
         />
       )}
+
+      {/* Delete Line Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={showDeleteLineModal}
+        handler={() => setShowDeleteLineModal(false)}
+        onConfirm={confirmDeleteLine}
+        itemName={
+          lineToDelete
+            ? `${lineToDelete.nearSite?.siteId} - ${lineToDelete.farSite?.siteId}`
+            : ""
+        }
+        title="Xác nhận xóa tuyến cáp"
+        message="Bạn có chắc chắn muốn xóa tuyến cáp này? Hành động này không thể hoàn tác."
+        confirmText="Xóa tuyến cáp"
+        deleting={deletingLine}
+      />
     </>
   );
 }

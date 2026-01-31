@@ -43,6 +43,7 @@ import {
   DialogHeader,
   DialogFooter,
   IconButton as MTIconButton,
+  Tooltip,
 } from "@material-tailwind/react";
 import {
   CogIcon,
@@ -616,39 +617,46 @@ function FoContract() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center justify-center gap-1">
-                      <IconButton
-                        variant="text"
-                        size="sm"
-                        color="blue-gray"
-                        title="Văn bản hợp đồng"
-                        onClick={() => handleOpenDocuments(contract.id)}
-                      >
-                        <DocumentTextIcon className="h-4 w-4" />
-                      </IconButton>
-                      <IconButton
-                        variant="text"
-                        size="sm"
-                        color="gray"
-                        onClick={() => handleOpenDetail(contract.id)}
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </IconButton>
-                      <IconButton
-                        variant="text"
-                        size="sm"
-                        color="blue"
-                        onClick={() => handleOpenEdit(contract.id)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </IconButton>
-                      <IconButton
-                        variant="text"
-                        size="sm"
-                        color="red"
-                        onClick={() => handleDelete(contract.id)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </IconButton>
+                      <Tooltip content="Văn bản hợp đồng">
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          color="blue-gray"
+                          onClick={() => handleOpenDocuments(contract.id)}
+                        >
+                          <DocumentTextIcon className="h-4 w-4" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip content="Xem chi tiết">
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          color="blue-gray"
+                          onClick={() => handleOpenDetail(contract.id)}
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip content="Chỉnh sửa">
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          color="blue-gray"
+                          onClick={() => handleOpenEdit(contract.id)}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip content="Xóa">
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          color="red"
+                          onClick={() => handleDelete(contract.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </IconButton>
+                      </Tooltip>
                     </div>
                   </td>
                 </tr>
@@ -1202,7 +1210,9 @@ function FoContract() {
           </IconButton>
         </DialogHeader>
         <DialogBody className="flex-1 p-0 overflow-hidden">
-          {openDocuments && documentId && <FoContractDocuments contractId={documentId} />}
+          {openDocuments && documentId && (
+            <FoContractDocuments contractId={documentId} />
+          )}
         </DialogBody>
       </Dialog>
 
