@@ -49,19 +49,18 @@ const router = createBrowserRouter([
         children: [
           {
             path: "/fo-contract",
-            element: <FoContract />,
-            children: [
-              {
-                path: "/fo-contract/:id",
+            element: <FoContract />,            
+          },
+          {
+            path: "/fo-contract/:id",
                 element: <FoConTractDetail />,
-              },
-            ],
           },
           {
             path: "/fo-cost-by-supplier",
             element: <FoReportBySupplierWithContracts />,
           },
           {
+            
             path: "/fo-cost-by-contracts",
             element: <FoReportByContracts />,
           },

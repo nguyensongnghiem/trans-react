@@ -1,48 +1,50 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { 
-  DocumentIcon, 
-  PencilIcon, 
-  TrashIcon, 
+import {
+  PencilIcon,
+  TrashIcon,
   PlusIcon,
-  DocumentTextIcon,
-  XMarkIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/solid";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 import Select from "react-select";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
-import { useNavigate } from "react-router-dom";
-import * as XLSX from 'xlsx';
-import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
-import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
-import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+import * as XLSX from "xlsx";
 import {
   Button,
   Card,
-  Dialog, 
+  Dialog,
   IconButton,
   Typography,
   DialogBody,
   DialogHeader,
   DialogFooter,
   Switch,
-  Chip,
   Tooltip,
+  Input,
+  IconButton as MTIconButton,
 } from "@material-tailwind/react";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
+import OwnerChip from "../components/OwnerChip";
 function HiredFoList() {
-  // const navigate = useNavigate();
-  const gridRef = useRef();
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [hiredFoList, setHiredFoList] = useState([]);
   const [routerTypeList, setRouterTypeList] = useState([]);
-  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState([]);
+  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
+    [],
+  );
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -64,89 +66,109 @@ function HiredFoList() {
 
   const [saving, setSaving] = useState(false);
 
-  const [colDefs, setColDefs] = useState([
-      {
-        headerName: "Tên tuyến",
-        valueGetter: (p) =>
-          p.data.nearSite?.siteId + " - " + p.data.farSite?.siteId,
-      },
-      { headerName: "Khoảng cách", valueGetter: (p) => p.data.finalDistance },
-      {
-        headerName: "Số core",
-        valueGetter: (p) => p.data.coreQuantity,
-      },
-      {
-        headerName: "Đơn giá/km",
-        valueGetter: (p) => p.data.cost,
-      },
-      {
-        headerName: "Số hợp đồng",
-        valueGetter: (p) => p.data.foContract.contractNumber,
-        // cellRenderer: (p) => p.data.foContract.contractNumber,
-      },
-      // {
-      //   headerName: "Tên hợp đồng",
-      //   valueGetter: (p) => p.data.cost,
-      //   cellRenderer: (p) => p.data.foContract.contractName,
-      // },
-      {
-        headerName: "Trạng thái",
-        valueGetter: (p) => p.data.active,
-        cellRenderer: (p) => {
-          return (
-            <div className="flex items-center justify-center h-full">
-              <StatusChip active={p.data.active} />
-            </div>
-          );
-        },
-      },
-      { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
-      {
-        headerName: "Tác động",
-        cellRenderer: (p) => (
-          <div className="flex items-center justify-center gap-1">
-            <Tooltip content="Sửa">
-              <IconButton
-                variant="text"
-                size="sm"
-                onClick={() => handleEdit(p.data.id)}
-              >
-                <PencilIcon className="h-4 w-4 text-blue-gray-600" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Xóa">
-              <IconButton
-                variant="text"
-                color="red"
-                size="sm"
-                onClick={() => handleDeleteRouter(p.data.id)}
-              >
-                <TrashIcon className="h-4 w-4" />
-              </IconButton>
-            </Tooltip>
-          </div>
-        ),
-      },
-    ]);
-  const defaultColDef = useMemo(() => {
-    return {
-      flex: 1,
-      sortable: true,
-      filter: true,
-      floatingFilter: true,
-    };
+  // Filter and pagination states
+  const [filters, setFilters] = useState({
+    search: "",
+    contract: null,
+    status: null,
+    province: null,
+    supplier: null,
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+
+  // Filter Logic
+  const filterOptions = useMemo(() => {
+    const contracts = new Set();
+    const provinces = new Set();
+    const suppliers = new Set();
+    hiredFoList.forEach((item) => {
+      if (item.foContract?.contractNumber) {
+        contracts.add(item.foContract.contractNumber);
+      }
+      if (item.nearSite?.province?.name) {
+        provinces.add(item.nearSite.province.name);
+      }
+      if (item.foContract?.transmissionOwner?.name) {
+        suppliers.add(item.foContract.transmissionOwner.name);
+      }
+    });
+    return {
+      contracts: Array.from(contracts)
+        .sort()
+        .map((c) => ({ value: c, label: c })),
+      provinces: Array.from(provinces)
+        .sort()
+        .map((p) => ({ value: p, label: p })),
+      suppliers: Array.from(suppliers)
+        .sort()
+        .map((s) => ({ value: s, label: s })),
+    };
+  }, [hiredFoList]);
+
+  const filteredHiredFos = useMemo(() => {
+    return hiredFoList.filter((item) => {
+      const matchContract =
+        !filters.contract ||
+        item.foContract?.contractNumber === filters.contract.value;
+      const matchStatus =
+        !filters.status || item.active === filters.status.value;
+      const matchProvince =
+        !filters.province ||
+        item.nearSite?.province?.name === filters.province.value;
+      const matchSupplier =
+        !filters.supplier ||
+        item.foContract?.transmissionOwner?.name === filters.supplier.value;
+      const matchSearch =
+        !filters.search ||
+        (item.nearSite?.siteId + " - " + item.farSite?.siteId)
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        item.note?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        item.foContract?.contractNumber
+          ?.toLowerCase()
+          .includes(filters.search.toLowerCase());
+
+      return (
+        matchContract &&
+        matchStatus &&
+        matchSearch &&
+        matchProvince &&
+        matchSupplier
+      );
+    });
+  }, [hiredFoList, filters]);
+
+  const totalPages = Math.ceil(filteredHiredFos.length / rowsPerPage);
+  const paginatedHiredFos = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredHiredFos.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredHiredFos, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const handleResetFilters = () => {
+    setFilters({
+      search: "",
+      contract: null,
+      status: null,
+      province: null,
+      supplier: null,
+    });
+  };
 
   useEffect(() => {
     const getAllHiredFo = async () => {
       try {
         setIsLoading(true);
         const hiredFoList = await axiosInstance.get("hired-fos");
+        console.log(hiredFoList.data);
         setHiredFoList(hiredFoList.data);
       } catch (error) {
         console.log(error);
-      } 
-      finally {
+      } finally {
         setIsLoading(false);
       }
     };
@@ -180,7 +202,9 @@ function HiredFoList() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const transDeviceTypeList = await axiosInstance.get("transmission-device-types");
+        const transDeviceTypeList = await axiosInstance.get(
+          "transmission-device-types",
+        );
         setTransmissionDeviceTypeList(transDeviceTypeList.data);
       } catch (error) {
         console.log(error);
@@ -195,7 +219,7 @@ function HiredFoList() {
       setEditFoLine({ ...foLine.data });
     } catch (error) {
       console.log(error);
-    }      
+    }
   };
 
   // Xử lý thêm mới
@@ -254,7 +278,6 @@ function HiredFoList() {
 
       // 2) Refresh lại list từ backend
       await reloadHiredFoList();
-
     } catch (error) {
       console.log(error);
       toast.error(error?.response?.data?.message || "Có lỗi bất thường xảy ra");
@@ -263,7 +286,6 @@ function HiredFoList() {
       setOpenEdit(false);
     }
   };
-
 
   // Xử lý Xóa
 
@@ -280,7 +302,7 @@ function HiredFoList() {
       setDeleteId(null);
       toast.success("Đã xóa thành công thiết bị");
       setHiredFoList((prevState) =>
-        prevState.filter((router) => router.id !== deleteId)
+        prevState.filter((router) => router.id !== deleteId),
       );
     } catch (e) {
       console.log(e);
@@ -289,7 +311,7 @@ function HiredFoList() {
       handleOpenDelete();
     }
   };
-  
+
   // Select Site A/B: nền trắng chữ đen
   const whiteSelectStyles = {
     control: (base, state) => ({
@@ -324,8 +346,8 @@ function HiredFoList() {
       backgroundColor: state.isSelected
         ? "#bfdbfe"
         : state.isFocused
-        ? "#e5e7eb"
-        : "white",
+          ? "#e5e7eb"
+          : "white",
       color: "black",
     }),
   };
@@ -356,7 +378,7 @@ function HiredFoList() {
 
       const res = await axiosInstance.post(
         "hired-fos/import-excel/check-multi",
-        form
+        form,
       );
 
       setExcelRows(res.data?.rows || []);
@@ -392,11 +414,11 @@ function HiredFoList() {
 
       const res = await axiosInstance.post(
         "hired-fos/import-excel/save-multi",
-        form
+        form,
       );
 
       toast.success(
-        `${res.data?.message || "Import thành công"} (HĐ: ${res.data?.totalContract || 0}, Tuyến: ${res.data?.totalLine || 0})`
+        `${res.data?.message || "Import thành công"} (HĐ: ${res.data?.totalContract || 0}, Tuyến: ${res.data?.totalLine || 0})`,
       );
 
       const hiredFoListRes = await axiosInstance.get("hired-fos");
@@ -433,9 +455,12 @@ function HiredFoList() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await axiosInstance.get("hired-fos/import-excel/template", {
-        responseType: "blob",
-      });
+      const response = await axiosInstance.get(
+        "hired-fos/import-excel/template",
+        {
+          responseType: "blob",
+        },
+      );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -457,29 +482,25 @@ function HiredFoList() {
 
   let deleteRouterName;
   if (deleteId != null) {
-    deleteRouterName = hiredFoList.find((router) => router.id === deleteId).name;
+    deleteRouterName = hiredFoList.find(
+      (router) => router.id === deleteId,
+    ).name;
     console.log(deleteRouterName);
   }
 
   // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
-    const columnDefs = gridRef.current.api.getColumnDefs();
-    const rowData = [];
-    gridRef.current.api.forEachNode(node => rowData.push(node.data));
-
-    const dataToExport = rowData.map(node => {
-      const row = {};
-      columnDefs.forEach(colDef => {
-        if (colDef.headerName && colDef.valueGetter) {
-          let value = colDef.valueGetter({ data: node });
-          if (colDef.valueFormatter) {
-            value = colDef.valueFormatter({ value: value });
-          }
-          row[colDef.headerName] = value;
-        }
-      });
-      return row;
-    });
+    const dataToExport = filteredHiredFos.map((item) => ({
+      Tỉnh: item.nearSite?.province?.name,
+      "Tên tuyến": `${item.nearSite?.siteId} - ${item.farSite?.siteId}`,
+      "Khoảng cách (km)": item.finalDistance,
+      "Số core": item.coreQuantity,
+      "Đơn giá (VNĐ)": item.cost,
+      "Số hợp đồng": item.foContract?.contractNumber,
+      "Nhà cung cấp": item.foContract?.transmissionOwner?.name,
+      "Trạng thái": item.active ? "Hoạt động" : "Không hoạt động",
+      "Ghi chú": item.note,
+    }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -489,40 +510,401 @@ function HiredFoList() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Danh sách FO thuê</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Danh sách FO thuê
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tổng số:{" "}
+            <span className="font-semibold text-blue-600">
+              {filteredHiredFos.length}
+            </span>{" "}
+            / {hiredFoList.length} tuyến
+          </p>
+        </div>
         <div className="flex gap-2">
           <CustomButton
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-[#0d47a1] hover:bg-[#0a3a82]"
             size="sm"
             onClick={handleOpenImport}
           >
             <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm mới
           </CustomButton>
           <CustomButton
-            color="blue-gray"
+            className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
             size="sm"
-            className="flex items-center gap-2 text-white"
             onClick={onBtnExport}
           >
             <ArrowDownTrayIcon className="h-4 w-4" /> Xuất Excel
           </CustomButton>
         </div>
       </div>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div
-          className="ag-theme-quartz" // applying the Data Grid theme
-          style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
-        >
-          <AgGridReact
-            ref={gridRef}
-            rowData={hiredFoList}
-            columnDefs={colDefs}
-            defaultColDef={defaultColDef}
-            pagination={true}
-            paginationPageSize={20}
-          />
+
+      {/* Filter Bar */}
+      <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
+        <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
+          <FunnelIcon className="h-5 w-5" />
+          <span className="font-bold text-sm uppercase tracking-wider">
+            Bộ lọc tìm kiếm
+          </span>
+          {(filters.search ||
+            filters.contract ||
+            filters.status ||
+            filters.province ||
+            filters.supplier) && (
+            <button
+              onClick={handleResetFilters}
+              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+            >
+              <ArrowPathIcon className="h-3 w-3" />
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tỉnh
+            </span>
+            <Select
+              isClearable
+              placeholder="Tất cả tỉnh"
+              className="text-sm"
+              options={filterOptions.provinces}
+              value={filters.province}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, province: val }))
+              }
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Nhà cung cấp
+            </span>
+            <Select
+              isClearable
+              placeholder="Tất cả NCC"
+              className="text-sm"
+              options={filterOptions.suppliers}
+              value={filters.supplier}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, supplier: val }))
+              }
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Số hợp đồng
+            </span>
+            <Select
+              isClearable
+              placeholder="Tất cả hợp đồng"
+              className="text-sm"
+              options={filterOptions.contracts}
+              value={filters.contract}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, contract: val }))
+              }
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Trạng thái
+            </span>
+            <Select
+              isClearable
+              placeholder="Tất cả trạng thái"
+              className="text-sm"
+              options={[
+                { label: "Hoạt động", value: true },
+                { label: "Không hoạt động", value: false },
+              ]}
+              value={filters.status}
+              onChange={(val) =>
+                setFilters((prev) => ({ ...prev, status: val }))
+              }
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "40px",
+                  borderRadius: "8px",
+                  borderColor: "#e2e8f0",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 col-span-1 md:col-span-2">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
+              Tìm kiếm nhanh
+            </span>
+            <Input
+              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+              placeholder="Tên tuyến, Ghi chú, Số HĐ..."
+              className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg text-sm"
+              labelProps={{
+                className: "before:content-none after:content-none",
+              }}
+              value={filters.search}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value }))
+              }
+              containerProps={{
+                className: "min-w-0",
+              }}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Table */}
+      <Card className="w-full overflow-hidden border border-gray-200 shadow-sm rounded-xl">
+        <div className="overflow-auto max-h-[70vh]">
+          <table className="w-full min-w-max table-auto text-left">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
+                {[
+                  "STT",
+                  "Tỉnh",
+                  "Tên tuyến",
+                  "Khoảng cách",
+                  "Số core",
+                  "Đơn giá",
+                  "Số hợp đồng",
+                  "Nhà cung cấp",
+                  "Trạng thái",
+                  "Ghi chú",
+                  "Tác động",
+                ].map((head) => (
+                  <th key={head} className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold leading-none"
+                    >
+                      {head}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {paginatedHiredFos.map((item, index) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-gray-50/80 transition-colors"
+                >
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {item.nearSite?.province?.name}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-bold"
+                    >
+                      {item.nearSite?.siteId} - {item.farSite?.siteId}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {item.finalDistance} km
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {item.coreQuantity}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {VND.format(item.cost)}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {item.foContract?.contractNumber}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    {item.foContract?.transmissionOwner?.name && (
+                      <OwnerChip
+                        name={item.foContract.transmissionOwner.name}
+                        className="inline-block"
+                      />
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <StatusChip active={item.active} />
+                  </td>
+                  <td className="p-4 max-w-xs truncate">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal italic opacity-70"
+                    >
+                      {item.note}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-1">
+                      <Tooltip content="Sửa">
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          color="blue-gray"
+                          onClick={() => handleEdit(item.id)}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip content="Xóa">
+                        <IconButton
+                          variant="text"
+                          size="sm"
+                          color="red"
+                          onClick={() => handleDeleteRouter(item.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </IconButton>
+                      </Tooltip>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredHiredFos.length === 0 && (
+            <div className="py-20 text-center">
+              <Typography variant="h6" color="blue-gray" className="opacity-40">
+                Không tìm thấy tuyến FO nào khớp với bộ lọc
+              </Typography>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
+          <div className="flex items-center gap-4">
+            <Typography
+              variant="small"
+              color="blue-gray"
+              className="font-normal"
+            >
+              Trang <span className="font-bold">{currentPage}</span> /{" "}
+              <span className="font-bold">{totalPages || 1}</span>
+            </Typography>
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+              <span className="text-xs text-blue-gray-400 font-medium">
+                Hiển thị:
+              </span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="text-xs border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-blue-500 transition-colors"
+              >
+                {[5, 10, 15, 20, 50, 100].map((val) => (
+                  <option key={val} value={val}>
+                    {val} dòng
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <MTIconButton
+              variant="outlined"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="rounded-md border-gray-300"
+            >
+              <ChevronLeftIcon strokeWidth={2} className="h-4 w-4" />
+            </MTIconButton>
+            <MTIconButton
+              variant="outlined"
+              size="sm"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              className="rounded-md border-gray-300"
+            >
+              <ChevronRightIcon strokeWidth={2} className="h-4 w-4" />
+            </MTIconButton>
+          </div>
+        </div>
+      </Card>
 
       {/* Modal Thêm mới */}
       <Dialog
@@ -536,7 +918,10 @@ function HiredFoList() {
             <Typography variant="h4" color="blue-gray" className="font-bold">
               Thêm mới thiết bị
             </Typography>
-            <Typography color="gray" className="mt-1 font-normal text-gray-600 text-sm">
+            <Typography
+              color="gray"
+              className="mt-1 font-normal text-gray-600 text-sm"
+            >
               Nhập thông tin chi tiết để đồng bộ dữ liệu hệ thống.
             </Typography>
             <IconButton
@@ -701,7 +1086,12 @@ function HiredFoList() {
                   </Card>
                 </DialogBody>
                 <DialogFooter className="pt-0 pr-6 pb-6">
-                  <CustomButton size="md" type="submit" color="gray" className="bg-gray-900 border-none shadow-none hover:shadow-lg">
+                  <CustomButton
+                    size="md"
+                    type="submit"
+                    color="gray"
+                    className="bg-gray-900 border-none shadow-none hover:shadow-lg"
+                  >
                     Thêm mới thiết bị
                   </CustomButton>
                 </DialogFooter>
@@ -717,7 +1107,10 @@ function HiredFoList() {
             <Typography variant="h4" color="blue-gray" className="font-bold">
               Import nhiều hợp đồng + tuyến FO
             </Typography>
-            <Typography color="gray" className="mt-1 font-normal text-gray-600 text-sm">
+            <Typography
+              color="gray"
+              className="mt-1 font-normal text-gray-600 text-sm"
+            >
               Upload file Excel mẫu để cập nhật dữ liệu hàng loạt.
             </Typography>
             <IconButton
@@ -768,7 +1161,11 @@ function HiredFoList() {
 
             {/* Buttons */}
             <div className="flex gap-2">
-              <CustomButton color="blue" type="button" onClick={handleCheckExcelMulti}>
+              <CustomButton
+                color="blue"
+                type="button"
+                onClick={handleCheckExcelMulti}
+              >
                 KIỂM TRA DỮ LIỆU
               </CustomButton>
 
@@ -790,41 +1187,46 @@ function HiredFoList() {
             )}
 
             {/* Error box */}
-            {excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
-              <div className="w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
-                <div className="mb-3 text-lg font-semibold text-red-600">
-                  ❌ Dữ liệu Excel không hợp lệ
-                </div>
+            {excelChecked &&
+              !excelSuccess &&
+              Object.keys(excelErrors).length > 0 && (
+                <div className="w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
+                  <div className="mb-3 text-lg font-semibold text-red-600">
+                    ❌ Dữ liệu Excel không hợp lệ
+                  </div>
 
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                  Tổng số dòng lỗi
-                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
-                    {Object.keys(excelErrors).length}
-                  </span>
-                </div>
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                    Tổng số dòng lỗi
+                    <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
+                      {Object.keys(excelErrors).length}
+                    </span>
+                  </div>
 
-                <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
-                  {Object.entries(excelErrors).map(([row, rowError]) => (
-                    <div key={row} className="rounded border border-red-200 bg-white p-4">
-                      <div className="mb-2 font-semibold text-red-700">
-                        ⚠️ Dòng {row}
+                  <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
+                    {Object.entries(excelErrors).map(([row, rowError]) => (
+                      <div
+                        key={row}
+                        className="rounded border border-red-200 bg-white p-4"
+                      >
+                        <div className="mb-2 font-semibold text-red-700">
+                          ⚠️ Dòng {row}
+                        </div>
+
+                        <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
+                          {rowError.errors?.map((err, idx) => (
+                            <li key={idx}>
+                              <span className="font-semibold text-red-600">
+                                {err.column}:
+                              </span>{" "}
+                              {err.message}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-
-                      <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
-                        {rowError.errors?.map((err, idx) => (
-                          <li key={idx}>
-                            <span className="font-semibold text-red-600">
-                              {err.column}:
-                            </span>{" "}
-                            {err.message}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Preview */}
             {excelSuccess && excelRows.length > 0 && (
@@ -839,7 +1241,7 @@ function HiredFoList() {
                     if (!acc[cn]) acc[cn] = [];
                     acc[cn].push(r);
                     return acc;
-                  }, {})
+                  }, {}),
                 ).map(([cn, list]) => (
                   <div key={cn} className="rounded border p-3">
                     <div className="flex items-center justify-between">
@@ -868,9 +1270,15 @@ function HiredFoList() {
                               <td className="border px-2 py-1">{i + 1}</td>
                               <td className="border px-2 py-1">{r.nearSite}</td>
                               <td className="border px-2 py-1">{r.farSite}</td>
-                              <td className="border px-2 py-1">{r.coreQuantity}</td>
-                              <td className="border px-2 py-1">{r.designedDistance}</td>
-                              <td className="border px-2 py-1">{r.finalDistance}</td>
+                              <td className="border px-2 py-1">
+                                {r.coreQuantity}
+                              </td>
+                              <td className="border px-2 py-1">
+                                {r.designedDistance}
+                              </td>
+                              <td className="border px-2 py-1">
+                                {r.finalDistance}
+                              </td>
                               <td className="border px-2 py-1">{r.cost}</td>
                             </tr>
                           ))}
@@ -909,8 +1317,12 @@ function HiredFoList() {
             <Typography variant="h4" color="blue-gray" className="font-bold">
               Cập nhật thông tin tuyến cáp
             </Typography>
-            <Typography color="gray" className="mt-1 font-normal text-gray-600 text-sm">
-              Chỉnh sửa thông tin tuyến cáp quang thuê để đảm bảo dữ liệu chính xác.
+            <Typography
+              color="gray"
+              className="mt-1 font-normal text-gray-600 text-sm"
+            >
+              Chỉnh sửa thông tin tuyến cáp quang thuê để đảm bảo dữ liệu chính
+              xác.
             </Typography>
             <IconButton
               size="sm"
@@ -930,7 +1342,9 @@ function HiredFoList() {
             }}
             validationSchema={Yup.object({
               coreQuantity: Yup.number().required("Yêu cầu nhập số core"),
-              finalDistance: Yup.number().required("Yêu cầu nhập chiều dài tuyến thực tế"),
+              finalDistance: Yup.number().required(
+                "Yêu cầu nhập chiều dài tuyến thực tế",
+              ),
               cost: Yup.number().required("Yêu cầu nhập đơn giá thuê"),
               nearSite: Yup.object({
                 id: Yup.string().required("Yêu cầu nhập site ID"),
@@ -938,7 +1352,6 @@ function HiredFoList() {
               farSite: Yup.object({
                 id: Yup.string().required("Yêu cầu nhập site ID"),
               }),
-         
             })}
           >
             {({ setFieldValue, getFieldProps, values, setErrors }) => (
@@ -972,20 +1385,20 @@ function HiredFoList() {
                           Số hợp đồng
                         </label>
                         <Field
-                          name="foContract.contractNumber"                          
+                          name="foContract.contractNumber"
                           className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                           disabled
-                        ></Field>                       
+                        ></Field>
                       </div>
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">
                           Tên hợp đồng
                         </label>
                         <Field
-                          name="foContract.contractName"                          
+                          name="foContract.contractName"
                           className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
                           disabled
-                        ></Field>                       
+                        ></Field>
                       </div>
 
                       <div className="col-span-full flex flex-col gap-2">
@@ -995,8 +1408,14 @@ function HiredFoList() {
                         <Select
                           placeholder="Site A"
                           styles={whiteSelectStyles}
-                          value={simpleSiteList.find((o) => o.id === values.nearSite?.id) || null}
-                          onChange={(opt) => setFieldValue("nearSite.id", opt?.id || null)}
+                          value={
+                            simpleSiteList.find(
+                              (o) => o.id === values.nearSite?.id,
+                            ) || null
+                          }
+                          onChange={(opt) =>
+                            setFieldValue("nearSite.id", opt?.id || null)
+                          }
                           components={{ MenuList: CustomMenuList }}
                           isSearchable={true}
                           options={simpleSiteList}
@@ -1017,8 +1436,14 @@ function HiredFoList() {
                         <Select
                           placeholder="Site B"
                           styles={whiteSelectStyles}
-                          value={simpleSiteList.find((o) => o.id === values.farSite?.id) || null}
-                          onChange={(opt) => setFieldValue("farSite.id", opt?.id || null)}
+                          value={
+                            simpleSiteList.find(
+                              (o) => o.id === values.farSite?.id,
+                            ) || null
+                          }
+                          onChange={(opt) =>
+                            setFieldValue("farSite.id", opt?.id || null)
+                          }
                           components={{ MenuList: CustomMenuList }}
                           isSearchable={true}
                           options={simpleSiteList}
@@ -1065,9 +1490,9 @@ function HiredFoList() {
                           component="span"
                         ></ErrorMessage>
                       </div>
-                      
+
                       {/* <p className="col-span-full text-2xl text-blue-600">Vị trí</p> */}
-                  
+
                       <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
                         <label className="text-slate-400 font-semibold">
                           Ghi chú
@@ -1082,7 +1507,12 @@ function HiredFoList() {
                   </Card>
                 </DialogBody>
                 <DialogFooter className="pt-0 pr-6 pb-6">
-                  <CustomButton size="md" type="submit" color="gray" className="bg-gray-900 border-none shadow-none hover:shadow-lg">
+                  <CustomButton
+                    size="md"
+                    type="submit"
+                    color="gray"
+                    className="bg-gray-900 border-none shadow-none hover:shadow-lg"
+                  >
                     Cập nhật dữ liệu
                   </CustomButton>
                 </DialogFooter>
@@ -1101,7 +1531,11 @@ function HiredFoList() {
           </Typography>
         </DialogHeader>
         <DialogBody className="text-center font-normal text-gray-600">
-          Bạn có chắc chắn muốn xóa thông tin trạm <span className="font-bold text-blue-gray-900">{deleteRouterName}</span>? 
+          Bạn có chắc chắn muốn xóa thông tin trạm{" "}
+          <span className="font-bold text-blue-gray-900">
+            {deleteRouterName}
+          </span>
+          ?
           <br />
           Hành động này không thể hoàn tác.
         </DialogBody>
@@ -1114,8 +1548,8 @@ function HiredFoList() {
           >
             Hủy
           </CustomButton>
-          <CustomButton 
-            color="red" 
+          <CustomButton
+            color="red"
             onClick={handleDeleteSubmit}
             className="px-6"
           >
