@@ -6,6 +6,7 @@ import {
   ArrowDownTrayIcon,
   GlobeAsiaAustraliaIcon,
   CloudArrowUpIcon,
+  EyeIcon,
 } from "@heroicons/react/24/solid";
 import {
   MagnifyingGlassIcon,
@@ -40,6 +41,7 @@ import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
+import KmlMap from "../components/KmlMap";
 
 function OwnFoList() {
   const [simpleSiteList, setSimpleSiteList] = useState([]);
@@ -49,6 +51,8 @@ function OwnFoList() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
+  const [openMap, setOpenMap] = useState(false);
+  const [selectedFoMap, setSelectedFoMap] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editFoLine, setEditFoLine] = useState({});
   const [kmlFile, setKmlFile] = useState(null);
@@ -213,6 +217,11 @@ function OwnFoList() {
     } finally {
       setOpenDelete(false);
     }
+  };
+
+  const handleViewMap = (fo) => {
+    setSelectedFoMap(fo);
+    setOpenMap(true);
   };
 
   const handleKmlDownload = async (fo) => {
@@ -387,11 +396,18 @@ function OwnFoList() {
                   <td className="p-4">
                     <div className="flex gap-1">
                       {item.kmlFileName && (
-                        <Tooltip content="Download KML">
-                          <IconButton variant="text" size="sm" color="green" onClick={() => handleKmlDownload(item)}>
-                            <GlobeAsiaAustraliaIcon className="h-4 w-4" />
-                          </IconButton>
-                        </Tooltip>
+                        <>
+                          <Tooltip content="Xem bản đồ">
+                            <IconButton variant="text" size="sm" color="blue" onClick={() => handleViewMap(item)}>
+                              <EyeIcon className="h-4 w-4" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip content="Download KML">
+                            <IconButton variant="text" size="sm" color="green" onClick={() => handleKmlDownload(item)}>
+                              <GlobeAsiaAustraliaIcon className="h-4 w-4" />
+                            </IconButton>
+                          </Tooltip>
+                        </>
                       )}
                     </div>
                   </td>
@@ -659,6 +675,21 @@ function OwnFoList() {
           )}
         </Formik>
         </div>
+      </Dialog>
+
+      {/* Map Modal */}
+      <Dialog open={openMap} handler={() => setOpenMap(false)} size="xl" className="overflow-hidden">
+        <DialogHeader className="flex justify-between items-center border-b p-4 bg-gray-50">
+            <Typography variant="h5" color="blue-gray">
+                Bản đồ tuyến cáp: {selectedFoMap?.nearSite?.siteId} - {selectedFoMap?.farSite?.siteId}
+            </Typography>
+            <IconButton variant="text" color="blue-gray" onClick={() => setOpenMap(false)}>
+                <XMarkIcon className="h-6 w-6" />
+            </IconButton>
+        </DialogHeader>
+        <DialogBody className="p-0 h-[75vh]">
+            {selectedFoMap && openMap && <KmlMap foId={selectedFoMap.id} />}
+        </DialogBody>
       </Dialog>
 
       {/* Delete Confirmation */}
