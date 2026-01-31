@@ -693,16 +693,12 @@ function OwnFoList() {
 
       {/* Map Modal */}
       <Dialog open={openMap} handler={() => setOpenMap(false)} size="xl" className="overflow-hidden">
-        <DialogHeader className="flex justify-between items-center border-b p-4 bg-gray-50">
-            <Typography variant="h5" color="blue-gray">
-                Bản đồ tuyến cáp: {selectedFoMap?.nearSite?.siteId} - {selectedFoMap?.farSite?.siteId}
-            </Typography>
-            <IconButton variant="text" color="blue-gray" onClick={() => setOpenMap(false)}>
-                <XMarkIcon className="h-6 w-6" />
-            </IconButton>
-        </DialogHeader>
-        <DialogBody className="p-0 h-[75vh]">
-            {selectedFoMap && openMap && <KmlMap foId={selectedFoMap.id} />}
+        <DialogBody className="p-0 h-[85vh]">
+            {selectedFoMap && openMap && <KmlMap 
+              foId={selectedFoMap.id} 
+              onClose={() => setOpenMap(false)} 
+              title={`${selectedFoMap.nearSite?.siteId} - ${selectedFoMap.farSite?.siteId}`}
+            />}
         </DialogBody>
       </Dialog>
 

@@ -1,11 +1,22 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, Polygon } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import JSZip from "jszip";
-import { ChevronRightIcon, ChevronDownIcon, FolderIcon, DocumentIcon, ListBulletIcon, XMarkIcon } from "@heroicons/react/24/solid";
-import { Checkbox, Typography, IconButton } from "@material-tailwind/react";
+import { 
+  ChevronRightIcon, 
+  ChevronDownIcon, 
+  FolderIcon, 
+  ListBulletIcon, 
+  XMarkIcon,
+  MagnifyingGlassIcon,
+  ArrowsPointingOutIcon,
+  ArrowDownTrayIcon,
+  AdjustmentsHorizontalIcon,
+  MapIcon,
+} from "@heroicons/react/24/solid";
+import { Typography, IconButton, Input, Tooltip, Checkbox } from "@material-tailwind/react";
 
 // Fix lỗi icon mặc định của Leaflet trong React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -16,13 +27,13 @@ L.Icon.Default.mergeOptions({
 });
 
 // Component phụ để tự động zoom bản đồ vừa khít với tuyến cáp
-function FitBounds({ bounds }) {
+function FitBounds({ bounds, zoomTrigger }) {
   const map = useMap();
   useEffect(() => {
     if (bounds && bounds.length > 0) {
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [bounds, map]);
+  }, [bounds, map, zoomTrigger]);
   return null;
 }
 
@@ -125,10 +136,12 @@ const getVisibleFeatures = (node) => {
     return features;
 };
 
-const KmlMap = ({ foId }) => {
+const KmlMap = ({ foId, onClose, title }) => {
   const [treeData, setTreeData] = useState(null);
   const [center, setCenter] = useState([21.0285, 105.8542]); // Mặc định Hà Nội
   const [showTree, setShowTree] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [zoomTrigger, setZoomTrigger] = useState(0);
   const axiosInstance = useAxiosPrivate();
 
   useEffect(() => {
@@ -216,111 +229,213 @@ const KmlMap = ({ foId }) => {
       if (treeData) setTreeData(updateNode(treeData));
   };
 
+  // Filter tree based on search term
+  const displayTree = useMemo(() => {
+      if (!searchTerm) return treeData;
+      
+      const filterNode = (node) => {
+          const nameMatches = node.name.toLowerCase().includes(searchTerm.toLowerCase());
+          let filteredChildren = [];
+          if (node.children) {
+              filteredChildren = node.children.map(filterNode).filter(Boolean);
+          }
+          
+          if (nameMatches || filteredChildren.length > 0) {
+              return {
+                  ...node,
+                  children: filteredChildren,
+                  collapsed: false // Auto expand on search
+              };
+          }
+          return null;
+      };
+      
+      return filterNode(treeData);
+  }, [treeData, searchTerm]);
+
+  const handleZoomToFit = () => {
+    setZoomTrigger(prev => prev + 1);
+  };
+
+  const handleExportKml = async () => {
+    if (!foId) return;
+    try {
+      const response = await axiosInstance.get(`own-fos/${foId}/kml`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      
+      // Lấy tên file từ header hoặc dùng title
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = title ? `${title}.kml` : "map.kml";
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch && filenameMatch.length > 1) filename = filenameMatch[1];
+      }
+      
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Lỗi khi tải file KML:", error);
+    }
+  };
+
   if (!treeData) return <div className="flex items-center justify-center h-full text-gray-500">Đang tải bản đồ...</div>;
 
   return (
-    <div className="flex h-full w-full overflow-hidden relative">
-      <div className="flex-1 relative h-full w-full transition-all duration-300">
-        <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
-      <MapResizer showTree={showTree} />
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      
-      {features.map((feature, index) => {
-          if (feature.type === "Point") {
-              return (
-                  <Marker key={index} position={feature.position}>
-                      <Popup>
-                          <div className="font-bold">{feature.name}</div>
-                          <div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} />
-                      </Popup>
-                  </Marker>
-              );
-          }
-          if (feature.type === "LineString") {
-              return (
-                  <Polyline key={index} positions={feature.positions} color="blue" weight={4}>
-                      <Popup>
-                          <div className="font-bold">{feature.name}</div>
-                          <div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} />
-                      </Popup>
-                  </Polyline>
-              );
-          }
-          if (feature.type === "Polygon") {
-              return (
-                  <Polygon key={index} positions={feature.positions} color="purple">
-                      <Popup>
-                          <div className="font-bold">{feature.name}</div>
-                          <div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} />
-                      </Popup>
-                  </Polygon>
-              );
-          }
-          return null;
-      })}
-
-      <FitBounds bounds={mapBounds} />
-    </MapContainer>
-
-        {!showTree && (
-            <div className="absolute top-2 right-2 z-[1000]">
-                <IconButton size="sm" color="white" className="shadow-md" onClick={() => setShowTree(true)}>
-                    <ListBulletIcon className="h-5 w-5 text-blue-gray-700" />
-                </IconButton>
+    <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden">
+      {/* 1. Header Toolbar */}
+      <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shadow-sm z-20 flex-shrink-0">
+         <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+                <MapIcon className="h-5 w-5 text-blue-600" />
             </div>
-        )}
+            <div>
+                <Typography variant="h5" color="blue-gray" className="font-bold leading-tight">
+                   {title || treeData?.name || "Bản đồ tuyến cáp"}
+                </Typography>
+            </div>
+         </div>
+
+         <div className="flex items-center gap-1">
+            <Tooltip content="Zoom to fit" className="z-[99999]">
+                <IconButton variant="text" size="sm" color="blue-gray" onClick={handleZoomToFit}>
+                   <ArrowsPointingOutIcon className="h-4 w-4" />
+                </IconButton>
+            </Tooltip>
+            <Tooltip content="Export KML" className="z-[99999]">
+                <IconButton variant="text" size="sm" color="blue-gray" onClick={handleExportKml}>
+                   <ArrowDownTrayIcon className="h-4 w-4" />
+                </IconButton>
+            </Tooltip>
+            <Tooltip content="Settings" className="z-[99999]">
+                <IconButton variant="text" size="sm" color="blue-gray">
+                   <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                </IconButton>
+            </Tooltip>
+            <div className="w-px h-6 bg-gray-300 mx-2"></div>
+            <IconButton variant="text" size="sm" color="red" onClick={onClose}>
+               <XMarkIcon className="h-5 w-5" />
+            </IconButton>
+         </div>
       </div>
 
-      {/* Sidebar */}
-      <div className={`flex flex-col bg-white border-l border-gray-200 shadow-xl z-[1000] transition-all duration-300 ease-in-out ${showTree ? 'w-80' : 'w-0 overflow-hidden'}`}>
-          <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50">
-              <Typography variant="small" className="font-bold text-blue-gray-800 uppercase">
-                  Danh sách lớp
-              </Typography>
-              <IconButton variant="text" size="sm" color="blue-gray" onClick={() => setShowTree(false)}>
-                  <XMarkIcon className="h-4 w-4" />
-              </IconButton>
+      {/* 2. Main Content (Layer Panel + Map) */}
+      <div className="flex flex-1 overflow-hidden relative">
+          {/* Layer Panel (Left) */}
+          <div className={`flex flex-col bg-white border-r border-gray-200 shadow-xl z-[1000] transition-all duration-300 ease-in-out ${showTree ? 'w-80' : 'w-0 overflow-hidden'}`}>
+              {/* Search Layer */}
+              <div className="p-3 border-b border-gray-100 bg-white">
+                  <Input 
+                    placeholder="Tìm kiếm layer..." 
+                    icon={<MagnifyingGlassIcon className="h-4 w-4" />} 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                  />
+              </div>
+              
+              {/* Tree Content */}
+              <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+                  {displayTree ? (
+                      <KmlTreeNode node={displayTree} onToggleVisibility={handleToggleVisibility} onToggleCollapse={handleToggleCollapse} />
+                  ) : (
+                      <div className="text-center text-gray-500 text-sm mt-4">Không tìm thấy kết quả</div>
+                  )}
+              </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-2">
-              <KmlTreeNode node={treeData} onToggleVisibility={handleToggleVisibility} onToggleCollapse={handleToggleCollapse} />
+
+          {/* Map Area */}
+          <div className="flex-1 relative h-full w-full bg-gray-100">
+              <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+                  <MapResizer showTree={showTree} />
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  
+                  {features.map((feature, index) => {
+                      if (feature.type === "Point") return <Marker key={index} position={feature.position}><Popup><div className="font-bold">{feature.name}</div><div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} /></Popup></Marker>;
+                      if (feature.type === "LineString") return <Polyline key={index} positions={feature.positions} color="blue" weight={4}><Popup><div className="font-bold">{feature.name}</div><div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} /></Popup></Polyline>;
+                      if (feature.type === "Polygon") return <Polygon key={index} positions={feature.positions} color="purple"><Popup><div className="font-bold">{feature.name}</div><div className="text-sm" dangerouslySetInnerHTML={{__html: feature.description}} /></Popup></Polygon>;
+                      return null;
+                  })}
+
+                  <FitBounds bounds={mapBounds} zoomTrigger={zoomTrigger} />
+              </MapContainer>
+
+              {/* Toggle Sidebar Button (Floating) */}
+              <div className="absolute top-4 left-4 z-[400]">
+                  <IconButton size="sm" color="white" className="shadow-md text-blue-gray-700" onClick={() => setShowTree(!showTree)}>
+                      <ListBulletIcon className="h-5 w-5" />
+                  </IconButton>
+              </div>
           </div>
+      </div>
+
+      {/* 3. Status Bar (Bottom) */}
+      <div className="h-7 bg-white border-t border-gray-200 flex items-center justify-between px-4 text-[11px] text-gray-500 flex-shrink-0">
+          <div>Ready</div>
+          <div>{features.length} features loaded</div>
       </div>
     </div>
   );
 };
 
-const KmlTreeNode = ({ node, onToggleVisibility, onToggleCollapse }) => {
+const KmlTreeNode = ({ node, onToggleVisibility, onToggleCollapse, level = 0 }) => {
     const hasChildren = node.children && node.children.length > 0;
     
     return (
-        <div className="ml-2">
-            <div className="flex items-center gap-1 py-0.5 hover:bg-blue-gray-50 rounded">
-                <div onClick={() => hasChildren && onToggleCollapse(node.id)} className="cursor-pointer p-0.5">
+        <div className="select-none">
+            <div 
+                className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50/50 rounded-lg mb-0.5 ${level === 0 ? 'bg-gray-50/30' : ''}`}
+                style={{ paddingLeft: `${level * 12 + 8}px` }}
+            >
+                {/* Collapse Icon */}
+                <div onClick={(e) => { e.stopPropagation(); hasChildren && onToggleCollapse(node.id); }} className="p-0.5 rounded hover:bg-gray-200 text-gray-400">
                     {hasChildren ? (
                         node.collapsed ? <ChevronRightIcon className="h-3 w-3 text-gray-500" /> : <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                     ) : <div className="w-3" />}
                 </div>
                 
-                <Checkbox 
-                    checked={node.visible} 
-                    onChange={() => onToggleVisibility(node.id, !node.visible)}
-                    containerProps={{ className: "p-0 mr-1" }}
-                    className="h-3.5 w-3.5 rounded border-gray-400 text-blue-600"
-                />
+                {/* Visibility Toggle */}
+                <div onClick={(e) => { e.stopPropagation(); }} className="mr-1">
+                    <Checkbox 
+                        checked={node.visible}
+                        onChange={() => onToggleVisibility(node.id, !node.visible)}
+                        containerProps={{ className: "p-1" }}
+                        className="h-4 w-4 rounded border-gray-400 text-blue-600 hover:before:opacity-0"
+                        ripple={false}
+                    />
+                </div>
                 
-                <div className="flex items-center gap-1 cursor-pointer select-none flex-1 min-w-0" onClick={() => hasChildren && onToggleCollapse(node.id)}>
-                    {node.type === 'Placemark' ? <DocumentIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" /> : <FolderIcon className="h-3.5 w-3.5 text-yellow-600 flex-shrink-0" />}
-                    <span className="text-xs font-medium text-gray-700 truncate" title={node.name}>{node.name}</span>
+                {/* Content */}
+                <div className="flex-1 flex items-center gap-2 min-w-0" onClick={() => hasChildren && onToggleCollapse(node.id)}>
+                    {/* Color Indicator */}
+                    {node.type !== 'Folder' && node.type !== 'Document' && (
+                        <div className={`w-1 h-3 rounded-full flex-shrink-0 ${node.type === 'LineString' ? 'bg-blue-500' : node.type === 'Polygon' ? 'bg-purple-500' : 'bg-red-500'}`}></div>
+                    )}
+                    
+                    {node.type === 'Folder' || node.type === 'Document' ? (
+                        <FolderIcon className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                    ) : null}
+                    
+                    <div className="flex flex-col min-w-0">
+                        <Typography variant="small" className="font-medium text-gray-700 truncate text-xs">
+                            {node.name}
+                        </Typography>
+                    </div>
                 </div>
             </div>
             {hasChildren && !node.collapsed && (
-                <div className="border-l border-gray-200 ml-2 pl-1">
+                <div>
                     {node.children.map(child => (
-                        <KmlTreeNode key={child.id} node={child} onToggleVisibility={onToggleVisibility} onToggleCollapse={onToggleCollapse} />
+                        <KmlTreeNode key={child.id} node={child} onToggleVisibility={onToggleVisibility} onToggleCollapse={onToggleCollapse} level={level + 1} />
                     ))}
                 </div>
             )}
