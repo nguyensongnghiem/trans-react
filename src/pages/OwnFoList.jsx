@@ -32,6 +32,7 @@ import {
   Switch,
   Tooltip,
   Input,
+  Chip,
   IconButton as MTIconButton,
 } from "@material-tailwind/react";
 import { CustomMenuList } from "./CustomList";
@@ -48,10 +49,8 @@ function OwnFoList() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
-  const [openKml, setOpenKml] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [editFoLine, setEditFoLine] = useState({});
-  const [selectedFo, setSelectedFo] = useState(null);
   const [kmlFile, setKmlFile] = useState(null);
   const axiosInstance = useAxiosPrivate();
 
@@ -172,6 +171,7 @@ function OwnFoList() {
     try {
       const res = await axiosInstance.get(`own-fos/${id}`);
       setEditFoLine(res.data);
+      setKmlFile(null); // Reset file selection
       setOpenEdit(true);
     } catch (e) {
       toast.error("Không thể lấy thông tin tuyến cáp");
@@ -180,7 +180,16 @@ function OwnFoList() {
 
   const handleEditSubmit = async (values) => {
     try {
+      // 1. Update text data
       await axiosInstance.put(`own-fos/${values.id}`, values);
+
+      // 2. Upload KML if selected
+      if (kmlFile) {
+        const formData = new FormData();
+        formData.append("file", kmlFile);
+        await axiosInstance.post(`own-fos/${values.id}/kml`, formData);
+      }
+
       toast.success("Đã cập nhật thành công");
       reloadOwnFoList();
       setOpenEdit(false);
@@ -203,29 +212,6 @@ function OwnFoList() {
       toast.error("Lỗi khi xóa dữ liệu");
     } finally {
       setOpenDelete(false);
-    }
-  };
-
-  const handleOpenKml = (fo) => {
-    setSelectedFo(fo);
-    setOpenKml(true);
-    setKmlFile(null);
-  };
-
-  const handleKmlUpload = async () => {
-    if (!kmlFile) {
-      toast.warning("Vui lòng chọn file KML/KMZ");
-      return;
-    }
-    const formData = new FormData();
-    formData.append("file", kmlFile);
-    try {
-      await axiosInstance.post(`own-fos/${selectedFo.id}/kml`, formData);
-      toast.success("Đã upload file KML thành công");
-      reloadOwnFoList();
-      setOpenKml(false);
-    } catch (e) {
-      toast.error("Lỗi upload file");
     }
   };
 
@@ -400,11 +386,6 @@ function OwnFoList() {
                   <td className="p-4 max-w-xs truncate italic opacity-70">{item.note}</td>
                   <td className="p-4">
                     <div className="flex gap-1">
-                      <Tooltip content="Upload KML">
-                        <IconButton variant="text" size="sm" color="blue" onClick={() => handleOpenKml(item)}>
-                          <CloudArrowUpIcon className="h-4 w-4" />
-                        </IconButton>
-                      </Tooltip>
                       {item.kmlFileName && (
                         <Tooltip content="Download KML">
                           <IconButton variant="text" size="sm" color="green" onClick={() => handleKmlDownload(item)}>
@@ -513,106 +494,171 @@ function OwnFoList() {
       </Dialog>
 
       {/* Edit Modal (similar to Create) */}
-      <Dialog open={openEdit} handler={() => setOpenEdit(false)} size="sm">
+      <Dialog
+        open={openEdit}
+        handler={() => setOpenEdit(false)}
+        className="overflow-hidden rounded-lg bg-white shadow-xl"
+        size="sm"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography
+              variant="h5"
+              color="blue-gray"
+              className="font-semibold text-gray-900"
+            >
+              Cập nhật tuyến cáp
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Chỉnh sửa thông tin tuyến cáp quang
+            </Typography>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={() => setOpenEdit(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <div className="max-h-[80vh] overflow-y-auto">
         <Formik
           enableReinitialize
           initialValues={editFoLine}
           onSubmit={handleEditSubmit}
         >
           {({ setFieldValue, values }) => (
-            <Form>
-              <DialogHeader>Cập nhật tuyến cáp</DialogHeader>
-              <DialogBody className="space-y-4">
-                <div className="flex justify-end">
-                   <Switch
-                    label="Hoạt động"
-                    checked={values.active}
-                    onChange={(e) => setFieldValue("active", e.target.checked)}
-                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-bold opacity-70">Site A</label>
-                    <Select
-                      options={simpleSiteList}
-                      value={simpleSiteList.find(o => o.id === values.nearSite?.id)}
-                      getOptionLabel={(o) => o.siteId}
-                      getOptionValue={(o) => o.id}
-                      onChange={(val) => setFieldValue("nearSite.id", val.id)}
-                      components={{ MenuList: CustomMenuList }}
-                      styles={whiteSelectStyles}
+            <Form className="flex flex-col">
+              <DialogBody className="p-6">
+                <div className="grid grid-cols-1 gap-5">
+                  {/* Status Switch */}
+                  <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="font-bold">
+                        Trạng thái hoạt động
+                      </Typography>
+                      <Typography variant="small" className="text-gray-500 text-xs font-normal">
+                        Bật/tắt trạng thái tuyến cáp
+                      </Typography>
+                    </div>
+                    <Switch
+                      color="green"
+                      checked={values.active}
+                      onChange={(e) => setFieldValue("active", e.target.checked)}
+                      className="scale-90"
+                      circleProps={{ className: "border-none" }}
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-bold opacity-70">Site B</label>
-                    <Select
-                      options={simpleSiteList}
-                      value={simpleSiteList.find(o => o.id === values.farSite?.id)}
-                      getOptionLabel={(o) => o.siteId}
-                      getOptionValue={(o) => o.id}
-                      onChange={(val) => setFieldValue("farSite.id", val.id)}
-                      components={{ MenuList: CustomMenuList }}
-                      styles={whiteSelectStyles}
-                    />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Site A</Typography>
+                      <Select
+                        options={simpleSiteList}
+                        value={simpleSiteList.find(o => o.id === values.nearSite?.id)}
+                        getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("nearSite.id", val.id)}
+                        components={{ MenuList: CustomMenuList }}
+                        styles={whiteSelectStyles}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Site B</Typography>
+                      <Select
+                        options={simpleSiteList}
+                        value={simpleSiteList.find(o => o.id === values.farSite?.id)}
+                        getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("farSite.id", val.id)}
+                        components={{ MenuList: CustomMenuList }}
+                        styles={whiteSelectStyles}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Số core</Typography>
+                      <Field name="coreQuantity" className="w-full border rounded p-2 text-sm" type="number" />
+                    </div>
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại cáp</Typography>
+                      <Field as="select" name="fiberType.id" className="w-full border rounded p-2 h-[38px] text-sm bg-white">
+                        {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </Field>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="text-sm font-bold opacity-70">Số core</label>
-                    <Field name="coreQuantity" className="w-full border rounded p-2" type="number" />
+                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
+                    <Field name="finalDistance" className="w-full border rounded p-2 text-sm" type="number" step="0.01" />
                   </div>
+
+                  {/* KML Upload Section */}
+                  <div className="rounded-lg border border-gray-200 p-3 bg-gray-50/50">
+                    <Typography variant="small" color="blue-gray" className="mb-2 font-bold flex items-center gap-2">
+                      <GlobeAsiaAustraliaIcon className="h-4 w-4 text-blue-500" /> File bản đồ (KML/KMZ)
+                    </Typography>
+
+                    {values.kmlFileName && (
+                      <div className="mb-3 flex items-center justify-between bg-white p-2 rounded border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <CloudArrowUpIcon className="h-4 w-4 text-green-500 flex-shrink-0" />
+                          <span className="text-xs font-medium text-blue-gray-700 truncate" title={values.kmlFileName}>
+                            {values.kmlFileName}
+                          </span>
+                        </div>
+                        <Tooltip content="Tải về">
+                          <IconButton size="sm" variant="text" color="blue" onClick={() => handleKmlDownload(values)}>
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                          </IconButton>
+                        </Tooltip>
+                      </div>
+                    )}
+
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".kml,.kmz"
+                        className="block w-full text-xs text-slate-500
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-full file:border-0
+                                  file:text-xs file:font-semibold
+                                  file:bg-blue-50 file:text-blue-700
+                                  hover:file:bg-blue-100
+                                  cursor-pointer"
+                        onChange={(e) => setKmlFile(e.target.files[0])}
+                      />
+                      {kmlFile && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <Chip size="sm" variant="ghost" value="Mới" color="green" className="rounded-full px-2 py-0.5 text-[10px]" />
+                          <span className="text-xs text-green-700 font-medium truncate">{kmlFile.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="text-sm font-bold opacity-70">Loại cáp</label>
-                    <Field as="select" name="fiberType.id" className="w-full border rounded p-2 h-[42px]">
-                      {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </Field>
+                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Ghi chú</Typography>
+                    <Field name="note" as="textarea" className="w-full border rounded p-2 h-20 text-sm resize-none" placeholder="Nhập ghi chú..." />
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-bold opacity-70">Chiều dài thực tế (km)</label>
-                  <Field name="finalDistance" className="w-full border rounded p-2" type="number" step="0.01" />
-                </div>
-                <div>
-                  <label className="text-sm font-bold opacity-70">Ghi chú</label>
-                  <Field name="note" as="textarea" className="w-full border rounded p-2 h-20" />
                 </div>
               </DialogBody>
-              <DialogFooter>
-                <Button variant="text" onClick={() => setOpenEdit(false)}>Hủy</Button>
-                <CustomButton type="submit">Cập nhật</CustomButton>
+              <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                <Button variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
+                  Hủy bỏ
+                </Button>
+                <CustomButton type="submit" size="sm" className="flex items-center gap-2">
+                  <PencilIcon className="h-4 w-4" /> Cập nhật
+                </CustomButton>
               </DialogFooter>
             </Form>
           )}
         </Formik>
-      </Dialog>
-
-      {/* KML Upload Modal */}
-      <Dialog open={openKml} handler={() => setOpenKml(false)} size="xs">
-        <DialogHeader>Quản lý file KML/KMZ</DialogHeader>
-        <DialogBody className="space-y-4">
-          <Typography variant="small" className="font-bold">
-            Tuyến: {selectedFo?.nearSite?.siteId} - {selectedFo?.farSite?.siteId}
-          </Typography>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <input
-              type="file"
-              accept=".kml,.kmz"
-              id="kml-upload"
-              className="hidden"
-              onChange={(e) => setKmlFile(e.target.files[0])}
-            />
-            <label htmlFor="kml-upload" className="cursor-pointer">
-              <CloudArrowUpIcon className="h-10 w-10 mx-auto text-blue-500 mb-2" />
-              <Typography variant="small" className="text-gray-600">
-                {kmlFile ? kmlFile.name : "Chọn file KML hoặc kéo thả vào đây"}
-              </Typography>
-            </label>
-          </div>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="text" onClick={() => setOpenKml(false)}>Đóng</Button>
-          <CustomButton onClick={handleKmlUpload} disabled={!kmlFile}>Upload</CustomButton>
-        </DialogFooter>
+        </div>
       </Dialog>
 
       {/* Delete Confirmation */}
