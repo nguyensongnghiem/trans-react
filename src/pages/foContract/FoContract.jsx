@@ -16,6 +16,12 @@ import {
   XMarkIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import {
+  BanknotesIcon,
+  ChartBarIcon,
+  BoltIcon,
+  DocumentDuplicateIcon
+} from "@heroicons/react/24/solid";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import React from "react";
@@ -140,6 +146,13 @@ function FoContract() {
     loadContractList();
   }, []);
 
+  const pieColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#64748b"];
+
+  const VND = new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  });
+
   // Filtering and Pagination Logic
   const filteredContracts = useMemo(() => {
     return contractList.filter((contract) => {
@@ -164,6 +177,40 @@ function FoContract() {
       return matchOwner && matchYear && matchStatus && matchSearch;
     });
   }, [contractList, filters]);
+
+  // --- Thống kê cho Dashboard ---
+  const stats = useMemo(() => {
+    const totalContracts = filteredContracts.length;
+    let totalCost = 0;
+    let totalLines = 0;
+    const providerCounts = {};
+
+    filteredContracts.forEach((contract) => {
+      const name = contract.transmissionOwner?.name || "Khác";
+      providerCounts[name] = (providerCounts[name] || 0) + 1;
+
+      if (contract.hiredFoLineList) {
+        totalLines += contract.hiredFoLineList.length;
+        contract.hiredFoLineList.forEach((line) => {
+          totalCost += (Number(line.cost) || 0) * (Number(line.finalDistance) || 0);
+        });
+      }
+    });
+
+    const counts = Object.values(providerCounts);
+    const maxCount = counts.length > 0 ? Math.max(...counts) : 0;
+
+    const providerData = Object.entries(providerCounts)
+      .map(([name, count]) => ({
+        name,
+        count,
+        percent: maxCount > 0 ? (count / maxCount) * 100 : 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return { totalContracts, totalCost, totalLines, providerData };
+  }, [filteredContracts]);
 
   const totalPages = Math.ceil(filteredContracts.length / rowsPerPage);
   const paginatedContracts = useMemo(() => {
@@ -452,6 +499,100 @@ function FoContract() {
             Xuất Excel
           </CustomButton>
         </div>
+      </div>
+
+      {/* Dashboard Cards */}
+      <div className="mb-6 grid gap-y-10 gap-x-6 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="border border-blue-gray-100 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <Typography className="mb-1 text-xs font-medium text-blue-gray-500">
+                Tổng số hợp đồng
+              </Typography>
+              <Typography variant="h4" color="blue-gray" className="font-bold">
+                {stats.totalContracts}
+              </Typography>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-500">
+              <DocumentDuplicateIcon className="h-6 w-6" />
+            </div>
+          </div>
+          <Typography variant="small" className="mt-2 font-normal text-blue-gray-600">
+            Hợp đồng đang hiển thị
+          </Typography>
+        </Card>
+
+        <Card className="border border-blue-gray-100 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <Typography className="mb-1 text-xs font-medium text-blue-gray-500">
+                Tổng giá trị (tháng)
+              </Typography>
+              <Typography variant="h4" color="blue-gray" className="font-bold">
+                {new Intl.NumberFormat("vi-VN", { notation: "compact", compactDisplay: "short" }).format(stats.totalCost)}
+              </Typography>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-500">
+              <BanknotesIcon className="h-6 w-6" />
+            </div>
+          </div>
+          <Typography variant="small" className="mt-2 font-normal text-blue-gray-600">
+            {VND.format(stats.totalCost)}
+          </Typography>
+        </Card>
+
+        <Card className="border border-blue-gray-100 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <Typography className="mb-1 text-xs font-medium text-blue-gray-500">
+                Tổng số tuyến cáp
+              </Typography>
+              <Typography variant="h4" color="blue-gray" className="font-bold">
+                {stats.totalLines}
+              </Typography>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+              <BoltIcon className="h-6 w-6" />
+            </div>
+          </div>
+          <Typography variant="small" className="mt-2 font-normal text-blue-gray-600">
+            Tuyến cáp trong các hợp đồng
+          </Typography>
+        </Card>
+
+        <Card className="border border-blue-gray-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <Typography className="text-xs font-medium text-blue-gray-500">
+              Hợp đồng theo Nhà cung cấp
+            </Typography>
+            <ChartBarIcon className="h-4 w-4 text-blue-gray-300" />
+          </div>
+          <div className="flex items-end gap-2 h-24 mt-2">
+            {stats.providerData.map((p, i) => (
+              <div key={p.name} className="flex flex-col justify-end items-center flex-1 h-full group relative">
+                <div
+                  className="w-full rounded-t-sm transition-all duration-500 relative hover:opacity-80"
+                  style={{
+                    height: `${Math.max(p.percent, 10)}%`,
+                    backgroundColor: pieColors[i % pieColors.length],
+                  }}
+                >
+                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-blue-gray-600">
+                    {p.count}
+                  </span>
+                </div>
+                <span className="text-[10px] text-blue-gray-500 truncate w-full text-center mt-1 font-medium" title={p.name}>
+                  {p.name}
+                </span>
+              </div>
+            ))}
+            {stats.providerData.length === 0 && (
+              <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
+                Chưa có dữ liệu
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
 
       {/* Filter Bar */}
