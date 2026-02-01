@@ -528,7 +528,7 @@ function LeaselineList() {
                     </Typography>
                   </td>
                   <td className="p-4">
-                    {item.transmissionOwner?.name && <OwnerChip name={item.transmissionOwner.name} />}
+                    {item.transmissionOwner?.name && <OwnerChip name={item.transmissionOwner.name} className="inline-block" />}
                   </td>
                   <td className="p-4">
                     <Typography variant="small" color="blue-gray" className="font-normal">

@@ -7,6 +7,7 @@ import {
   DocumentIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/solid";
 import {
   MagnifyingGlassIcon,
@@ -44,10 +45,7 @@ import OwnerChip from "../components/OwnerChip";
 function HiredFoList() {
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [hiredFoList, setHiredFoList] = useState([]);
-  const [routerTypeList, setRouterTypeList] = useState([]);
-  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
-    [],
-  );
+  const [contracts, setContracts] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -181,34 +179,12 @@ function HiredFoList() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const siteList = await axiosInstance.get("sites/simple-list");
-        setSimpleSiteList(siteList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const routerTypes = await axiosInstance.get("router-types");
-        setRouterTypeList(routerTypes.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const transDeviceTypeList = await axiosInstance.get(
-          "transmission-device-types",
-        );
-        setTransmissionDeviceTypeList(transDeviceTypeList.data);
+        const [sites, contractsRes] = await Promise.all([
+          axiosInstance.get("sites/simple-list"),
+          axiosInstance.get("contract/all")
+        ]);
+        setSimpleSiteList(sites.data);
+        setContracts(contractsRes.data);
       } catch (error) {
         console.log(error);
       }
@@ -229,13 +205,13 @@ function HiredFoList() {
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
   };
-  const handleCreate = async (router) => {
-    console.log(router);
+  const handleCreate = async (values) => {
     try {
-      await axiosInstance.post("routers", router);
-      toast.success("Đã thêm mới thiết bị thành công.");
+      await axiosInstance.post("hired-fos", values);
+      toast.success("Đã thêm mới tuyến cáp thành công.");
+      reloadHiredFoList();
     } catch (error) {
-      toast.error(error.response.data.message, {
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra", {
         zIndex: 9999,
       });
     } finally {
@@ -529,9 +505,16 @@ function HiredFoList() {
           <CustomButton
             className="flex items-center gap-2 bg-[#0d47a1] hover:bg-[#0a3a82]"
             size="sm"
-            onClick={handleOpenImport}
+            onClick={handleOpenCreate}
           >
             <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm mới
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]"
+            size="sm"
+            onClick={handleOpenImport}
+          >
+            <ArrowUpTrayIcon strokeWidth={2} className="h-4 w-4" /> Import excel
           </CustomButton>
           <CustomButton
             className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
@@ -913,196 +896,104 @@ function HiredFoList() {
       <Dialog
         open={openCreate}
         handler={handleOpenCreate}
-        className="overflow-hidden"
         size="sm"
       >
-        <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block pb-4 border-b border-gray-100">
-            <Typography variant="h4" color="blue-gray" className="font-bold">
-              Thêm mới thiết bị
-            </Typography>
-            <Typography
-              color="gray"
-              className="mt-1 font-normal text-gray-600 text-sm"
-            >
-              Nhập thông tin chi tiết để đồng bộ dữ liệu hệ thống.
-            </Typography>
-            <IconButton
-              size="sm"
-              variant="text"
-              className="!absolute right-3.5 top-3.5"
-              onClick={handleOpenCreate}
-            >
-              <XMarkIcon className="h-4 w-4 stroke-2" />
-            </IconButton>
-          </DialogHeader>
-
-          <Formik
+        <Formik
             onSubmit={handleCreate}
             initialValues={{
-              name: null,
-              site: { id: null },
-              ip: "",
-              transmissionDeviceType: { id: 1 },
-              routerType: { id: 1 },
+              foContract: { id: null },
+              nearSite: { id: null },
+              farSite: { id: null },
+              coreQuantity: 2,
+              finalDistance: 0,
+              cost: 0,
               note: "",
+              active: true
             }}
             validationSchema={Yup.object({
-              name: Yup.string().required("Yêu cầu nhập tên router"),
-              site: Yup.object({
-                id: Yup.string().required("Yêu cầu nhập site ID"),
-              }),
-              ip: Yup.string().required("Yêu cầu nhập Ip quản lý"),
+              foContract: Yup.object({ id: Yup.number().required("Bắt buộc chọn hợp đồng") }),
+              nearSite: Yup.object({ id: Yup.number().required("Bắt buộc chọn trạm đầu") }),
+              farSite: Yup.object({ id: Yup.number().required("Bắt buộc chọn trạm cuối") }),
+              coreQuantity: Yup.number().required("Bắt buộc"),
+              finalDistance: Yup.number().required("Bắt buộc"),
+              cost: Yup.number().required("Bắt buộc"),
             })}
           >
-            {({ setFieldValue, getFieldProps, values, setErrors }) => (
-              <Form className="flex flex-initial flex-shrink flex-col">
-                <DialogBody className="space-y-4 pb-6">
-                  <Card className="shadow-none">
-                    <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Tên thiết bị
-                        </label>
+            {({ setFieldValue }) => (
+              <Form>
+                <DialogHeader>Thêm mới tuyến cáp thuê</DialogHeader>
+                <DialogBody className="space-y-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-bold opacity-70">Hợp đồng</label>
+                    <Select
+                      placeholder="Chọn hợp đồng..."
+                      options={contracts}
+                      getOptionLabel={(o) => o.contractNumber + " - " + o.contractName}
+                      getOptionValue={(o) => o.id}
+                      onChange={(val) => setFieldValue("foContract.id", val.id)}
+                      styles={whiteSelectStyles}
+                      components={{ MenuList: CustomMenuList }}
+                    />
+                    <ErrorMessage className="text-xs text-red-500" name="foContract.id" component="span" />
+                  </div>
 
-                        <Field
-                          name="name"
-                          placeholder="Nhập tên thiết bị"
-                          className="flex-1 rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="name"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Site ID
-                        </label>
-                        <Select
-                          placeholder="Site ID"
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("site.id", selectedOption.id);
-                          }}
-                          classNames={{
-                            control: (state) =>
-                              state.isFocused
-                                ? "border-blue-500"
-                                : "border-grey-300",
-                          }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
-                          isSearchable={true}
-                          options={simpleSiteList}
-                          name="site.id"
-                          getOptionLabel={(option) => option.siteId}
-                          isLoading={false}
-                          loadingMessage={() => "Đang lấy thông tin trạm..."}
-                          noOptionsMessage={() => "Site ID không tìm thấy"}
-                        />
-
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="site.id"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          IP quản lý
-                        </label>
-                        <Field
-                          name="ip"
-                          placeholder="Nhập IP quản ý"
-                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        ></Field>
-                        <ErrorMessage
-                          className="justify-items-end text-sm font-light italic text-red-500"
-                          name="ip"
-                          component="span"
-                        ></ErrorMessage>
-                      </div>
-
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Loại thiết bị truyền dẫn
-                        </label>
-                        <Field
-                          className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          as="select"
-                          name="transmissionDeviceType.id"
-                        >
-                          {transmissionDeviceTypeList.map((transDeviceType) => {
-                            return (
-                              <option
-                                key={transDeviceType.id}
-                                value={transDeviceType.id}
-                              >
-                                {transDeviceType.name}
-                              </option>
-                            );
-                          })}
-                        </Field>
-                      </div>
-                      {/* <p className="col-span-full text-2xl text-blue-600">Vị trí</p> */}
-                      <div className="col-span-full flex flex-col items-stretch gap-2">
-                        <label className="text-slate-400 font-semibold">
-                          Loại thiết bị Router
-                        </label>
-                        <Field
-                          className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          as="select"
-                          name="routerType.id"
-                        >
-                          {routerTypeList.map((routerType) => {
-                            return (
-                              <option key={routerType.id} value={routerType.id}>
-                                {routerType.name}
-                              </option>
-                            );
-                          })}
-                        </Field>
-                      </div>
-
-                      <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
-                        <label className="text-slate-400 font-semibold">
-                          Ghi chú
-                        </label>
-                        <Field
-                          className="h-24 h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          as="textarea"
-                          name="note"
-                        ></Field>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-bold opacity-70">Site A</label>
+                      <Select
+                        placeholder="Site A"
+                        options={simpleSiteList}
+                        getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("nearSite.id", val.id)}
+                        components={{ MenuList: CustomMenuList }}
+                        styles={whiteSelectStyles}
+                      />
+                      <ErrorMessage className="text-xs text-red-500" name="nearSite.id" component="span" />
                     </div>
-                  </Card>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-bold opacity-70">Site B</label>
+                      <Select
+                        placeholder="Site B"
+                        options={simpleSiteList}
+                        getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("farSite.id", val.id)}
+                        components={{ MenuList: CustomMenuList }}
+                        styles={whiteSelectStyles}
+                      />
+                      <ErrorMessage className="text-xs text-red-500" name="farSite.id" component="span" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-bold opacity-70">Số core</label>
+                      <Field name="coreQuantity" type="number" className="w-full border rounded p-2" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold opacity-70">Khoảng cách (km)</label>
+                      <Field name="finalDistance" type="number" step="0.01" className="w-full border rounded p-2" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold opacity-70">Đơn giá (VNĐ)</label>
+                      <Field name="cost" type="number" className="w-full border rounded p-2" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold opacity-70">Ghi chú</label>
+                    <Field as="textarea" name="note" className="w-full border rounded p-2 h-20" />
+                  </div>
                 </DialogBody>
-                <DialogFooter className="pt-0 pr-6 pb-6">
-                  <CustomButton
-                    size="md"
-                    type="submit"
-                    color="gray"
-                    className="bg-gray-900 border-none shadow-none hover:shadow-lg"
-                  >
-                    Thêm mới thiết bị
-                  </CustomButton>
+                <DialogFooter>
+                  <Button variant="text" onClick={handleOpenCreate}>Hủy</Button>
+                  <CustomButton type="submit">Lưu</CustomButton>
                 </DialogFooter>
               </Form>
             )}
-            {/* <img src={MySvg} alt="" className="flex-initial p-5" /> */}
           </Formik>
-        </div>
       </Dialog>
       <Dialog open={importOpen} handler={handleOpenImport} size="lg" className="flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
