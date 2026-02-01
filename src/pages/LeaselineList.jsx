@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { DocumentIcon, PencilIcon, TrashIcon, PlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/solid";
+import { DocumentIcon, PencilIcon, TrashIcon, PlusIcon, ArrowDownTrayIcon, CloudArrowUpIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -7,6 +7,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
+  ExclamationTriangleIcon,
+  DocumentArrowUpIcon,
 } from "@heroicons/react/24/outline";
 import Select from "react-select";
 import * as Yup from "yup";
@@ -48,6 +50,15 @@ function LeaselineList() {
   const [editLeaseline, setEditLeaseline] = useState({});
   const [editId, setEditId] = useState(null);
   const axiosInstance = useAxiosPrivate();
+
+  // Import states
+  const [importOpen, setImportOpen] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelChecked, setExcelChecked] = useState(false);
+  const [excelSuccess, setExcelSuccess] = useState(false);
+  const [excelErrors, setExcelErrors] = useState({});
+  const [excelRows, setExcelRows] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   // Filter and pagination states
   const [filters, setFilters] = useState({
@@ -262,6 +273,89 @@ function LeaselineList() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Leaselines");
     XLSX.writeFile(workbook, "LeaselineList.xlsx");
   };
+
+  // Import Handlers
+  const handleOpenImport = () => {
+    setImportOpen((prev) => !prev);
+    if (importOpen) {
+      setExcelFile(null);
+      setExcelChecked(false);
+      setExcelSuccess(false);
+      setExcelErrors({});
+      setExcelRows([]);
+      setSaving(false);
+    }
+  };
+
+  const handleCheckImport = async () => {
+    if (!excelFile) {
+      toast.warning("Vui lòng chọn file Excel");
+      return;
+    }
+    try {
+      const form = new FormData();
+      form.append("file", excelFile);
+      const res = await axiosInstance.post("leaselines/import-excel/check", form);
+      setExcelRows(res.data?.rows || []);
+      setExcelErrors({});
+      setExcelChecked(true);
+      setExcelSuccess(true);
+      toast.success("✔ File Excel hợp lệ");
+    } catch (err) {
+      if (err?.response?.status === 400) {
+        setExcelErrors(err.response.data || {});
+        setExcelRows([]);
+        setExcelChecked(true);
+        setExcelSuccess(false);
+        toast.error("❌ Dữ liệu Excel không hợp lệ");
+        return;
+      }
+      toast.error("Lỗi hệ thống khi kiểm tra Excel");
+    }
+  };
+
+  const handleSaveImport = async () => {
+    if (!excelSuccess) return;
+    try {
+      setSaving(true);
+      const form = new FormData();
+      form.append("file", excelFile);
+      const res = await axiosInstance.post("leaselines/import-excel/save", form);
+      toast.success(res.data?.message || "Import thành công");
+      
+      // Reload list
+      const leaselines = await axiosInstance.get("leaselines");
+      setLeaselineList(leaselines.data);
+
+      setImportOpen(false);
+      setExcelFile(null);
+      setExcelChecked(false);
+      setExcelSuccess(false);
+      setExcelErrors({});
+      setExcelRows([]);
+    } catch (err) {
+        const data = err?.response?.data;
+        toast.error(data?.message || "❌ Lỗi khi lưu dữ liệu");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axiosInstance.get("leaselines/import-excel/template", { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "leaseline-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error("Không thể tải file mẫu.");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
       <div className="flex justify-between items-center mb-6">
@@ -280,6 +374,13 @@ function LeaselineList() {
             onClick={handleOpenCreate}
           >
             <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm mới
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]"
+            size="sm"
+            onClick={handleOpenImport}
+          >
+            <DocumentArrowUpIcon className="h-4 w-4" /> Import Excel
           </CustomButton>
           <CustomButton
             className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
@@ -973,6 +1074,118 @@ function LeaselineList() {
             )}
           </Formik>
         </div>
+      </Dialog>
+
+      {/* Import Modal */}
+      <Dialog open={importOpen} handler={handleOpenImport} size="lg" className="flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
+          <div>
+            <Typography variant="h4" color="blue-gray" className="font-bold">
+              Import Kênh thuê
+            </Typography>
+            <Typography variant="small" color="gray" className="font-normal mt-1">
+              Tải lên file Excel để cập nhật dữ liệu hàng loạt
+            </Typography>
+          </div>
+          <IconButton variant="text" color="blue-gray" onClick={handleOpenImport}>
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <DialogBody className="overflow-y-auto p-4 flex-1">
+          {/* File Selection Area */}
+          <div className="mb-6 p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-gray-50 transition-colors relative">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="p-3 bg-blue-50 rounded-full">
+                <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
+                <br />
+                <span className="text-xs text-gray-400">Hỗ trợ định dạng .xlsx, .xls</span>
+              </div>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    setExcelFile(f);
+                    setExcelChecked(false);
+                    setExcelSuccess(false);
+                    setExcelErrors({});
+                    setExcelRows([]);
+                  }
+                  e.target.value = null; 
+                }}
+              />
+            </div>
+          </div>
+
+          {excelFile && (
+            <div className="mb-6 flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg border border-blue-100">
+                  <DocumentIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <Typography variant="small" color="blue-gray" className="font-bold">{excelFile.name}</Typography>
+                  <Typography variant="small" className="text-blue-gray-500 text-xs">{(excelFile.size / 1024).toFixed(2)} KB</Typography>
+                </div>
+              </div>
+              <IconButton variant="text" color="red" size="sm" onClick={() => setExcelFile(null)}><TrashIcon className="h-4 w-4" /></IconButton>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center mb-4">
+             <Typography variant="small" className="text-gray-500">
+                Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
+             </Typography>
+          </div>
+
+          {excelChecked && excelSuccess && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <Typography variant="small" color="green" className="font-bold">Kiểm tra dữ liệu thành công!</Typography>
+                <Typography variant="small" className="text-green-700">Đã tìm thấy <b>{excelRows.length}</b> dòng dữ liệu hợp lệ.</Typography>
+              </div>
+            </div>
+          )}
+
+          {excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
+            <div className="mb-4 border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2 text-red-700 font-medium">
+                <ExclamationTriangleIcon className="h-5 w-5" />
+                <span>Phát hiện lỗi trong file ({Object.keys(excelErrors).length} dòng)</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto p-4">
+                <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                  {Object.entries(excelErrors).map(([row, rowError]) => (
+                    <li key={row}>
+                      <span className="font-bold text-gray-700">Dòng {row}:</span> {rowError.errors?.map(e => e.message).join(", ")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </DialogBody>
+
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="text" color="blue-gray" onClick={handleOpenImport} className="normal-case">Hủy bỏ</Button>
+          {!excelSuccess ? (
+            <CustomButton color="blue" onClick={handleCheckImport} disabled={!excelFile} className="flex items-center gap-2">
+              <MagnifyingGlassIcon className="h-4 w-4" /> Kiểm tra dữ liệu
+            </CustomButton>
+          ) : (
+            <CustomButton color="green" onClick={handleSaveImport} disabled={saving} className="flex items-center gap-2">
+              {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ArrowDownTrayIcon className="h-4 w-4" />}
+              {saving ? "Đang lưu..." : "Lưu vào hệ thống"}
+            </CustomButton>
+          )}
+        </DialogFooter>
       </Dialog>
 
       {/*Modal confirm xóa site*/}
