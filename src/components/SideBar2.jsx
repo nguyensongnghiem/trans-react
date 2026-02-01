@@ -8,6 +8,7 @@ import {
   AccordionHeader,
   AccordionBody,
   Typography,
+  Tooltip,
 } from "@material-tailwind/react";
 import {
   PresentationChartBarIcon,
@@ -18,6 +19,7 @@ import {
   TableCellsIcon,
   BookOpenIcon,
   UserGroupIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/solid";
 import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/authContext";
@@ -161,13 +163,18 @@ const Sidebar2 = ({ sidebarOpen }) => {
                       </ListItemPrefix>
                       <Typography
                         color="inherit"
-                        className="mr-auto font-semibold"
+                        className="mr-auto font-semibold flex items-center"
                       >
                         <span
                           className={`${sidebarOpen ? "" : "hidden"} uppercase`}
                         >
                           {menu.title}
                         </span>
+                        {menu.requiredRole === "ROLE_ADMIN" && sidebarOpen && (
+                          <Tooltip content="Admin Only">
+                            <ShieldCheckIcon className="h-4 w-4 text-orange-500 ml-2" />
+                          </Tooltip>
+                        )}
                       </Typography>
                     </div>
                   </ListItem>
@@ -198,12 +205,17 @@ const Sidebar2 = ({ sidebarOpen }) => {
                   <ListItemPrefix>
                     <menu.icon className="h-4 w-4" />
                   </ListItemPrefix>
-                  <Typography color="white" className="mr-auto font-semibold">
+                  <Typography color="white" className="mr-auto font-semibold flex items-center">
                     <span
                       className={`${sidebarOpen ? "" : "hidden"} uppercase`}
                     >
                       {menu.title}
                     </span>
+                    {menu.requiredRole === "ROLE_ADMIN" && sidebarOpen && (
+                      <Tooltip content="Admin Only">
+                        <ShieldCheckIcon className="h-4 w-4 text-orange-500 ml-2" />
+                      </Tooltip>
+                    )}
                   </Typography>
                 </AccordionHeader>
               </ListItem>
