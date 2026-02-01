@@ -28,6 +28,7 @@ import BackupDashboard from "./pages/BackupDashboard.jsx";
 import UserManagement from "./pages/UserManagement.jsx";
 import ScheduleManagement from "./pages/ScheduleManagement.jsx";
 import FiberTypeList from "./pages/FiberTypeList.jsx";
+import ProvinceList from "./pages/ProvinceList.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -47,7 +48,7 @@ const router = createBrowserRouter([
         element: <UnderConstructionPage />,
       },
       {
-        element: <PrivateRoutes allowedRoles={["ROLE_ADMIN"]} />,
+        element: <PrivateRoutes allowedRoles={["ROLE_ADMIN", "ROLE_USER"]} />,
         children: [
           {
             path: "/fo-contract",
@@ -101,20 +102,29 @@ const router = createBrowserRouter([
           {
             path: "/router/backup-dashboard",
             element: <BackupDashboard />,
+          },         
+          {
+            path: "/router/backup-scheduler",
+            element: <ScheduleManagement />,
           },
           {
+            path: "/province",
+            element: <ProvinceList />,
+          },
+        ]
+      },
+      {
+        element: <PrivateRoutes allowedRoles={["ROLE_ADMIN"]} />,
+        children: [
+           {
             path: "/admin/users",
             element: <UserManagement />,
           },
           {
             path: "/admin/fiber-types",
             element: <FiberTypeList />,
-          },
-          {
-            path: "/router/backup-scheduler",
-            element: <ScheduleManagement />,
-          },
-        ],
+          }
+        ]
       },
       {
         element: <PrivateRoutes allowedRoles={["ROLE_USER"]} />,

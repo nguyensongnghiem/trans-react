@@ -38,6 +38,7 @@ const menuConfig = [
     children: [
       { title: "Danh sách trạm", path: "/site" },
       { title: "Tra cứu thông tin trạm", path: "/site/lookup" },
+      { title: "Quản lý Tỉnh", path: "/province" },
     ],
   },
   {
