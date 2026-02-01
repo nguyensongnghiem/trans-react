@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { DocumentIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { DocumentIcon, PencilIcon, TrashIcon, PlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/solid";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import Select from "react-select";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from 'xlsx';
 
-import { AgGridReact } from "ag-grid-react"; // React Data Grid Component
-import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
-import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import {
   Button,
   Card,
@@ -19,16 +24,18 @@ import {
   DialogHeader,
   DialogFooter,
   Switch,
+  Input,
+  IconButton as MTIconButton,
 } from "@material-tailwind/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import OwnerChip from "../components/OwnerChip";
 import StatusChip from "../components/StatusChip";
+import CustomButton from "../components/CustomButton";
+
 function LeaselineList() {
   // const navigate = useNavigate();
-  const gridRef = useRef();
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [leaselineList, setLeaselineList] = useState([]);
   const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
@@ -41,80 +48,52 @@ function LeaselineList() {
   const [editLeaseline, setEditLeaseline] = useState({});
   const [editId, setEditId] = useState(null);
   const axiosInstance = useAxiosPrivate();
-  const [colDefs, setColDefs] = useState([
-    { headerName: "Tỉnh", valueGetter: (p) => p.data.site.province?.name },
-    { headerName: "Site ID", valueGetter: (p) => p.data.site.siteId },
-    {
-      headerName: "Nhà cung cấp",
-      valueGetter: (p) => p.data.transmissionOwner?.name,
-      cellRenderer: (p) => {
-        return (
-          <span className="inline-block text-center">
-            <OwnerChip name={p.data.transmissionOwner?.name}></OwnerChip>
-          </span>
-        );
-      },
-    },
-    {
-      headerName: "Số lượng",
-      valueGetter: (p) => p.data.quantity,
-    },
-    { headerName: "Băng thông (Mbps)", valueGetter: (p) => p.data.speed },
-    {
-      headerName: "Đơn giá (VNĐ)",
-      valueGetter: (p) => p.data.cost,
-      cellRenderer: (p) => VND.format(p.data.cost),
-    },
-    {
-      headerName: "Loại kênh",
-      valueGetter: (p) => p.data.leaseLineConnectType?.name,
-    },
-    { headerName: "Ghi chú", valueGetter: (p) => p.data.note },
-    {
-      headerName: "Trạng thái",
-      valueGetter: (p) => p.data.active,
-      cellRenderer: (p) => {
-        return (
-          <div className="flex items-center justify-center h-full">
-            <StatusChip 
-              active={p.data.active} 
-              labelOn="Hoạt động" 
-              labelOff="Không hoạt động" 
-            />
-          </div>
-        );
-      },
-    },
-    {
-      headerName: "Tác động",
-      cellRenderer: (p) => (
-        <div className="flex items-center justify-center">
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleEdit(p.data.id)}
-          >
-            <PencilIcon className="h-4 w-4 text-gray-900" />
-          </IconButton>
-          <IconButton
-            variant="text"
-            size="sm"
-            onClick={() => handleDeleteLeaseline(p.data.id)}
-          >
-            <TrashIcon strokeWidth={3} className="h-4 w-4 text-gray-900" />
-          </IconButton>
-        </div>
-      ),
-    },
-  ]);
-  const defaultColDef = useMemo(() => {
-    return {
-      flex: 1,
-      sortable: true,
-      filter: true,
-      floatingFilter: true,
-    };
+
+  // Filter and pagination states
+  const [filters, setFilters] = useState({
+    search: "",
+    site: null,
+    transmissionOwner: null,
+    leaseLineConnectType: null,
+    status: null,
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+
+  // Filter Logic
+  const filteredLeaselines = useMemo(() => {
+    return leaselineList.filter((item) => {
+      const matchSite = !filters.site || item.site?.id === filters.site.value;
+      const matchOwner = !filters.transmissionOwner || item.transmissionOwner?.id === filters.transmissionOwner.value;
+      const matchType = !filters.leaseLineConnectType || item.leaseLineConnectType?.id === filters.leaseLineConnectType.value;
+      const matchStatus = !filters.status || item.active === filters.status.value;
+      const matchSearch = !filters.search ||
+        item.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        item.note?.toLowerCase().includes(filters.search.toLowerCase());
+
+      return matchSite && matchOwner && matchType && matchStatus && matchSearch;
+    });
+  }, [leaselineList, filters]);
+
+  const totalPages = Math.ceil(filteredLeaselines.length / rowsPerPage);
+  const paginatedLeaselines = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredLeaselines.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredLeaselines, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const handleResetFilters = () => {
+    setFilters({
+      search: "",
+      site: null,
+      transmissionOwner: null,
+      leaseLineConnectType: null,
+      status: null,
+    });
+  };
 
   useEffect(() => {
     const getAllLeaseline = async () => {
@@ -266,23 +245,17 @@ function LeaselineList() {
 
   // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
-    const columnDefs = gridRef.current.api.getColumnDefs();
-    const rowData = [];
-    gridRef.current.api.forEachNode(node => rowData.push(node.data));
-
-    const dataToExport = rowData.map(node => {
-      const row = {};
-      columnDefs.forEach(colDef => {
-        if (colDef.headerName && colDef.valueGetter) {
-          let value = colDef.valueGetter({ data: node });
-          if (colDef.valueFormatter) {
-            value = colDef.valueFormatter({ value: value });
-          }
-          row[colDef.headerName] = value;
-        }
-      });
-      return row;
-    });
+    const dataToExport = filteredLeaselines.map((item) => ({
+      "Tỉnh": item.site?.province?.name,
+      "Site ID": item.site?.siteId,
+      "Nhà cung cấp": item.transmissionOwner?.name,
+      "Số lượng": item.quantity,
+      "Băng thông (Mbps)": item.speed,
+      "Đơn giá (VNĐ)": item.cost,
+      "Loại kênh": item.leaseLineConnectType?.name,
+      "Ghi chú": item.note,
+      "Trạng thái": item.active ? "Hoạt động" : "Không hoạt động",
+    }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -290,59 +263,267 @@ function LeaselineList() {
     XLSX.writeFile(workbook, "LeaselineList.xlsx");
   };
   return (
-    <div className="p-5">
-      <div className="flex items-center justify-between">
-        <Typography variant="h4" color="blue-gray" className="mb-3">
-          Danh sách kênh thuê
-        </Typography>
+    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Danh sách kênh thuê
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Tổng số: <span className="font-semibold text-blue-600">{filteredLeaselines.length}</span> / {leaselineList.length} kênh
+          </p>
+        </div>
         <div className="flex gap-2">
-          <Button
-            variant="gradient"
+          <CustomButton
+            className="flex items-center gap-2 bg-[#0d47a1] hover:bg-[#0a3a82]"
             size="sm"
-            className="mb-3 flex items-center gap-3"
             onClick={handleOpenCreate}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
-            </svg>
-            Thêm mới
-          </Button>
-          <Button
-            variant="gradient"
+            <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm mới
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
             size="sm"
-            color="green"
-            className="mb-3 flex items-center gap-3"
             onClick={onBtnExport}
           >
-            Xuất Excel
-          </Button>
+            <ArrowDownTrayIcon className="h-4 w-4" /> Xuất Excel
+          </CustomButton>
         </div>
       </div>
-      <div
-        className="ag-theme-quartz" // applying the Data Grid theme
-        style={{ height: "100vh", width: "100%" }} // the Data Grid will fill the size of the parent container
-      >
-        <AgGridReact
-          ref={gridRef}
-          rowData={leaselineList}
-          columnDefs={colDefs}
-          defaultColDef={defaultColDef}
-          pagination={true}
-          paginationPageSize={20}
-          className="overflow-x-auto"
-        />
+
+      {/* Filter Bar */}
+      <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
+        <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
+          <FunnelIcon className="h-5 w-5" />
+          <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
+          {(filters.search || filters.site || filters.transmissionOwner || filters.leaseLineConnectType || filters.status) && (
+            <button
+              onClick={handleResetFilters}
+              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+            >
+              <ArrowPathIcon className="h-3 w-3" /> Xóa bộ lọc
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Site ID</span>
+            <Select
+              isClearable
+              placeholder="Tất cả Site"
+              className="text-sm"
+              options={simpleSiteList.map(s => ({ value: s.id, label: s.siteId }))}
+              value={filters.site}
+              onChange={(val) => setFilters((prev) => ({ ...prev, site: val }))}
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Nhà cung cấp</span>
+            <Select
+              isClearable
+              placeholder="Tất cả NCC"
+              className="text-sm"
+              options={transmissionOwnerList.map(o => ({ value: o.id, label: o.name }))}
+              value={filters.transmissionOwner}
+              onChange={(val) => setFilters((prev) => ({ ...prev, transmissionOwner: val }))}
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Loại kênh</span>
+            <Select
+              isClearable
+              placeholder="Tất cả loại"
+              className="text-sm"
+              options={leaseLineConnectTypeList.map(t => ({ value: t.id, label: t.name }))}
+              value={filters.leaseLineConnectType}
+              onChange={(val) => setFilters((prev) => ({ ...prev, leaseLineConnectType: val }))}
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Trạng thái</span>
+            <Select
+              isClearable
+              placeholder="Tất cả trạng thái"
+              className="text-sm"
+              options={[
+                { label: "Hoạt động", value: true },
+                { label: "Không hoạt động", value: false },
+              ]}
+              value={filters.status}
+              onChange={(val) => setFilters((prev) => ({ ...prev, status: val }))}
+              menuPortalTarget={document.body}
+              styles={{
+                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tìm kiếm nhanh</span>
+            <Input
+              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+              placeholder="Site ID, Ghi chú..."
+              className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg text-sm"
+              labelProps={{ className: "before:content-none after:content-none" }}
+              value={filters.search}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+              containerProps={{ className: "min-w-0" }}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Table */}
+      <Card className="w-full overflow-hidden border border-gray-200 shadow-sm rounded-xl">
+        <div className="overflow-auto max-h-[70vh]">
+          <table className="w-full min-w-max table-auto text-left">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
+                {["STT", "Tỉnh", "Site ID", "Nhà cung cấp", "Số lượng", "Băng thông", "Đơn giá", "Loại kênh", "Trạng thái", "Ghi chú", "Tác động"].map((head) => (
+                  <th key={head} className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-bold leading-none">
+                      {head}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {paginatedLeaselines.map((item, index) => (
+                <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">
+                      {item.site?.province?.name}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-bold">
+                      {item.site?.siteId}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    {item.transmissionOwner?.name && <OwnerChip name={item.transmissionOwner.name} />}
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">
+                      {item.quantity}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">
+                      {item.speed} Mbps
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">
+                      {VND.format(item.cost)}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography variant="small" color="blue-gray" className="font-normal">
+                      {item.leaseLineConnectType?.name}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <StatusChip active={item.active} />
+                  </td>
+                  <td className="p-4 max-w-xs truncate">
+                    <Typography variant="small" color="blue-gray" className="font-normal italic opacity-70">
+                      {item.note}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-1">
+                      <IconButton variant="text" size="sm" color="blue-gray" onClick={() => handleEdit(item.id)}>
+                        <PencilIcon className="h-4 w-4" />
+                      </IconButton>
+                      <IconButton variant="text" size="sm" color="red" onClick={() => handleDeleteLeaseline(item.id)}>
+                        <TrashIcon className="h-4 w-4" />
+                      </IconButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredLeaselines.length === 0 && (
+            <div className="py-20 text-center">
+              <Typography variant="h6" color="blue-gray" className="opacity-40">
+                Không tìm thấy kênh thuê nào khớp với bộ lọc
+              </Typography>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-white">
+          <div className="flex items-center gap-4">
+            <Typography variant="small" color="blue-gray" className="font-normal">
+              Trang <span className="font-bold">{currentPage}</span> / <span className="font-bold">{totalPages || 1}</span>
+            </Typography>
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+              <span className="text-xs text-blue-gray-400 font-medium">Hiển thị:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="text-xs border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-blue-500 transition-colors"
+              >
+                {[5, 10, 15, 20, 50, 100].map((val) => (
+                  <option key={val} value={val}>{val} dòng</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <MTIconButton
+              variant="outlined"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="rounded-md border-gray-300"
+            >
+              <ChevronLeftIcon strokeWidth={2} className="h-4 w-4" />
+            </MTIconButton>
+            <MTIconButton
+              variant="outlined"
+              size="sm"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className="rounded-md border-gray-300"
+            >
+              <ChevronRightIcon strokeWidth={2} className="h-4 w-4" />
+            </MTIconButton>
+          </div>
+        </div>
+      </Card>
 
       {/* Modal Thêm mới */}
       <Dialog
