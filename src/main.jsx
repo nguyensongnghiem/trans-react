@@ -27,6 +27,7 @@ import RouterBackup from "./pages/RouterBackup.jsx";
 import BackupDashboard from "./pages/BackupDashboard.jsx";
 import UserManagement from "./pages/UserManagement.jsx";
 import ScheduleManagement from "./pages/ScheduleManagement.jsx";
+import FiberTypeList from "./pages/FiberTypeList.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -104,6 +105,10 @@ const router = createBrowserRouter([
           {
             path: "/admin/users",
             element: <UserManagement />,
+          },
+          {
+            path: "/admin/fiber-types",
+            element: <FiberTypeList />,
           },
           {
             path: "/router/backup-scheduler",

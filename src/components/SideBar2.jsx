@@ -108,7 +108,10 @@ const menuConfig = [
     title: "Quản trị hệ thống",
     icon: UserGroupIcon,
     requiredRole: "ROLE_ADMIN",
-    children: [{ title: "Quản lý người dùng", path: "/admin/users" }],
+    children: [
+      { title: "Quản lý người dùng", path: "/admin/users" },
+      { title: "Quản lý loại cáp", path: "/admin/fiber-types" },
+    ],
   },
 ];
 

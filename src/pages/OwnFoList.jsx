@@ -10,6 +10,7 @@ import {
   MapIcon,
 } from "@heroicons/react/24/solid";
 import {
+  DocumentArrowUpIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ArrowPathIcon,
@@ -53,12 +54,18 @@ function OwnFoList() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
+  const [openImport, setOpenImport] = useState(false);
   const [openMap, setOpenMap] = useState(false);
   const [selectedFoMap, setSelectedFoMap] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editFoLine, setEditFoLine] = useState({});
   const [kmlFile, setKmlFile] = useState(null);
   const axiosInstance = useAxiosPrivate();
+
+  // Import states
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState([]);
+  const [importErrors, setImportErrors] = useState(null);
 
   // Filter and pagination states
   const [filters, setFilters] = useState({
@@ -265,6 +272,43 @@ function OwnFoList() {
     XLSX.writeFile(workbook, "OwnFoLine.xlsx");
   };
 
+  // Import Handlers
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportErrors(null);
+    setImportPreview([]);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await axiosInstance.post("own-fos/import-excel/check", formData);
+      setImportPreview(res.data.rows);
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setImportErrors(error.response.data);
+      } else {
+        toast.error("Lỗi khi kiểm tra file");
+      }
+    }
+  };
+
+  const handleSaveImport = async () => {
+    if (!importFile) return;
+    const formData = new FormData();
+    formData.append("file", importFile);
+    try {
+      await axiosInstance.post("own-fos/import-excel/save", formData);
+      toast.success("Import thành công");
+      setOpenImport(false);
+      reloadOwnFoList();
+    } catch (error) {
+      toast.error("Lỗi khi lưu dữ liệu import");
+    }
+  };
+
   const whiteSelectStyles = {
     control: (base, state) => ({
       ...base,
@@ -295,6 +339,13 @@ function OwnFoList() {
             onClick={handleOpenCreate}
           >
             <PlusIcon strokeWidth={2} className="h-4 w-4" /> Thêm mới
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]"
+            size="sm"
+            onClick={() => { setOpenImport(true); setImportFile(null); setImportPreview([]); setImportErrors(null); }}
+          >
+            <DocumentArrowUpIcon className="h-4 w-4" /> Import Excel
           </CustomButton>
           <CustomButton
             className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
@@ -689,6 +740,83 @@ function OwnFoList() {
           )}
         </Formik>
         </div>
+      </Dialog>
+
+      {/* Import Modal */}
+      <Dialog open={openImport} handler={() => setOpenImport(false)} size="lg">
+        <DialogHeader>Import Excel Tuyến cáp</DialogHeader>
+        <DialogBody className="overflow-y-auto max-h-[70vh]">
+          <div className="mb-4">
+            <Input
+              type="file"
+              accept=".xlsx, .xls"
+              label="Chọn file Excel"
+              onChange={handleFileChange}
+            />
+            <Typography variant="small" color="gray" className="mt-2">
+              File cần có các cột: Trạm đầu, Trạm cuối, Số core, Khoảng cách thiết kế (km), Khoảng cách thực tế (km), Loại cáp, Ghi chú.
+            </Typography>
+          </div>
+
+          {importErrors && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+              <p className="font-bold mb-2">Phát hiện lỗi trong file:</p>
+              <ul className="list-disc pl-5 max-h-40 overflow-y-auto">
+                {Object.entries(importErrors).map(([row, errorGroup]) => (
+                  <li key={row}>
+                    Dòng {row}: {errorGroup.errors.map(e => `${e.columnName} - ${e.message}`).join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {importPreview.length > 0 && !importErrors && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-max table-auto text-left text-xs border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-2 border">Dòng</th>
+                    <th className="p-2 border">Trạm đầu</th>
+                    <th className="p-2 border">Trạm cuối</th>
+                    <th className="p-2 border">Core</th>
+                    <th className="p-2 border">KC Thiết kế</th>
+                    <th className="p-2 border">KC Thực tế</th>
+                    <th className="p-2 border">Loại cáp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreview.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="p-2 border">{row.rowIndex}</td>
+                      <td className="p-2 border">{row.nearSite}</td>
+                      <td className="p-2 border">{row.farSite}</td>
+                      <td className="p-2 border">{row.coreQuantity}</td>
+                      <td className="p-2 border">{row.designedDistance}</td>
+                      <td className="p-2 border">{row.finalDistance}</td>
+                      <td className="p-2 border">{row.fiberTypeName}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-2 text-right font-bold text-blue-600">
+                Tổng số dòng hợp lệ: {importPreview.length}
+              </div>
+            </div>
+          )}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="text" onClick={() => setOpenImport(false)} className="mr-2">
+            Hủy
+          </Button>
+          <Button
+            color="green"
+            onClick={handleSaveImport}
+            disabled={!importFile || !!importErrors || importPreview.length === 0}
+          >
+            Lưu dữ liệu
+          </Button>
+        </DialogFooter>
       </Dialog>
 
       {/* Map Modal */}
