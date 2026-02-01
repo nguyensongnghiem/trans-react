@@ -4,6 +4,9 @@ import {
   TrashIcon,
   PlusIcon,
   ArrowDownTrayIcon,
+  DocumentIcon,
+  CheckCircleIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/solid";
 import {
   MagnifyingGlassIcon,
@@ -1101,46 +1104,38 @@ function HiredFoList() {
           </Formik>
         </div>
       </Dialog>
-      <Dialog open={importOpen} handler={handleOpenImport} size="lg">
-        <div className="max-h-[90vh] overflow-y-auto p-3">
-          <DialogHeader className="relative m-0 block pb-4 border-b border-gray-100">
+      <Dialog open={importOpen} handler={handleOpenImport} size="lg" className="flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
+          <div>
             <Typography variant="h4" color="blue-gray" className="font-bold">
-              Import nhiều hợp đồng + tuyến FO
+              Import Dữ liệu Hợp đồng & Tuyến cáp
             </Typography>
-            <Typography
-              color="gray"
-              className="mt-1 font-normal text-gray-600 text-sm"
-            >
-              Upload file Excel mẫu để cập nhật dữ liệu hàng loạt.
+            <Typography variant="small" color="gray" className="font-normal mt-1">
+              Tải lên file Excel để cập nhật dữ liệu hàng loạt
             </Typography>
-            <IconButton
-              size="sm"
-              variant="text"
-              className="!absolute right-3.5 top-3.5"
-              onClick={handleOpenImport}
-            >
-              <XMarkIcon className="h-4 w-4 stroke-2" />
-            </IconButton>
-          </DialogHeader>
+          </div>
+          <IconButton variant="text" color="blue-gray" onClick={handleOpenImport}>
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
 
-          <DialogBody className="space-y-4">
-            {/* Upload */}
-            <div className="flex flex-col gap-2">
-              <label className="text-slate-400 font-semibold">
-                Chọn file Excel (
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="text-blue-500 italic hover:underline"
-                >
-                  Tải file mẫu tại đây
-                </button>
-                )
-              </label>
+        <DialogBody className="overflow-y-auto p-4 flex-1">
+          {/* File Selection Area */}
+          <div className="mb-6 p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-gray-50 transition-colors relative">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="p-3 bg-blue-50 rounded-full">
+                <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
+                <br />
+                <span className="text-xs text-gray-400">Hỗ trợ định dạng .xlsx, .xls</span>
+              </div>
+              
               <input
                 type="file"
-                accept=".xlsx"
-                className="w-full rounded border"
+                accept=".xlsx, .xls"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) {
@@ -1150,159 +1145,153 @@ function HiredFoList() {
                     setExcelErrors({});
                     setExcelRows([]);
                   }
+                  e.target.value = null; 
                 }}
               />
-              {excelFile && (
-                <div className="text-sm text-blue-700">
-                  📊 File Excel: <b>{excelFile.name}</b>
+            </div>
+          </div>
+
+          {excelFile && (
+            <div className="mb-6 flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg border border-blue-100">
+                  <DocumentIcon className="h-6 w-6 text-blue-600" />
                 </div>
-              )}
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-2">
-              <CustomButton
-                color="blue"
-                type="button"
-                onClick={handleCheckExcelMulti}
-              >
-                KIỂM TRA DỮ LIỆU
-              </CustomButton>
-
-              <CustomButton
-                color="green"
-                type="button"
-                disabled={!excelSuccess || saving}
-                onClick={handleSaveExcelMulti}
-              >
-                {saving ? "Đang lưu..." : "LƯU DATABASE"}
-              </CustomButton>
-            </div>
-
-            {/* Success */}
-            {excelChecked && excelSuccess && (
-              <div className="rounded border border-green-300 bg-green-50 p-3 text-green-700">
-                ✔ File Excel hợp lệ. Có thể lưu DB.
+                <div>
+                  <Typography variant="small" color="blue-gray" className="font-bold">
+                    {excelFile.name}
+                  </Typography>
+                  <Typography variant="small" className="text-blue-gray-500 text-xs">
+                    {(excelFile.size / 1024).toFixed(2)} KB
+                  </Typography>
+                </div>
               </div>
-            )}
+              <IconButton variant="text" color="red" size="sm" onClick={() => {
+                setExcelFile(null);
+                setExcelChecked(false);
+                setExcelSuccess(false);
+                setExcelRows([]);
+              }}>
+                <TrashIcon className="h-4 w-4" />
+              </IconButton>
+            </div>
+          )}
 
-            {/* Error box */}
-            {excelChecked &&
-              !excelSuccess &&
-              Object.keys(excelErrors).length > 0 && (
-                <div className="w-full rounded-lg border border-red-400 bg-red-50 p-5 shadow-md">
-                  <div className="mb-3 text-lg font-semibold text-red-600">
-                    ❌ Dữ liệu Excel không hợp lệ
-                  </div>
+          <div className="flex justify-between items-center mb-4">
+             <Typography variant="small" className="text-gray-500">
+                Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
+             </Typography>
+          </div>
 
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                    Tổng số dòng lỗi
-                    <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">
-                      {Object.keys(excelErrors).length}
-                    </span>
-                  </div>
+          {/* Status Messages */}
+          {excelChecked && excelSuccess && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <Typography variant="small" color="green" className="font-bold">
+                  Kiểm tra dữ liệu thành công!
+                </Typography>
+                <Typography variant="small" className="text-green-700">
+                  Đã tìm thấy <b>{excelRows.length}</b> dòng dữ liệu hợp lệ. Nhấn "Lưu vào hệ thống" để tiến hành import.
+                </Typography>
+              </div>
+            </div>
+          )}
 
-                  <div className="max-h-[320px] overflow-y-auto space-y-4 pr-2">
-                    {Object.entries(excelErrors).map(([row, rowError]) => (
-                      <div
-                        key={row}
-                        className="rounded border border-red-200 bg-white p-4"
-                      >
-                        <div className="mb-2 font-semibold text-red-700">
-                          ⚠️ Dòng {row}
-                        </div>
-
-                        <ul className="ml-5 list-disc space-y-1 text-sm text-gray-800">
+          {/* Error Display */}
+          {excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
+            <div className="mb-4 border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2 text-red-700 font-medium">
+                <ExclamationTriangleIcon className="h-5 w-5" />
+                <span>Phát hiện lỗi trong file ({Object.keys(excelErrors).length} dòng)</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto p-0">
+                <ul className="divide-y divide-gray-100">
+                  {Object.entries(excelErrors).map(([row, rowError]) => (
+                    <li key={row} className="p-3 hover:bg-gray-50">
+                      <div className="flex gap-2 text-sm">
+                        <span className="font-bold text-gray-700 whitespace-nowrap">Dòng {row}:</span>
+                        <ul className="list-disc list-inside text-red-600 flex-1">
                           {rowError.errors?.map((err, idx) => (
                             <li key={idx}>
-                              <span className="font-semibold text-red-600">
-                                {err.column}:
-                              </span>{" "}
-                              {err.message}
+                              <span className="font-medium text-gray-800">{err.column}:</span> {err.message}
                             </li>
                           ))}
                         </ul>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {/* Preview */}
-            {excelSuccess && excelRows.length > 0 && (
-              <div className="space-y-3">
-                <Typography variant="h6" color="blue-gray">
-                  Preview (group theo Số hợp đồng)
-                </Typography>
-
-                {Object.entries(
-                  excelRows.reduce((acc, r) => {
-                    const cn = (r.contractNumber || "").trim().toUpperCase();
-                    if (!acc[cn]) acc[cn] = [];
-                    acc[cn].push(r);
-                    return acc;
-                  }, {}),
-                ).map(([cn, list]) => (
-                  <div key={cn} className="rounded border p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold text-blue-700">📌 {cn}</div>
-                      <div className="text-sm text-gray-600">
-                        Số tuyến: <b>{list.length}</b>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 overflow-x-auto">
-                      <table className="w-full border text-sm">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="border px-2 py-1">#</th>
-                            <th className="border px-2 py-1">Trạm đầu</th>
-                            <th className="border px-2 py-1">Trạm cuối</th>
-                            <th className="border px-2 py-1">Core</th>
-                            <th className="border px-2 py-1">Thiết kế</th>
-                            <th className="border px-2 py-1">Thực tế</th>
-                            <th className="border px-2 py-1">Đơn giá</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {list.slice(0, 5).map((r, i) => (
-                            <tr key={i}>
-                              <td className="border px-2 py-1">{i + 1}</td>
-                              <td className="border px-2 py-1">{r.nearSite}</td>
-                              <td className="border px-2 py-1">{r.farSite}</td>
-                              <td className="border px-2 py-1">
-                                {r.coreQuantity}
-                              </td>
-                              <td className="border px-2 py-1">
-                                {r.designedDistance}
-                              </td>
-                              <td className="border px-2 py-1">
-                                {r.finalDistance}
-                              </td>
-                              <td className="border px-2 py-1">{r.cost}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                      {list.length > 5 && (
-                        <div className="mt-2 text-xs text-gray-500">
-                          (Hiển thị 5/{list.length} dòng)
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
-          </DialogBody>
+            </div>
+          )}
 
-          <DialogFooter>
-            <Button variant="text" onClick={handleOpenImport}>
-              Đóng
-            </Button>
-          </DialogFooter>
-        </div>
+          {/* Preview Table */}
+          {excelSuccess && excelRows.length > 0 && (
+            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 font-bold text-gray-700 text-xs uppercase tracking-wider">
+                Xem trước dữ liệu ({excelRows.length} dòng)
+              </div>
+              <div className="overflow-x-auto max-h-60">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 border-b font-medium">Hợp đồng</th>
+                      <th className="px-4 py-3 border-b font-medium">Trạm đầu</th>
+                      <th className="px-4 py-3 border-b font-medium">Trạm cuối</th>
+                      <th className="px-4 py-3 border-b font-medium">Core</th>
+                      <th className="px-4 py-3 border-b font-medium">Đơn giá</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {excelRows.slice(0, 10).map((row, idx) => (
+                      <tr key={idx} className="bg-white hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium text-blue-600">{row.contractNumber}</td>
+                        <td className="px-4 py-2">{row.nearSite}</td>
+                        <td className="px-4 py-2">{row.farSite}</td>
+                        <td className="px-4 py-2">{row.coreQuantity}</td>
+                        <td className="px-4 py-2">{VND.format(row.cost)}</td>
+                      </tr>
+                    ))}
+                    {excelRows.length > 10 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-3 text-center text-gray-500 italic bg-gray-50">
+                          ... và {excelRows.length - 10} dòng khác ...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </DialogBody>
+
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="text" color="blue-gray" onClick={handleOpenImport} className="normal-case">
+            Hủy bỏ
+          </Button>
+          {!excelSuccess ? (
+            <CustomButton 
+              color="blue" 
+              onClick={handleCheckExcelMulti}
+              disabled={!excelFile}
+              className="flex items-center gap-2"
+            >
+              <MagnifyingGlassIcon className="h-4 w-4" /> Kiểm tra dữ liệu
+            </CustomButton>
+          ) : (
+            <CustomButton 
+              color="green" 
+              onClick={handleSaveExcelMulti}
+              disabled={saving}
+              className="flex items-center gap-2"
+            >
+              {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ArrowDownTrayIcon className="h-4 w-4" />}
+              {saving ? "Đang lưu..." : "Lưu vào hệ thống"}
+            </CustomButton>
+          )}
+        </DialogFooter>
       </Dialog>
 
       {/* Modal Sửa thông tin */}

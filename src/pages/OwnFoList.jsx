@@ -8,6 +8,8 @@ import {
   CloudArrowUpIcon,
   EyeIcon,
   MapIcon,
+  DocumentIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/solid";
 import {
   DocumentArrowUpIcon,
@@ -66,6 +68,8 @@ function OwnFoList() {
   const [importFile, setImportFile] = useState(null);
   const [importPreview, setImportPreview] = useState([]);
   const [importErrors, setImportErrors] = useState(null);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Filter and pagination states
   const [filters, setFilters] = useState({
@@ -273,39 +277,75 @@ function OwnFoList() {
   };
 
   // Import Handlers
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImportFile(file);
-    setImportErrors(null);
-    setImportPreview([]);
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+      setImportErrors(null);
+      setImportPreview([]);
+      setImportSuccess(false);
+    }
+    e.target.value = null;
+  };
 
+  const handleCheckImport = async () => {
+    if (!importFile) {
+      toast.warning("Vui lòng chọn file Excel");
+      return;
+    }
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", importFile);
 
     try {
       const res = await axiosInstance.post("own-fos/import-excel/check", formData);
-      setImportPreview(res.data.rows);
+      setImportPreview(res.data.rows || []);
+      setImportErrors(null);
+      setImportSuccess(true);
+      toast.success("✔ File Excel hợp lệ");
     } catch (error) {
-      if (error.response && error.response.data) {
-        setImportErrors(error.response.data);
-      } else {
-        toast.error("Lỗi khi kiểm tra file");
-      }
+      setImportErrors(error.response?.data || {});
+      setImportPreview([]);
+      setImportSuccess(false);
+      toast.error("❌ Dữ liệu Excel không hợp lệ");
     }
   };
 
   const handleSaveImport = async () => {
-    if (!importFile) return;
+    if (!importSuccess) return;
+    setSaving(true);
     const formData = new FormData();
     formData.append("file", importFile);
     try {
       await axiosInstance.post("own-fos/import-excel/save", formData);
       toast.success("Import thành công");
       setOpenImport(false);
+      setImportFile(null);
+      setImportSuccess(false);
+      setImportPreview([]);
+      setImportErrors(null);
       reloadOwnFoList();
     } catch (error) {
       toast.error("Lỗi khi lưu dữ liệu import");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axiosInstance.get("own-fos/import-excel/template", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "own-fo-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Không thể tải file mẫu.");
     }
   };
 
@@ -343,7 +383,7 @@ function OwnFoList() {
           <CustomButton
             className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]"
             size="sm"
-            onClick={() => { setOpenImport(true); setImportFile(null); setImportPreview([]); setImportErrors(null); }}
+            onClick={() => { setOpenImport(true); setImportFile(null); setImportPreview([]); setImportErrors(null); setImportSuccess(false); }}
           >
             <DocumentArrowUpIcon className="h-4 w-4" /> Import Excel
           </CustomButton>
@@ -743,79 +783,184 @@ function OwnFoList() {
       </Dialog>
 
       {/* Import Modal */}
-      <Dialog open={openImport} handler={() => setOpenImport(false)} size="lg">
-        <DialogHeader>Import Excel Tuyến cáp</DialogHeader>
-        <DialogBody className="overflow-y-auto max-h-[70vh]">
-          <div className="mb-4">
-            <Input
-              type="file"
-              accept=".xlsx, .xls"
-              label="Chọn file Excel"
-              onChange={handleFileChange}
-            />
-            <Typography variant="small" color="gray" className="mt-2">
-              File cần có các cột: Trạm đầu, Trạm cuối, Số core, Khoảng cách thiết kế (km), Khoảng cách thực tế (km), Loại cáp, Ghi chú.
+      <Dialog open={openImport} handler={() => setOpenImport(false)} size="lg" className="flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
+          <div>
+            <Typography variant="h4" color="blue-gray" className="font-bold">
+              Import Tuyến cáp tự đầu tư
+            </Typography>
+            <Typography variant="small" color="gray" className="font-normal mt-1">
+              Tải lên file Excel để cập nhật dữ liệu hàng loạt
             </Typography>
           </div>
+          <IconButton variant="text" color="blue-gray" onClick={() => setOpenImport(false)}>
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
 
-          {importErrors && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-              <p className="font-bold mb-2">Phát hiện lỗi trong file:</p>
-              <ul className="list-disc pl-5 max-h-40 overflow-y-auto">
-                {Object.entries(importErrors).map(([row, errorGroup]) => (
-                  <li key={row}>
-                    Dòng {row}: {errorGroup.errors.map(e => `${e.columnName} - ${e.message}`).join(", ")}
-                  </li>
-                ))}
-              </ul>
+        <DialogBody className="overflow-y-auto p-4 flex-1">
+          {/* File Selection Area */}
+          <div className="mb-6 p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-gray-50 transition-colors relative">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="p-3 bg-blue-50 rounded-full">
+                <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
+                <br />
+                <span className="text-xs text-gray-400">Hỗ trợ định dạng .xlsx, .xls</span>
+              </div>
+              
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleFileChange}
+              />
+            </div>
+          </div>
+
+          {importFile && (
+            <div className="mb-6 flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg border border-blue-100">
+                  <DocumentIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <Typography variant="small" color="blue-gray" className="font-bold">
+                    {importFile.name}
+                  </Typography>
+                  <Typography variant="small" className="text-blue-gray-500 text-xs">
+                    {(importFile.size / 1024).toFixed(2)} KB
+                  </Typography>
+                </div>
+              </div>
+              <IconButton variant="text" color="red" size="sm" onClick={() => {
+                setImportFile(null);
+                setImportSuccess(false);
+                setImportPreview([]);
+                setImportErrors(null);
+              }}>
+                <TrashIcon className="h-4 w-4" />
+              </IconButton>
             </div>
           )}
 
-          {importPreview.length > 0 && !importErrors && (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-max table-auto text-left text-xs border">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 border">Dòng</th>
-                    <th className="p-2 border">Trạm đầu</th>
-                    <th className="p-2 border">Trạm cuối</th>
-                    <th className="p-2 border">Core</th>
-                    <th className="p-2 border">KC Thiết kế</th>
-                    <th className="p-2 border">KC Thực tế</th>
-                    <th className="p-2 border">Loại cáp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importPreview.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="p-2 border">{row.rowIndex}</td>
-                      <td className="p-2 border">{row.nearSite}</td>
-                      <td className="p-2 border">{row.farSite}</td>
-                      <td className="p-2 border">{row.coreQuantity}</td>
-                      <td className="p-2 border">{row.designedDistance}</td>
-                      <td className="p-2 border">{row.finalDistance}</td>
-                      <td className="p-2 border">{row.fiberTypeName}</td>
-                    </tr>
+          <div className="flex justify-between items-center mb-4">
+             <Typography variant="small" className="text-gray-500">
+                Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
+             </Typography>
+          </div>
+
+          {/* Status Messages */}
+          {importSuccess && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <Typography variant="small" color="green" className="font-bold">
+                  Kiểm tra dữ liệu thành công!
+                </Typography>
+                <Typography variant="small" className="text-green-700">
+                  Đã tìm thấy <b>{importPreview.length}</b> dòng dữ liệu hợp lệ. Nhấn "Lưu vào hệ thống" để tiến hành import.
+                </Typography>
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {importErrors && Object.keys(importErrors).length > 0 && (
+            <div className="mb-4 border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2 text-red-700 font-medium">
+                <ExclamationTriangleIcon className="h-5 w-5" />
+                <span>Phát hiện lỗi trong file ({Object.keys(importErrors).length} dòng)</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto p-0">
+                <ul className="divide-y divide-gray-100">
+                  {Object.entries(importErrors).map(([row, errorGroup]) => (
+                    <li key={row} className="p-3 hover:bg-gray-50">
+                      <div className="flex gap-2 text-sm">
+                        <span className="font-bold text-gray-700 whitespace-nowrap">Dòng {row}:</span>
+                        <ul className="list-disc list-inside text-red-600 flex-1">
+                          {errorGroup.errors?.map((err, idx) => (
+                            <li key={idx}>
+                              <span className="font-medium text-gray-800">{err.columnName || err.column}:</span> {err.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-              <div className="mt-2 text-right font-bold text-blue-600">
-                Tổng số dòng hợp lệ: {importPreview.length}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Preview Table */}
+          {importSuccess && importPreview.length > 0 && (
+            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 font-bold text-gray-700 text-xs uppercase tracking-wider">
+                Xem trước dữ liệu ({importPreview.length} dòng)
+              </div>
+              <div className="overflow-x-auto max-h-60">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 border-b font-medium">Trạm đầu</th>
+                      <th className="px-4 py-3 border-b font-medium">Trạm cuối</th>
+                      <th className="px-4 py-3 border-b font-medium">Core</th>
+                      <th className="px-4 py-3 border-b font-medium">KC Thiết kế</th>
+                      <th className="px-4 py-3 border-b font-medium">KC Thực tế</th>
+                      <th className="px-4 py-3 border-b font-medium">Loại cáp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {importPreview.slice(0, 10).map((row, idx) => (
+                      <tr key={idx} className="bg-white hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium text-blue-600">{row.nearSite}</td>
+                        <td className="px-4 py-2">{row.farSite}</td>
+                        <td className="px-4 py-2">{row.coreQuantity}</td>
+                        <td className="px-4 py-2">{row.designedDistance}</td>
+                        <td className="px-4 py-2">{row.finalDistance}</td>
+                        <td className="px-4 py-2">{row.fiberTypeName}</td>
+                      </tr>
+                    ))}
+                    {importPreview.length > 10 && (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-3 text-center text-gray-500 italic bg-gray-50">
+                          ... và {importPreview.length - 10} dòng khác ...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </DialogBody>
-        <DialogFooter>
-          <Button variant="text" onClick={() => setOpenImport(false)} className="mr-2">
-            Hủy
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg">
+          <Button variant="text" color="blue-gray" onClick={() => setOpenImport(false)} className="normal-case">
+            Hủy bỏ
           </Button>
-          <Button
-            color="green"
-            onClick={handleSaveImport}
-            disabled={!importFile || !!importErrors || importPreview.length === 0}
-          >
-            Lưu dữ liệu
-          </Button>
+          {!importSuccess ? (
+            <CustomButton 
+              color="blue" 
+              onClick={handleCheckImport}
+              disabled={!importFile}
+              className="flex items-center gap-2"
+            >
+              <MagnifyingGlassIcon className="h-4 w-4" /> Kiểm tra dữ liệu
+            </CustomButton>
+          ) : (
+            <CustomButton 
+              color="green" 
+              onClick={handleSaveImport}
+              disabled={saving}
+              className="flex items-center gap-2"
+            >
+              {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ArrowDownTrayIcon className="h-4 w-4" />}
+              {saving ? "Đang lưu..." : "Lưu vào hệ thống"}
+            </CustomButton>
+          )}
         </DialogFooter>
       </Dialog>
 

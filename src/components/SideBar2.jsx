@@ -20,6 +20,7 @@ import {
   BookOpenIcon,
   UserGroupIcon,
   ShieldCheckIcon,
+  SignalIcon,
 } from "@heroicons/react/24/solid";
 import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/authContext";
@@ -87,6 +88,14 @@ const menuConfig = [
       },
       { title: "Hợp đồng thuê cột", path: "/under-construction/contract-pole" },
       { title: "Hợp đồng cống bể", path: "/under-construction/contract-duct" },
+    ],
+  },
+  {
+    id: 9,
+    title: "Quản lý kênh thuê",
+    icon: SignalIcon,
+    children: [
+      { title: "Danh sách kênh thuê", path: "/leaseline" },
     ],
   },
   {
