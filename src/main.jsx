@@ -29,6 +29,9 @@ import UserManagement from "./pages/UserManagement.jsx";
 import ScheduleManagement from "./pages/ScheduleManagement.jsx";
 import FiberTypeList from "./pages/FiberTypeList.jsx";
 import ProvinceList from "./pages/ProvinceList.jsx";
+import MWLineList from "./pages/MWLineList.jsx";
+import MicrowaveTypeList from "./pages/MicrowaveTypeList.jsx";
+import RouterTypeList from "./pages/RouterTypeList.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -52,18 +55,18 @@ const router = createBrowserRouter([
         children: [
           {
             path: "/fo-contract",
-            element: <FoContract />,            
+            element: <FoContract />,
           },
           {
             path: "/fo-contract/:id",
-                element: <FoConTractDetail />,
+            element: <FoConTractDetail />,
           },
           {
             path: "/fo-cost-by-supplier",
             element: <FoReportBySupplierWithContracts />,
           },
           {
-            
+
             path: "/fo-cost-by-contracts",
             element: <FoReportByContracts />,
           },
@@ -102,7 +105,7 @@ const router = createBrowserRouter([
           {
             path: "/router/backup-dashboard",
             element: <BackupDashboard />,
-          },         
+          },
           {
             path: "/router/backup-scheduler",
             element: <ScheduleManagement />,
@@ -111,18 +114,30 @@ const router = createBrowserRouter([
             path: "/province",
             element: <ProvinceList />,
           },
+          {
+            path: "/microwave",
+            element: <MWLineList />,
+          },
         ]
       },
       {
         element: <PrivateRoutes allowedRoles={["ROLE_ADMIN"]} />,
         children: [
-           {
+          {
             path: "/admin/users",
             element: <UserManagement />,
           },
           {
             path: "/admin/fiber-types",
             element: <FiberTypeList />,
+          },
+          {
+            path: "/admin/microwave-types",
+            element: <MicrowaveTypeList />,
+          },
+          {
+            path: "/admin/router-types",
+            element: <RouterTypeList />,
           }
         ]
       },

@@ -72,7 +72,7 @@ const menuConfig = [
     title: "Quản lý tuyến viba",
     icon: RssIcon,
     children: [
-      { title: "Dữ liệu tuyến viba", path: "/under-construction/microwave" },
+      { title: "Dữ liệu tuyến viba", path: "/microwave" },
     ],
   },
   {
@@ -123,6 +123,8 @@ const menuConfig = [
     children: [
       { title: "Quản lý người dùng", path: "/admin/users" },
       { title: "Quản lý loại cáp", path: "/admin/fiber-types" },
+      { title: "Quản lý loại Viba", path: "/admin/microwave-types" },
+      { title: "Quản lý loại Router", path: "/admin/router-types" },
     ],
   },
 ];
@@ -140,16 +142,15 @@ const Sidebar2 = ({ sidebarOpen }) => {
       if (Array.isArray(roles)) {
         isAdmin = roles.includes("ROLE_ADMIN");
       }
-    } catch (error) {}
+    } catch (error) { }
   }
 
   const handleOpen = (value) => setOpen(open === value ? 0 : value);
 
   return (
     <div
-      className={`h-full p-2 shadow-xl bg-blue-gray-900 shadow-blue-gray-900/5 ${
-        sidebarOpen ? "w-[20rem]" : "w-[4rem]"
-      } transition-all duration-300`}
+      className={`h-full p-2 shadow-xl bg-blue-gray-900 shadow-blue-gray-900/5 ${sidebarOpen ? "w-[20rem]" : "w-[4rem]"
+        } transition-all duration-300`}
     >
       <List className="overflow-y-auto py-3 gap-3">
         {menuConfig.map((menu) => {
@@ -200,9 +201,8 @@ const Sidebar2 = ({ sidebarOpen }) => {
               icon={
                 <ChevronDownIcon
                   strokeWidth={2.5}
-                  className={`mx-auto text-white opacity-70 h-4 w-4 transition-transform ${
-                    open === menu.id ? "rotate-180" : ""
-                  }`}
+                  className={`mx-auto text-white opacity-70 h-4 w-4 transition-transform ${open === menu.id ? "rotate-180" : ""
+                    }`}
                 />
               }
             >
