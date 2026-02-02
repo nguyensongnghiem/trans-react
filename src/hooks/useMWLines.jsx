@@ -13,6 +13,7 @@ function useMWLines() {
         setIsLoading(true);
         try {
             const data = await mwLineService.getMWLines(axiosPrivate);
+            console.log("MWLines data:", data);
             setMWLines(data);
             setError(null);
         } catch (err) {

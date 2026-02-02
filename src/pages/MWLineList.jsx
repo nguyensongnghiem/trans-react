@@ -25,6 +25,7 @@ import {
     DialogHeader,
     DialogFooter,
     Input,
+    Switch,
     IconButton as MTIconButton
 } from "@material-tailwind/react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
@@ -36,10 +37,16 @@ import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import FormSelect from "../components/FormSelect";
 
 const MWLineSchema = Yup.object().shape({
-    nearSite: Yup.object().required("Near Site là bắt buộc").nullable(),
-    farSite: Yup.object().required("Far Site là bắt buộc").nullable(),
+    nearSite: Yup.object({
+        id: Yup.number().required("Near Site là bắt buộc")
+    }),
+    farSite: Yup.object({
+        id: Yup.number().required("Far Site là bắt buộc")
+    }),
     serial: Yup.string().required("Serial là bắt buộc"),
-    microwaveType: Yup.object().required("Loại thiết bị viba là bắt buộc").nullable(),
+    microwaveType: Yup.object({
+        id: Yup.number().required("Loại thiết bị viba là bắt buộc")
+    }),
 });
 
 function MWLineList() {
@@ -105,7 +112,11 @@ function MWLineList() {
     }, [filteredMWLines, currentPage]);
 
     const handleEdit = (mw) => {
-        setEditMWLine(mw);
+        const initialDataForEdit = {
+            ...mw,
+            license: mw.license || { licenseNumber: '', issueDate: null, expiryDate: null, frequencyBand: '', frequencyQuantity: null }
+        };
+        setEditMWLine(initialDataForEdit);
         setOpenEdit(true);
     };
 
@@ -206,10 +217,15 @@ function MWLineList() {
             <Dialog open={openCreate} handler={() => setOpenCreate(false)} size="lg">
                 <DialogHeader>Thêm mới Tuyến Viba</DialogHeader>
                 <Formik
-                    initialValues={{ nearSite: null, farSite: null, serial: "", microwaveType: null, status: "ACTIVE", license: null }}
+                    initialValues={{ nearSite: { id: null }, farSite: { id: null }, serial: "", microwaveType: { id: null }, status: "ACTIVE", license: { licenseNumber: '', issueDate: null, expiryDate: null, frequencyBand: '', frequencyQuantity: null } }}
                     validationSchema={MWLineSchema}
                     onSubmit={async (values) => {
-                        await createMWLine(values);
+                        const payload = { ...values };
+                        // If license object has no real values, set it to null before sending
+                        if (payload.license && !Object.values(payload.license).some(v => v)) {
+                            payload.license = null;
+                        }
+                        await createMWLine(payload);
                         setOpenCreate(false);
                     }}
                 >
@@ -218,25 +234,25 @@ function MWLineList() {
                             <DialogBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-auto">
                                 <div className="space-y-4">
                                     <Typography variant="h6">Thông tin tuyến</Typography>
-                                    <FormSelect label="Near Site" name="nearSite" options={siteList} getOptionLabel={o => o.siteId} onChange={v => setFieldValue("nearSite", v)} />
-                                    <FormSelect label="Far Site" name="farSite" options={siteList} getOptionLabel={o => o.siteId} onChange={v => setFieldValue("farSite", v)} />
+                                    <FormSelect label="Near Site" name="nearSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} onChange={v => setFieldValue("nearSite.id", v?.id)} />
+                                    <FormSelect label="Far Site" name="farSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} onChange={v => setFieldValue("farSite.id", v?.id)} />
                                     <div>
                                         <Typography variant="small" className="mb-2 font-medium">Serial</Typography>
                                         <Field as={Input} name="serial" placeholder="Nhập Serial" />
                                         <ErrorMessage name="serial" component="div" className="text-red-500 text-xs mt-1" />
                                     </div>
-                                    <FormSelect label="Loại thiết bị" name="microwaveType" options={microwaveTypeList} getOptionLabel={o => `${o.vendor.name} - ${o.name}`} onChange={v => setFieldValue("microwaveType", v)} />
+                                    <FormSelect label="Loại thiết bị" name="microwaveType.id" options={microwaveTypeList} getOptionLabel={o => `${o.vendor.name} - ${o.name}`} getOptionValue={o => o.id} onChange={v => setFieldValue("microwaveType.id", v?.id)} />
                                 </div>
                                 <div className="space-y-4 border-l pl-4">
                                     <Typography variant="h6">Giấy phép (Tùy chọn)</Typography>
-                                    <Input label="Số giấy phép" onChange={e => setFieldValue("license.licenseNumber", e.target.value)} />
+                                    <Field as={Input} name="license.licenseNumber" label="Số giấy phép" />
                                     <div className="grid grid-cols-2 gap-2">
-                                        <Input label="Ngày cấp" type="date" onChange={e => setFieldValue("license.issueDate", e.target.value)} />
-                                        <Input label="Ngày hết hạn" type="date" onChange={e => setFieldValue("license.expiryDate", e.target.value)} />
+                                        <Field as={Input} name="license.issueDate" label="Ngày cấp" type="date" />
+                                        <Field as={Input} name="license.expiryDate" label="Ngày hết hạn" type="date" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <Input label="Băng tần" placeholder="7G/13G..." onChange={e => setFieldValue("license.frequencyBand", e.target.value)} />
-                                        <Input label="Số tần số" type="number" onChange={e => setFieldValue("license.frequencyQuantity", e.target.value)} />
+                                        <Field as={Input} name="license.frequencyBand" label="Băng tần" placeholder="7G/13G..." />
+                                        <Field as={Input} name="license.frequencyQuantity" label="Số tần số" type="number" />
                                     </div>
                                 </div>
                             </DialogBody>
@@ -249,9 +265,71 @@ function MWLineList() {
                 </Formik>
             </Dialog>
 
+            {/* Edit Dialog */}
+            <Dialog open={openEdit} handler={() => setOpenEdit(false)} size="lg">
+                <DialogHeader>Cập nhật Tuyến Viba</DialogHeader>
+                <Formik
+                    enableReinitialize
+                    initialValues={editMWLine}
+                    validationSchema={MWLineSchema}
+                    onSubmit={async (values) => {
+                        const payload = { ...values };
+                        if (payload.license && !Object.values(payload.license).some(v => v)) {
+                            payload.license = null;
+                        }
+                        await updateMWLine(values.id, payload);
+                        setOpenEdit(false);
+                    }}
+                >
+                    {({ setFieldValue, values }) => (
+                        <Form>
+                            <DialogBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-auto">
+                                <div className="space-y-4">
+                                    <Typography variant="h6">Thông tin tuyến</Typography>
+                                    <FormSelect label="Near Site" name="nearSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} />
+                                    <FormSelect label="Far Site" name="farSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} />
+                                    <div>
+                                        <Typography variant="small" className="mb-2 font-medium">Serial</Typography>
+                                        <Field as={Input} name="serial" placeholder="Nhập Serial" />
+                                        <ErrorMessage name="serial" component="div" className="text-red-500 text-xs mt-1" />
+                                    </div>
+                                    <FormSelect label="Loại thiết bị" name="microwaveType.id" options={microwaveTypeList} getOptionLabel={o => `${o.vendor.name} - ${o.name}`} getOptionValue={o => o.id} />
+                                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                                        <div>
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Trạng thái hoạt động</Typography>
+                                        </div>
+                                        <Switch
+                                            color="green"
+                                            checked={values.status === 'ACTIVE'}
+                                            onChange={(e) => setFieldValue("status", e.target.checked ? 'ACTIVE' : 'INACTIVE')}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-4 border-l pl-4">
+                                    <Typography variant="h6">Giấy phép (Tùy chọn)</Typography>
+                                    <Field as={Input} name="license.licenseNumber" label="Số giấy phép" />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Field as={Input} name="license.issueDate" label="Ngày cấp" type="date" />
+                                        <Field as={Input} name="license.expiryDate" label="Ngày hết hạn" type="date" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Field as={Input} name="license.frequencyBand" label="Băng tần" placeholder="7G/13G..." />
+                                        <Field as={Input} name="license.frequencyQuantity" label="Số tần số" type="number" />
+                                    </div>
+                                </div>
+                            </DialogBody>
+                            <DialogFooter>
+                                <Button variant="text" color="red" onClick={() => setOpenEdit(false)}>Hủy</Button>
+                                <Button variant="gradient" color="blue" type="submit">Cập nhật</Button>
+                            </DialogFooter>
+                        </Form>
+                    )}
+                </Formik>
+            </Dialog>
+
             <DeleteConfirmationModal
                 open={openDelete}
-                onClose={() => setOpenDelete(false)}
+                handler={() => setOpenDelete(false)}
                 onConfirm={async () => { await deleteMWLine(deleteId); setOpenDelete(false); }}
                 title="Xóa tuyến viba"
             />
