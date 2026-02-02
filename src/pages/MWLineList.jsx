@@ -88,6 +88,56 @@ function MWLineList() {
         fetchMetadata();
     }, [axiosInstance]);
 
+    const filterOptions = useMemo(() => {
+        const getUnique = (arr, extractor) => {
+            const map = new Map();
+            arr.forEach(item => {
+                const val = extractor(item);
+                if (val && !map.has(val.id)) {
+                    map.set(val.id, val);
+                }
+            });
+            return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+        };
+
+        const getFilteredFor = (excludeKey) => {
+            return mwLineList.filter((mw) => {
+                if (excludeKey !== "province" && filters.province &&
+                    (mw.nearSite?.province?.id !== filters.province.id && mw.farSite?.province?.id !== filters.province.id))
+                    return false;
+                if (excludeKey !== "vendor" && filters.vendor && mw.microwaveType?.vendor?.id !== filters.vendor.id)
+                    return false;
+                if (excludeKey !== "microwaveType" && filters.microwaveType && mw.microwaveType?.id !== filters.microwaveType.id)
+                    return false;
+                if (excludeKey !== "status" && filters.status && mw.status !== filters.status.value)
+                    return false;
+                if (excludeKey !== "search" && filters.search) {
+                    const search = filters.search.toLowerCase();
+                    return (
+                        mw.serial?.toLowerCase().includes(search) ||
+                        mw.nearSite?.siteId?.toLowerCase().includes(search) ||
+                        mw.farSite?.siteId?.toLowerCase().includes(search)
+                    );
+                }
+                return true;
+            });
+        };
+
+        const provinceFiltered = getFilteredFor("province");
+        const provincesMap = new Map();
+        provinceFiltered.forEach(mw => {
+             if (mw.nearSite?.province) provincesMap.set(mw.nearSite.province.id, mw.nearSite.province);
+             if (mw.farSite?.province) provincesMap.set(mw.farSite.province.id, mw.farSite.province);
+        });
+        const provinces = Array.from(provincesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+        return {
+            provinces: provinces,
+            vendors: getUnique(getFilteredFor("vendor"), mw => mw.microwaveType?.vendor),
+            microwaveTypes: getUnique(getFilteredFor("microwaveType"), mw => mw.microwaveType),
+        };
+    }, [mwLineList, filters]);
+
     const filteredMWLines = useMemo(() => {
         return mwLineList.filter((mw) => {
             const matchProvince = !filters.province ||
@@ -110,6 +160,16 @@ function MWLineList() {
         const startIndex = (currentPage - 1) * rowsPerPage;
         return filteredMWLines.slice(startIndex, startIndex + rowsPerPage);
     }, [filteredMWLines, currentPage]);
+
+    const handleResetFilters = () => {
+        setFilters({
+            province: null,
+            vendor: null,
+            microwaveType: null,
+            status: null,
+            search: "",
+        });
+    };
 
     const handleEdit = (mw) => {
         const initialDataForEdit = {
@@ -154,22 +214,114 @@ function MWLineList() {
                 </div>
             </div>
 
-            <Card className="p-4 mb-6 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <Input
-                        icon={<MagnifyingGlassIcon className="h-4 w-4" />}
-                        placeholder="Tìm kiếm Serial, Site ID..."
-                        value={filters.search}
-                        onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                    />
-                    {/* Filters could be more elaborate as in RouterList */}
+            <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
+                <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
+                    <FunnelIcon className="h-5 w-5" />
+                    <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
+                    {(filters.province || filters.vendor || filters.microwaveType || filters.status || filters.search) && (
+                        <button
+                            onClick={handleResetFilters}
+                            className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+                        >
+                            <ArrowPathIcon className="h-3 w-3" /> Xóa bộ lọc
+                        </button>
+                    )}
                 </div>
-            </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tỉnh</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả tỉnh"
+                            className="text-sm"
+                            options={filterOptions.provinces}
+                            getOptionLabel={(option) => option.name}
+                            getOptionValue={(option) => option.id}
+                            value={filters.province}
+                            onChange={(val) => setFilters((prev) => ({ ...prev, province: val }))}
+                            menuPortalTarget={document.body}
+                            styles={{
+                                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Hãng sản xuất</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả hãng"
+                            className="text-sm"
+                            options={filterOptions.vendors}
+                            getOptionLabel={(option) => option.name}
+                            getOptionValue={(option) => option.id}
+                            value={filters.vendor}
+                            onChange={(val) => setFilters((prev) => ({ ...prev, vendor: val }))}
+                            menuPortalTarget={document.body}
+                            styles={{
+                                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Loại thiết bị</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả loại"
+                            className="text-sm"
+                            options={filterOptions.microwaveTypes}
+                            getOptionLabel={(option) => option.name}
+                            getOptionValue={(option) => option.id}
+                            value={filters.microwaveType}
+                            onChange={(val) => setFilters((prev) => ({ ...prev, microwaveType: val }))}
+                            menuPortalTarget={document.body}
+                            styles={{
+                                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Trạng thái</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả trạng thái"
+                            className="text-sm"
+                            options={[
+                                { label: "Hoạt động", value: "ACTIVE" },
+                                { label: "Không hoạt động", value: "INACTIVE" },
+                            ]}
+                            value={filters.status}
+                            onChange={(val) => setFilters((prev) => ({ ...prev, status: val }))}
+                            menuPortalTarget={document.body}
+                            styles={{
+                                control: (base) => ({ ...base, minHeight: "40px", borderRadius: "8px", borderColor: "#e2e8f0" }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tìm kiếm nhanh</span>
+                        <Input
+                            icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+                            placeholder="Serial, Site ID..."
+                            className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg text-sm"
+                            labelProps={{ className: "before:content-none after:content-none" }}
+                            value={filters.search}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                            containerProps={{ className: "min-w-0" }}
+                        />
+                    </div>
+                </div>
+            </div>
 
             <Card className="overflow-hidden shadow-sm">
                 <table className="w-full text-left table-auto">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th className="p-4 font-bold text-sm">Tỉnh</th>
                             <th className="p-4 font-bold text-sm">Near Site</th>
                             <th className="p-4 font-bold text-sm">Far Site</th>
                             <th className="p-4 font-bold text-sm">Serial</th>
@@ -182,6 +334,10 @@ function MWLineList() {
                     <tbody>
                         {paginatedMWLines.map((mw) => (
                             <tr key={mw.id} className="border-t hover:bg-gray-50">
+                                <td className="p-4 text-sm font-medium">
+                                    {mw.nearSite?.province?.name}
+                                    {mw.farSite?.province && mw.nearSite?.province?.id !== mw.farSite?.province?.id ? ` - ${mw.farSite.province.name}` : ''}
+                                </td>
                                 <td className="p-4 text-sm font-medium">{mw.nearSite?.siteId}</td>
                                 <td className="p-4 text-sm font-medium">{mw.farSite?.siteId}</td>
                                 <td className="p-4 text-sm">{mw.serial}</td>
