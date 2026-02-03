@@ -130,6 +130,7 @@ const menuConfig = [
       { title: "Quản lý Chủ trạm", path: "/admin/site-owners" },
       { title: "Quản lý Đơn vị truyền dẫn", path: "/admin/transmission-owners" },
       { title: "Quản lý Giấy phép Viba", path: "/admin/microwave-licenses" },
+      { title: "Quản lý Database", path: "/admin/database" },
     ],
   },
 ];

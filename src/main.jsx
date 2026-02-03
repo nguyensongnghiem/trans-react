@@ -37,6 +37,7 @@ import RoleList from "./pages/RoleList.jsx";
 import SiteOwnerList from "./pages/SiteOwnerList.jsx";
 import TransmissionOwnerList from "./pages/TransmissionOwnerList.jsx";
 import MicrowaveLicenseList from "./pages/MicrowaveLicenseList.jsx";
+import DatabaseManagement from "./pages/DatabaseManagement.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -163,6 +164,10 @@ const router = createBrowserRouter([
           {
             path: "/admin/microwave-licenses",
             element: <MicrowaveLicenseList />,
+          },
+          {
+            path: "/admin/database",
+            element: <DatabaseManagement />,
           }
         ]
       },
