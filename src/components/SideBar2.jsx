@@ -125,6 +125,11 @@ const menuConfig = [
       { title: "Quản lý loại cáp", path: "/admin/fiber-types" },
       { title: "Quản lý loại Viba", path: "/admin/microwave-types" },
       { title: "Quản lý loại Router", path: "/admin/router-types" },
+      { title: "Quản lý Nhà cung cấp", path: "/admin/vendors" },
+      { title: "Quản lý Vai trò", path: "/admin/roles" },
+      { title: "Quản lý Chủ trạm", path: "/admin/site-owners" },
+      { title: "Quản lý Đơn vị truyền dẫn", path: "/admin/transmission-owners" },
+      { title: "Quản lý Giấy phép Viba", path: "/admin/microwave-licenses" },
     ],
   },
 ];

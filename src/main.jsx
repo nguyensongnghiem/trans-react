@@ -32,6 +32,11 @@ import ProvinceList from "./pages/ProvinceList.jsx";
 import MWLineList from "./pages/MWLineList.jsx";
 import MicrowaveTypeList from "./pages/MicrowaveTypeList.jsx";
 import RouterTypeList from "./pages/RouterTypeList.jsx";
+import VendorList from "./pages/VendorList.jsx";
+import RoleList from "./pages/RoleList.jsx";
+import SiteOwnerList from "./pages/SiteOwnerList.jsx";
+import TransmissionOwnerList from "./pages/TransmissionOwnerList.jsx";
+import MicrowaveLicenseList from "./pages/MicrowaveLicenseList.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -138,6 +143,26 @@ const router = createBrowserRouter([
           {
             path: "/admin/router-types",
             element: <RouterTypeList />,
+          },
+          {
+            path: "/admin/vendors",
+            element: <VendorList />,
+          },
+          {
+            path: "/admin/roles",
+            element: <RoleList />,
+          },
+          {
+            path: "/admin/site-owners",
+            element: <SiteOwnerList />,
+          },
+          {
+            path: "/admin/transmission-owners",
+            element: <TransmissionOwnerList />,
+          },
+          {
+            path: "/admin/microwave-licenses",
+            element: <MicrowaveLicenseList />,
           }
         ]
       },
