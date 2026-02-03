@@ -16,6 +16,7 @@ import {
     DialogFooter,
     Input,
     IconButton,
+    Chip,
 } from "@material-tailwind/react";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
@@ -163,6 +164,9 @@ function MicrowaveLicenseList() {
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Số lượng TS</Typography>
                             </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Tuyến sử dụng</Typography>
+                            </th>
                             {isAdmin && (
                                 <th className="p-4 w-32 text-center">
                                     <Typography variant="small" color="blue-gray" className="font-bold">Hành động</Typography>
@@ -178,6 +182,26 @@ function MicrowaveLicenseList() {
                                 <td className="p-4">{formatDateLabel(item.expiryDate)}</td>
                                 <td className="p-4">{item.frequencyBand}</td>
                                 <td className="p-4">{item.frequencyQuantity}</td>
+                                <td className="p-4">
+                                    {item.mwLine ? (
+                                        <div className="flex flex-col">
+                                            <Typography variant="small" color="blue-gray" className="font-semibold text-xs">
+                                                {item.mwLine.nearSite?.siteId} - {item.mwLine.farSite?.siteId}
+                                            </Typography>
+                                            <Typography variant="small" color="gray" className="font-normal text-[10px]">
+                                                {item.mwLine.serial}
+                                            </Typography>
+                                        </div>
+                                    ) : (
+                                        <Chip
+                                            value="Chưa có"
+                                            size="sm"
+                                            color="red"
+                                            variant="ghost"
+                                            className="rounded-full w-fit px-2 py-1 text-[10px]"
+                                        />
+                                    )}
+                                </td>
                                 {isAdmin && (
                                     <td className="p-4 flex justify-center gap-2">
                                         <IconButton

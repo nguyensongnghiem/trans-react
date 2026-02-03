@@ -73,6 +73,7 @@ const menuConfig = [
     icon: RssIcon,
     children: [
       { title: "Dữ liệu tuyến viba", path: "/microwave" },
+      { title: "Quản lý Giấy phép Viba", path: "/admin/microwave-licenses" },
     ],
   },
   {
@@ -129,7 +130,6 @@ const menuConfig = [
       { title: "Quản lý Vai trò", path: "/admin/roles" },
       { title: "Quản lý Chủ trạm", path: "/admin/site-owners" },
       { title: "Quản lý Đơn vị truyền dẫn", path: "/admin/transmission-owners" },
-      { title: "Quản lý Giấy phép Viba", path: "/admin/microwave-licenses" },
       { title: "Quản lý Database", path: "/admin/database" },
     ],
   },
