@@ -7,9 +7,9 @@ import {
     MagnifyingGlassIcon,
     FunnelIcon,
     ArrowPathIcon,
-    ChevronLeftIcon,
     ChevronRightIcon,
-    XMarkIcon
+    XMarkIcon,
+    ArrowUpTrayIcon
 } from "@heroicons/react/24/outline";
 import Select from "react-select";
 import { Formik, Form, Field, ErrorMessage } from "formik";
@@ -43,7 +43,7 @@ const MWLineSchema = Yup.object().shape({
     farSite: Yup.object({
         id: Yup.number().required("Far Site là bắt buộc")
     }),
-    serial: Yup.string().required("Serial là bắt buộc"),
+    serial: Yup.string(),
     microwaveType: Yup.object({
         id: Yup.number().required("Loại thiết bị viba là bắt buộc")
     }),
@@ -65,6 +65,14 @@ function MWLineList() {
     const [openDelete, setOpenDelete] = useState(false);
     const [editMWLine, setEditMWLine] = useState({});
     const [deleteId, setDeleteId] = useState(null);
+
+    // Import State
+    const [openImport, setOpenImport] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importErrors, setImportErrors] = useState(null);
+    const [importResults, setImportResults] = useState(null);
+    const [isChecking, setIsChecking] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const [filters, setFilters] = useState({
         province: null,
@@ -126,8 +134,8 @@ function MWLineList() {
         const provinceFiltered = getFilteredFor("province");
         const provincesMap = new Map();
         provinceFiltered.forEach(mw => {
-             if (mw.nearSite?.province) provincesMap.set(mw.nearSite.province.id, mw.nearSite.province);
-             if (mw.farSite?.province) provincesMap.set(mw.farSite.province.id, mw.farSite.province);
+            if (mw.nearSite?.province) provincesMap.set(mw.nearSite.province.id, mw.nearSite.province);
+            if (mw.farSite?.province) provincesMap.set(mw.farSite.province.id, mw.farSite.province);
         });
         const provinces = Array.from(provincesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -197,6 +205,65 @@ function MWLineList() {
         XLSX.writeFile(wb, "DanhSachTuyenViba.xlsx");
     };
 
+    const handleDownloadTemplate = async () => {
+        try {
+            const response = await axiosInstance.get("mw-lines/import-excel/template", { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'mw-line-import-template.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error("Lỗi khi tải template", error);
+        }
+    };
+
+    const handleCheckImport = async () => {
+        if (!importFile) return;
+        setIsChecking(true);
+        setImportErrors(null);
+        setImportResults(null);
+        const formData = new FormData();
+        formData.append("file", importFile);
+        try {
+            const res = await axiosInstance.post("mw-lines/import-excel/check", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            setImportResults(res.data);
+        } catch (error) {
+            if (error.response?.status === 400) {
+                setImportErrors(error.response.data);
+            } else {
+                console.error("Lỗi khi kiểm tra file", error);
+            }
+        } finally {
+            setIsChecking(false);
+        }
+    };
+
+    const handleSaveImport = async () => {
+        if (!importFile) return;
+        setIsSaving(true);
+        const formData = new FormData();
+        formData.append("file", importFile);
+        try {
+            await axiosInstance.post("mw-lines/import-excel/save", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            setOpenImport(false);
+            setImportFile(null);
+            setImportResults(null);
+            // Refresh list
+            window.location.reload(); // Quick way to refresh from useMWLines hook
+        } catch (error) {
+            console.error("Lỗi khi lưu import", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
             <div className="flex justify-between items-center mb-4">
@@ -207,6 +274,9 @@ function MWLineList() {
                 <div className="flex gap-2">
                     <CustomButton className="flex items-center gap-2" size="sm" onClick={() => setOpenCreate(true)}>
                         <PlusIcon className="h-4 w-4" /> Thêm mới
+                    </CustomButton>
+                    <CustomButton className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]" size="sm" onClick={() => setOpenImport(true)}>
+                        <ArrowUpTrayIcon className="h-4 w-4" /> Import Excel
                     </CustomButton>
                     <CustomButton className="flex items-center gap-2 bg-green-600" size="sm" onClick={onBtnExport}>
                         <ArrowDownTrayIcon className="h-4 w-4" /> Xuất Excel
@@ -369,118 +439,388 @@ function MWLineList() {
                 </table>
             </Card>
 
-            {/* Create Dialog */}
-            <Dialog open={openCreate} handler={() => setOpenCreate(false)} size="lg">
-                <DialogHeader>Thêm mới Tuyến Viba</DialogHeader>
-                <Formik
-                    initialValues={{ nearSite: { id: null }, farSite: { id: null }, serial: "", microwaveType: { id: null }, status: "ACTIVE", license: { licenseNumber: '', issueDate: null, expiryDate: null, frequencyBand: '', frequencyQuantity: null } }}
-                    validationSchema={MWLineSchema}
-                    onSubmit={async (values) => {
-                        const payload = { ...values };
-                        // If license object has no real values, set it to null before sending
-                        if (payload.license && !Object.values(payload.license).some(v => v)) {
-                            payload.license = null;
-                        }
-                        await createMWLine(payload);
-                        setOpenCreate(false);
-                    }}
-                >
-                    {({ setFieldValue, values }) => (
-                        <Form>
-                            <DialogBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-auto">
-                                <div className="space-y-4">
-                                    <Typography variant="h6">Thông tin tuyến</Typography>
-                                    <FormSelect label="Near Site" name="nearSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} onChange={v => setFieldValue("nearSite.id", v?.id)} />
-                                    <FormSelect label="Far Site" name="farSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} onChange={v => setFieldValue("farSite.id", v?.id)} />
-                                    <div>
-                                        <Typography variant="small" className="mb-2 font-medium">Serial</Typography>
-                                        <Field as={Input} name="serial" placeholder="Nhập Serial" />
-                                        <ErrorMessage name="serial" component="div" className="text-red-500 text-xs mt-1" />
+            {/* Modal Thêm mới */}
+            <Dialog
+                open={openCreate}
+                handler={() => setOpenCreate(false)}
+                className="overflow-hidden rounded-lg bg-white shadow-xl"
+                size="md"
+            >
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div>
+                        <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+                            Thêm mới Tuyến Viba
+                        </Typography>
+                        <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+                            Nhập các thông tin chi tiết cho tuyến viba mới
+                        </Typography>
+                    </div>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenCreate(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
+
+                <div className="max-h-[80vh] overflow-y-auto">
+                    <Formik
+                        initialValues={{
+                            nearSite: { id: null },
+                            farSite: { id: null },
+                            serial: "",
+                            microwaveType: { id: null },
+                            status: "ACTIVE",
+                            license: { licenseNumber: '', issueDate: null, expiryDate: null, frequencyBand: '', frequencyQuantity: null }
+                        }}
+                        validationSchema={MWLineSchema}
+                        onSubmit={async (values) => {
+                            const payload = { ...values };
+                            if (payload.license && !Object.values(payload.license).some(v => v)) {
+                                payload.license = null;
+                            }
+                            await createMWLine(payload);
+                            setOpenCreate(false);
+                        }}
+                    >
+                        {({ setFieldValue, values }) => (
+                            <Form className="flex flex-col">
+                                <DialogBody className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-5">
+                                            <div className="flex items-center gap-2 mb-2 border-b border-blue-50 pb-1">
+                                                <div className="bg-blue-100 p-1.5 rounded-md">
+                                                    <PlusIcon className="h-4 w-4 text-blue-700" />
+                                                </div>
+                                                <Typography variant="small" color="blue-gray" className="font-bold">
+                                                    Thông tin tuyến
+                                                </Typography>
+                                            </div>
+
+                                            <FormSelect
+                                                label="Trạm đầu (Near Site)"
+                                                name="nearSite.id"
+                                                options={siteList}
+                                                getOptionLabel={o => o.siteId}
+                                                required
+                                            />
+
+                                            <FormSelect
+                                                label="Trạm cuối (Far Site)"
+                                                name="farSite.id"
+                                                options={siteList}
+                                                getOptionLabel={o => o.siteId}
+                                                required
+                                            />
+
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Số Serial
+                                                    </Typography>
+                                                    <Field
+                                                        name="serial"
+                                                        placeholder="Nhập Serial..."
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <FormSelect
+                                                label="Loại thiết bị"
+                                                name="microwaveType.id"
+                                                options={microwaveTypeList}
+                                                getOptionLabel={o => `${o.vendor.name} - ${o.name}`}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="space-y-5 md:border-l md:pl-6">
+                                            <div className="flex items-center gap-2 mb-2 border-b border-amber-50 pb-1">
+                                                <div className="bg-amber-100 p-1.5 rounded-md">
+                                                    <PlusIcon className="h-4 w-4 text-amber-700" />
+                                                </div>
+                                                <Typography variant="small" color="blue-gray" className="font-bold">
+                                                    Giấy phép tần số (Tùy chọn)
+                                                </Typography>
+                                            </div>
+
+                                            <div>
+                                                <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                    Số giấy phép
+                                                </Typography>
+                                                <Field
+                                                    name="license.licenseNumber"
+                                                    placeholder="VD: 123/GP- tần số"
+                                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Ngày cấp
+                                                    </Typography>
+                                                    <Field
+                                                        type="date"
+                                                        name="license.issueDate"
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Ngày hết hạn
+                                                    </Typography>
+                                                    <Field
+                                                        type="date"
+                                                        name="license.expiryDate"
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Băng tần
+                                                    </Typography>
+                                                    <Field
+                                                        name="license.frequencyBand"
+                                                        placeholder="VD: 7G/13G"
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Số lượng tần số
+                                                    </Typography>
+                                                    <Field
+                                                        type="number"
+                                                        name="license.frequencyQuantity"
+                                                        placeholder="Nhập số..."
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <FormSelect label="Loại thiết bị" name="microwaveType.id" options={microwaveTypeList} getOptionLabel={o => `${o.vendor.name} - ${o.name}`} getOptionValue={o => o.id} onChange={v => setFieldValue("microwaveType.id", v?.id)} />
-                                </div>
-                                <div className="space-y-4 border-l pl-4">
-                                    <Typography variant="h6">Giấy phép (Tùy chọn)</Typography>
-                                    <Field as={Input} name="license.licenseNumber" label="Số giấy phép" />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Field as={Input} name="license.issueDate" label="Ngày cấp" type="date" />
-                                        <Field as={Input} name="license.expiryDate" label="Ngày hết hạn" type="date" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Field as={Input} name="license.frequencyBand" label="Băng tần" placeholder="7G/13G..." />
-                                        <Field as={Input} name="license.frequencyQuantity" label="Số tần số" type="number" />
-                                    </div>
-                                </div>
-                            </DialogBody>
-                            <DialogFooter>
-                                <Button variant="text" color="red" onClick={() => setOpenCreate(false)}>Hủy</Button>
-                                <Button variant="gradient" color="blue" type="submit">Lưu</Button>
-                            </DialogFooter>
-                        </Form>
-                    )}
-                </Formik>
+                                </DialogBody>
+
+                                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenCreate(false)} size="sm">
+                                        Hủy bỏ
+                                    </CustomButton>
+                                    <CustomButton type="submit" className="bg-[#0d47a1] hover:bg-[#0a3a82]" size="sm">
+                                        Lưu tuyến mới
+                                    </CustomButton>
+                                </DialogFooter>
+                            </Form>
+                        )}
+                    </Formik>
+                </div>
             </Dialog>
 
-            {/* Edit Dialog */}
-            <Dialog open={openEdit} handler={() => setOpenEdit(false)} size="lg">
-                <DialogHeader>Cập nhật Tuyến Viba</DialogHeader>
-                <Formik
-                    enableReinitialize
-                    initialValues={editMWLine}
-                    validationSchema={MWLineSchema}
-                    onSubmit={async (values) => {
-                        const payload = { ...values };
-                        if (payload.license && !Object.values(payload.license).some(v => v)) {
-                            payload.license = null;
-                        }
-                        await updateMWLine(values.id, payload);
-                        setOpenEdit(false);
-                    }}
-                >
-                    {({ setFieldValue, values }) => (
-                        <Form>
-                            <DialogBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-auto">
-                                <div className="space-y-4">
-                                    <Typography variant="h6">Thông tin tuyến</Typography>
-                                    <FormSelect label="Near Site" name="nearSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} />
-                                    <FormSelect label="Far Site" name="farSite.id" options={siteList} getOptionLabel={o => o.siteId} getOptionValue={o => o.id} />
-                                    <div>
-                                        <Typography variant="small" className="mb-2 font-medium">Serial</Typography>
-                                        <Field as={Input} name="serial" placeholder="Nhập Serial" />
-                                        <ErrorMessage name="serial" component="div" className="text-red-500 text-xs mt-1" />
-                                    </div>
-                                    <FormSelect label="Loại thiết bị" name="microwaveType.id" options={microwaveTypeList} getOptionLabel={o => `${o.vendor.name} - ${o.name}`} getOptionValue={o => o.id} />
-                                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                                        <div>
-                                            <Typography variant="small" color="blue-gray" className="font-bold">Trạng thái hoạt động</Typography>
+            {/* Modal Cập nhật */}
+            <Dialog
+                open={openEdit}
+                handler={() => setOpenEdit(false)}
+                className="overflow-hidden rounded-lg bg-white shadow-xl"
+                size="md"
+            >
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div>
+                        <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+                            Cập nhật Tuyến Viba
+                        </Typography>
+                        <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+                            Thay đổi các thông tin cho tuyến viba: <span className="font-bold text-blue-700">{editMWLine.serial || 'N/A'}</span>
+                        </Typography>
+                    </div>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenEdit(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
+
+                <div className="max-h-[80vh] overflow-y-auto">
+                    <Formik
+                        enableReinitialize
+                        initialValues={editMWLine}
+                        validationSchema={MWLineSchema}
+                        onSubmit={async (values) => {
+                            const payload = { ...values };
+                            if (payload.license && !Object.values(payload.license).some(v => v)) {
+                                payload.license = null;
+                            }
+                            await updateMWLine(values.id, payload);
+                            setOpenEdit(false);
+                        }}
+                    >
+                        {({ setFieldValue, values }) => (
+                            <Form className="flex flex-col">
+                                <DialogBody className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-5">
+                                            <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3 mb-2">
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="font-bold">
+                                                        Trạng thái hoạt động
+                                                    </Typography>
+                                                </div>
+                                                <Switch
+                                                    color="green"
+                                                    checked={values.status === 'ACTIVE'}
+                                                    onChange={(e) => setFieldValue("status", e.target.checked ? 'ACTIVE' : 'INACTIVE')}
+                                                    className="scale-90"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mb-2 border-b border-blue-50 pb-1">
+                                                <div className="bg-blue-100 p-1.5 rounded-md">
+                                                    <PencilIcon className="h-4 w-4 text-blue-700" />
+                                                </div>
+                                                <Typography variant="small" color="blue-gray" className="font-bold">
+                                                    Thông tin tuyến
+                                                </Typography>
+                                            </div>
+
+                                            <FormSelect
+                                                label="Trạm đầu (Near Site)"
+                                                name="nearSite.id"
+                                                options={siteList}
+                                                getOptionLabel={o => o.siteId}
+                                                required
+                                            />
+
+                                            <FormSelect
+                                                label="Trạm cuối (Far Site)"
+                                                name="farSite.id"
+                                                options={siteList}
+                                                getOptionLabel={o => o.siteId}
+                                                required
+                                            />
+
+                                            <div>
+                                                <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                    Số Serial
+                                                </Typography>
+                                                <Field
+                                                    name="serial"
+                                                    placeholder="Nhập Serial..."
+                                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                                                />
+                                            </div>
+
+                                            <FormSelect
+                                                label="Loại thiết bị"
+                                                name="microwaveType.id"
+                                                options={microwaveTypeList}
+                                                getOptionLabel={o => `${o.vendor.name} - ${o.name}`}
+                                                required
+                                            />
                                         </div>
-                                        <Switch
-                                            color="green"
-                                            checked={values.status === 'ACTIVE'}
-                                            onChange={(e) => setFieldValue("status", e.target.checked ? 'ACTIVE' : 'INACTIVE')}
-                                        />
+
+                                        <div className="space-y-5 md:border-l md:pl-6">
+                                            <div className="flex items-center gap-2 mb-2 border-b border-amber-50 pb-1">
+                                                <div className="bg-amber-100 p-1.5 rounded-md">
+                                                    <PlusIcon className="h-4 w-4 text-amber-700" />
+                                                </div>
+                                                <Typography variant="small" color="blue-gray" className="font-bold">
+                                                    Giấy phép tần số
+                                                </Typography>
+                                            </div>
+
+                                            <div>
+                                                <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                    Số giấy phép
+                                                </Typography>
+                                                <Field
+                                                    name="license.licenseNumber"
+                                                    placeholder="VD: 123/GP- tần số"
+                                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Ngày cấp
+                                                    </Typography>
+                                                    <Field
+                                                        type="date"
+                                                        name="license.issueDate"
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Ngày hết hạn
+                                                    </Typography>
+                                                    <Field
+                                                        type="date"
+                                                        name="license.expiryDate"
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Băng tần
+                                                    </Typography>
+                                                    <Field
+                                                        name="license.frequencyBand"
+                                                        placeholder="VD: 7G/13G"
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                        Số lượng tần số
+                                                    </Typography>
+                                                    <Field
+                                                        type="number"
+                                                        name="license.frequencyQuantity"
+                                                        placeholder="Nhập số..."
+                                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-2">
+                                                <Typography variant="small" color="blue-gray" className="mb-1 font-bold">
+                                                    Ghi chú
+                                                </Typography>
+                                                <Field
+                                                    as="textarea"
+                                                    name="note"
+                                                    rows={3}
+                                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-4 border-l pl-4">
-                                    <Typography variant="h6">Giấy phép (Tùy chọn)</Typography>
-                                    <Field as={Input} name="license.licenseNumber" label="Số giấy phép" />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Field as={Input} name="license.issueDate" label="Ngày cấp" type="date" />
-                                        <Field as={Input} name="license.expiryDate" label="Ngày hết hạn" type="date" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Field as={Input} name="license.frequencyBand" label="Băng tần" placeholder="7G/13G..." />
-                                        <Field as={Input} name="license.frequencyQuantity" label="Số tần số" type="number" />
-                                    </div>
-                                </div>
-                            </DialogBody>
-                            <DialogFooter>
-                                <Button variant="text" color="red" onClick={() => setOpenEdit(false)}>Hủy</Button>
-                                <Button variant="gradient" color="blue" type="submit">Cập nhật</Button>
-                            </DialogFooter>
-                        </Form>
-                    )}
-                </Formik>
+                                </DialogBody>
+
+                                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
+                                        Hủy bỏ
+                                    </CustomButton>
+                                    <CustomButton type="submit" className="bg-[#0d47a1] hover:bg-[#0a3a82]" size="sm">
+                                        Cập nhật tuyến
+                                    </CustomButton>
+                                </DialogFooter>
+                            </Form>
+                        )}
+                    </Formik>
+                </div>
             </Dialog>
 
             <DeleteConfirmationModal
@@ -489,6 +829,150 @@ function MWLineList() {
                 onConfirm={async () => { await deleteMWLine(deleteId); setOpenDelete(false); }}
                 title="Xóa tuyến viba"
             />
+
+            {/* Modal Import */}
+            <Dialog
+                open={openImport}
+                handler={() => setOpenImport(false)}
+                className="overflow-hidden rounded-lg bg-white shadow-xl"
+                size="lg"
+            >
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div>
+                        <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+                            Import Tuyến Viba từ Excel
+                        </Typography>
+                        <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+                            Tải lên tệp Excel để thêm hàng loạt tuyến viba vào hệ thống
+                        </Typography>
+                    </div>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenImport(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
+
+                <DialogBody className="p-6">
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center justify-between">
+                            <div className="flex-1 pr-4">
+                                <Typography variant="small" color="blue" className="font-bold uppercase mb-1">
+                                    Bước 1: Tải tệp mẫu và chuẩn bị dữ liệu
+                                </Typography>
+                                <Typography variant="small" color="blue-gray" className="text-xs">
+                                    Sử dụng tệp mẫu có sẵn. <span className="font-bold">Lưu ý:</span> Cột <span className="text-blue-700 italic">Số giấy phép, Ngày cấp, Ngày hết hạn, Băng tần, Số tần số</span> đã được bổ sung và có thể bỏ trống nếu chưa có thông tin.
+                                </Typography>
+                            </div>
+                            <CustomButton
+                                size="sm"
+                                variant="outlined"
+                                color="blue"
+                                className="flex items-center gap-2 bg-white shrink-0 shadow-sm"
+                                onClick={handleDownloadTemplate}
+                            >
+                                <ArrowDownTrayIcon className="h-4 w-4" />
+                                <span>Tải tệp mẫu</span>
+                            </CustomButton>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <Typography variant="small" color="blue-gray" className="font-bold uppercase mb-3">
+                                Bước 2: Chọn tệp Excel từ máy tính
+                            </Typography>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        onChange={(e) => {
+                                            setImportFile(e.target.files[0]);
+                                            setImportErrors(null);
+                                            setImportResults(null);
+                                        }}
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-md cursor-pointer focus:outline-none"
+                                    />
+                                </div>
+                                <CustomButton
+                                    size="md"
+                                    className="bg-[#0d47a1] hover:bg-[#0a3a82] flex items-center gap-2 min-w-[150px] justify-center"
+                                    disabled={!importFile || isChecking}
+                                    onClick={handleCheckImport}
+                                >
+                                    {isChecking ? (
+                                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <MagnifyingGlassIcon className="h-4 w-4" />
+                                    )}
+                                    <span>Kiểm tra dữ liệu</span>
+                                </CustomButton>
+                            </div>
+                        </div>
+
+                        {importErrors && (
+                            <div className="bg-red-50 p-4 rounded-lg border border-red-100 max-h-[300px] overflow-auto shadow-inner">
+                                <Typography variant="small" color="red" className="font-bold flex items-center gap-2 mb-2">
+                                    <XMarkIcon className="h-5 w-5 bg-red-100 rounded-full p-0.5" />
+                                    <span>Phát hiện lỗi trong tệp Excel:</span>
+                                </Typography>
+                                <div className="space-y-3">
+                                    {Object.entries(importErrors).map(([row, errorObj]) => (
+                                        <div key={row} className="text-xs border-b border-red-100 pb-2 last:border-0">
+                                            <span className="font-bold text-red-700 bg-red-100/50 px-1.5 py-0.5 rounded">Dòng {row}:</span>
+                                            <ul className="list-disc ml-6 mt-1.5 space-y-1">
+                                                {errorObj.errors.map((err, idx) => (
+                                                    <li key={idx}>
+                                                        <span className="font-semibold text-gray-800">{err.column}:</span>
+                                                        <span className="text-red-600 ml-1">{err.message}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {importResults && (
+                            <div className="bg-green-50 p-5 rounded-lg border border-green-100 shadow-sm flex items-start gap-4 animate-fadeIn">
+                                <div className="bg-green-100 p-2 rounded-full">
+                                    <PlusIcon className="h-5 w-5 text-green-700" />
+                                </div>
+                                <div>
+                                    <Typography variant="small" color="green" className="font-bold mb-0.5">
+                                        Tệp dữ liệu hợp lệ!
+                                    </Typography>
+                                    <Typography variant="small" color="blue-gray" className="text-gray-700">
+                                        Sẵn sàng import <span className="font-bold text-green-700 text-lg mx-1">{importResults.total}</span> tuyến viba vào hệ thống.
+                                    </Typography>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </DialogBody>
+
+                <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
+                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenImport(false)} disabled={isSaving} size="sm">
+                        Hủy bỏ
+                    </CustomButton>
+                    <CustomButton
+                        className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                        disabled={!importResults || isSaving}
+                        onClick={handleSaveImport}
+                        size="sm"
+                    >
+                        {isSaving ? (
+                            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <PlusIcon className="h-4 w-4" />
+                        )}
+                        <span>Lưu vào hệ thống</span>
+                    </CustomButton>
+                </DialogFooter>
+            </Dialog>
         </div>
     );
 }

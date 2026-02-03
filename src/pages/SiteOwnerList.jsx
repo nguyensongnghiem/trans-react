@@ -4,6 +4,7 @@ import {
     TrashIcon,
     PlusIcon,
     MagnifyingGlassIcon,
+    XMarkIcon,
 } from "@heroicons/react/24/solid";
 import {
     Card,
@@ -183,53 +184,141 @@ function SiteOwnerList() {
                 </table>
             </Card>
 
-            <Dialog open={openCreate} handler={() => setOpenCreate(!openCreate)} size="sm">
-                <DialogHeader>Thêm mới Chủ trạm</DialogHeader>
+            <Dialog
+                open={openCreate}
+                handler={() => setOpenCreate(false)}
+                size="sm"
+                className="rounded-lg overflow-hidden shadow-xl"
+            >
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div>
+                        <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+                            Thêm mới Chủ trạm
+                        </Typography>
+                        <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+                            Nhập thông tin chủ trạm mới vào hệ thống
+                        </Typography>
+                    </div>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenCreate(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
                 <Formik
                     initialValues={{ name: "" }}
                     validationSchema={validationSchema}
                     onSubmit={handleCreate}
                 >
-                    {({ errors, touched }) => (
-                        <Form>
-                            <DialogBody>
-                                <Field name="name">
-                                    {({ field }) => (
-                                        <Input {...field} label="Tên chủ trạm" error={touched.name && Boolean(errors.name)} />
-                                    )}
-                                </Field>
-                                <ErrorMessage name="name" component="div" className="text-red-500 text-xs mt-1" />
+                    {({ errors, touched, handleSubmit }) => (
+                        <Form onSubmit={handleSubmit}>
+                            <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                                <div className="space-y-1">
+                                    <Typography variant="small" color="blue-gray" className="font-bold">
+                                        Tên chủ trạm
+                                    </Typography>
+                                    <Field name="name">
+                                        {({ field }) => (
+                                            <Input
+                                                {...field}
+                                                size="lg"
+                                                placeholder="VD: MobiFone, Viettel, ..."
+                                                className="!border-t-blue-gray-200 focus:!border-blue-500"
+                                                labelProps={{
+                                                    className: "before:content-none after:content-none",
+                                                }}
+                                                error={touched.name && Boolean(errors.name)}
+                                            />
+                                        )}
+                                    </Field>
+                                    <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                </div>
                             </DialogBody>
-                            <DialogFooter>
-                                <Button variant="text" onClick={() => setOpenCreate(false)} className="mr-2">Hủy</Button>
-                                <CustomButton type="submit">Lưu</CustomButton>
+                            <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
+                                <CustomButton variant="text" color="blue-gray" onClick={() => setOpenCreate(false)} size="sm">
+                                    Hủy bỏ
+                                </CustomButton>
+                                <CustomButton
+                                    type="submit"
+                                    size="sm"
+                                    className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20"
+                                >
+                                    Lưu thông tin
+                                </CustomButton>
                             </DialogFooter>
                         </Form>
                     )}
                 </Formik>
             </Dialog>
 
-            <Dialog open={openEdit} handler={() => setOpenEdit(!openEdit)} size="sm">
-                <DialogHeader>Cập nhật Chủ trạm</DialogHeader>
+            <Dialog
+                open={openEdit}
+                handler={() => setOpenEdit(false)}
+                size="sm"
+                className="rounded-lg overflow-hidden shadow-xl"
+            >
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div>
+                        <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+                            Cập nhật Chủ trạm
+                        </Typography>
+                        <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+                            Chỉnh sửa thông tin chủ trạm #{selectedItem?.id}
+                        </Typography>
+                    </div>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenEdit(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
                 {selectedItem && (
                     <Formik
                         initialValues={{ name: selectedItem.name }}
                         validationSchema={validationSchema}
                         onSubmit={handleUpdate}
                     >
-                        {({ errors, touched }) => (
-                            <Form>
-                                <DialogBody>
-                                    <Field name="name">
-                                        {({ field }) => (
-                                            <Input {...field} label="Tên chủ trạm" error={touched.name && Boolean(errors.name)} />
-                                        )}
-                                    </Field>
-                                    <ErrorMessage name="name" component="div" className="text-red-500 text-xs mt-1" />
+                        {({ errors, touched, handleSubmit }) => (
+                            <Form onSubmit={handleSubmit}>
+                                <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Tên chủ trạm
+                                        </Typography>
+                                        <Field name="name">
+                                            {({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    size="lg"
+                                                    className="!border-t-blue-gray-200 focus:!border-blue-500"
+                                                    labelProps={{
+                                                        className: "before:content-none after:content-none",
+                                                    }}
+                                                    error={touched.name && Boolean(errors.name)}
+                                                />
+                                            )}
+                                        </Field>
+                                        <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
                                 </DialogBody>
-                                <DialogFooter>
-                                    <Button variant="text" onClick={() => setOpenEdit(false)} className="mr-2">Hủy</Button>
-                                    <CustomButton type="submit">Cập nhật</CustomButton>
+                                <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
+                                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
+                                        Hủy bỏ
+                                    </CustomButton>
+                                    <CustomButton
+                                        type="submit"
+                                        size="sm"
+                                        className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20 flex items-center gap-2"
+                                    >
+                                        <PencilIcon className="h-4 w-4" />
+                                        Cập nhật
+                                    </CustomButton>
                                 </DialogFooter>
                             </Form>
                         )}
@@ -237,14 +326,49 @@ function SiteOwnerList() {
                 )}
             </Dialog>
 
-            <Dialog open={openDelete} handler={() => setOpenDelete(!openDelete)} size="xs">
-                <DialogHeader>Xác nhận xóa</DialogHeader>
-                <DialogBody>
-                    Bạn có chắc muốn xóa chủ trạm <b>{selectedItem?.name}</b>?
+            <Dialog
+                open={openDelete}
+                handler={() => setOpenDelete(false)}
+                size="xs"
+                className="rounded-lg overflow-hidden shadow-xl"
+            >
+                <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+                    <div className="bg-red-100 p-2 rounded-full">
+                        <TrashIcon className="h-5 w-5 text-red-600" />
+                    </div>
+                    <Typography variant="h5" color="red" className="font-semibold">
+                        Xác nhận xóa
+                    </Typography>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenDelete(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
+                <DialogBody className="p-6 text-blue-gray-700">
+                    <Typography variant="paragraph" color="blue-gray" className="font-medium">
+                        Bạn có chắc chắn muốn xóa chủ trạm <b>{selectedItem?.name}</b>?
+                    </Typography>
+                    <Typography variant="small" color="gray" className="mt-3 italic">
+                        Hành động này không thể phục hồi và có thể ảnh hưởng đến các dữ liệu liên quan.
+                    </Typography>
                 </DialogBody>
-                <DialogFooter>
-                    <Button variant="text" onClick={() => setOpenDelete(false)} className="mr-2">Hủy</Button>
-                    <Button color="red" onClick={handleDelete}>Xóa</Button>
+                <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
+                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenDelete(false)} size="sm">
+                        Hủy bỏ
+                    </CustomButton>
+                    <Button
+                        color="red"
+                        onClick={handleDelete}
+                        size="sm"
+                        className="flex items-center gap-2 shadow-md shadow-red-500/20 bg-red-600 hover:bg-red-700"
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                        Xác nhận xóa
+                    </Button>
                 </DialogFooter>
             </Dialog>
         </div>

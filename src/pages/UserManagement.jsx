@@ -18,7 +18,8 @@ import {
   Checkbox,
   Spinner,
 } from "@material-tailwind/react";
-import { PencilIcon, TrashIcon, UserPlusIcon } from "@heroicons/react/24/solid";
+import { PencilIcon, TrashIcon, UserPlusIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 
 const TABLE_HEAD = ["ID", "Username", "Email", "Quyền hạn", "Trạng thái", "Hành động"];
@@ -258,10 +259,10 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td className={classes}>
-                      <StatusChip 
-                        active={user.state === "ACTIVE"} 
-                        labelOn="ACTIVE" 
-                        labelOff={user.state} 
+                      <StatusChip
+                        active={user.state === "ACTIVE"}
+                        labelOn="ACTIVE"
+                        labelOff={user.state}
                       />
                     </td>
                     <td className={classes}>
@@ -292,86 +293,138 @@ const UserManagement = () => {
         </CardBody>
       </Card>
 
-      {/* Dialog Thêm/Sửa */}
-      <Dialog open={openDialog} handler={handleOpen} size="sm">
-        <DialogHeader>
-          <Typography variant="h5" color="blue-gray">
-            {isEdit ? "Cập nhật người dùng" : "Thêm người dùng mới"}
-          </Typography>
-        </DialogHeader>
-        <DialogBody divider className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            label="Username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            disabled={isEdit}
-          />
-          <Input
-            label="Password"
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder={isEdit ? "Để trống nếu không đổi" : "Nhập mật khẩu"}
-          />
-          <Input
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="md:col-span-2"
-          />
-          <div className="md:col-span-2">
-            <Select
-              label="Trạng thái"
-              value={formData.state}
-              onChange={handleStateChange}
-            >
-              <Option value="ACTIVE">Hoạt động (Active)</Option>
-              <Option value="INACTIVE">Vô hiệu hóa (Inactive)</Option>
-              <Option value="LOCKED">Khóa (Locked)</Option>
-            </Select>
+      <Dialog
+        open={openDialog}
+        handler={handleOpen}
+        size="md"
+        className="rounded-lg overflow-hidden shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              {isEdit ? "Cập nhật người dùng" : "Thêm người dùng mới"}
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              {isEdit ? "Chỉnh sửa thông tin tài khoản" : "Tạo tài khoản mới cho hệ thống"}
+            </Typography>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={handleOpen}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+        <DialogBody className="grid grid-cols-1 gap-4 p-6 text-blue-gray-700">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Typography variant="small" color="blue-gray" className="font-bold">
+                Username
+              </Typography>
+              <Input
+                size="lg"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                disabled={isEdit}
+                placeholder="Nhập tên đăng nhập"
+                className="!border-t-blue-gray-200 focus:!border-blue-500"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Typography variant="small" color="blue-gray" className="font-bold">
+                Password
+              </Typography>
+              <Input
+                type="password"
+                size="lg"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder={isEdit ? "Để trống nếu không đổi" : "Nhập mật khẩu"}
+                className="!border-t-blue-gray-200 focus:!border-blue-500"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
           </div>
 
-          <div className="md:col-span-2">
-            <Typography
-              variant="small"
-              color="blue-gray"
-              className="mb-2 font-medium"
-            >
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Typography variant="small" color="blue-gray" className="font-bold">
+                Email
+              </Typography>
+              <Input
+                type="email"
+                size="lg"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="example@mobifone.vn"
+                className="!border-t-blue-gray-200 focus:!border-blue-500"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Typography variant="small" color="blue-gray" className="font-bold">
+                Trạng thái
+              </Typography>
+              <Select
+                value={formData.state}
+                onChange={handleStateChange}
+                className="!border-t-blue-gray-200 focus:!border-blue-500"
+                labelProps={{
+                  className: "before:content-none after:content-none",
+                }}
+              >
+                <Option value="ACTIVE">Hoạt động (Active)</Option>
+                <Option value="INACTIVE">Vô hiệu hóa (Inactive)</Option>
+                <Option value="LOCKED">Khóa (Locked)</Option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2 mt-2">
+            <Typography variant="small" color="blue-gray" className="font-bold">
               Phân quyền
             </Typography>
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-gray-200 p-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 rounded-lg border border-gray-200 p-3 sm:grid-cols-3 bg-gray-50/50">
               {availableRoles.map((role) => (
                 <Checkbox
                   key={role.id}
                   id={`role-${role.id}`}
                   label={
-                    <Typography color="blue-gray" className="font-medium">
+                    <Typography color="blue-gray" className="font-medium text-sm">
                       {role.name.replace("ROLE_", "")}
                     </Typography>
                   }
+                  containerProps={{ className: "p-2" }}
                   checked={formData.roles.includes(role.name)}
                   onChange={() => handleRoleChange(role.name)}
                 />
               ))}
             </div>
-            </div>
+          </div>
         </DialogBody>
-        <DialogFooter>
-          <Button
-            variant="text"
-            color="red"
-            onClick={handleOpen}
-            className="mr-1"
+        <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
+          <CustomButton variant="text" color="blue-gray" onClick={handleOpen} size="sm">
+            Hủy bỏ
+          </CustomButton>
+          <CustomButton
+            onClick={handleSubmit}
+            size="sm"
+            className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20"
           >
-            Hủy
-          </Button>
-          <Button variant="gradient" color="green" onClick={handleSubmit}>
             {isEdit ? "Lưu thay đổi" : "Tạo mới"}
-          </Button>
+          </CustomButton>
         </DialogFooter>
       </Dialog>
     </div>

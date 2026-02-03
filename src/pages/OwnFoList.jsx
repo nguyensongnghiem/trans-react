@@ -10,6 +10,7 @@ import {
   MapIcon,
   DocumentIcon,
   CheckCircleIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/solid";
 import {
   DocumentArrowUpIcon,
@@ -385,7 +386,7 @@ function OwnFoList() {
             size="sm"
             onClick={() => { setOpenImport(true); setImportFile(null); setImportPreview([]); setImportErrors(null); setImportSuccess(false); }}
           >
-            <DocumentArrowUpIcon className="h-4 w-4" /> Import Excel
+            <ArrowUpTrayIcon className="h-4 w-4" /> Import Excel
           </CustomButton>
           <CustomButton
             className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
@@ -545,76 +546,129 @@ function OwnFoList() {
         </div>
       </Card>
 
-      {/* Create Modal */}
-      <Dialog open={openCreate} handler={handleOpenCreate} size="sm">
-        <Formik
-          initialValues={{ coreQuantity: 24, nearSite: { id: null }, farSite: { id: null }, designedDistance: 0, finalDistance: 0, fiberType: { id: 1 }, active: true, note: "" }}
-          validationSchema={Yup.object({
-            coreQuantity: Yup.number().required("Bắt buộc"),
-            nearSite: Yup.object({ id: Yup.number().required("Bắt buộc") }),
-            farSite: Yup.object({ id: Yup.number().required("Bắt buộc") }),
-          })}
-          onSubmit={handleCreate}
-        >
-          {({ setFieldValue, values }) => (
-            <Form>
-              <DialogHeader>Thêm mới tuyến cáp tự đầu tư</DialogHeader>
-              <DialogBody className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-bold opacity-70">Site A</label>
-                    <Select
-                      options={simpleSiteList}
-                      getOptionLabel={(o) => o.siteId}
-                      getOptionValue={(o) => o.id}
-                      onChange={(val) => setFieldValue("nearSite.id", val.id)}
-                      components={{ MenuList: CustomMenuList }}
-                      styles={whiteSelectStyles}
+      <Dialog
+        open={openCreate}
+        handler={handleOpenCreate}
+        className="overflow-hidden rounded-lg bg-white shadow-xl"
+        size="sm"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Thêm mới tuyến cáp tự đầu tư
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Nhập các thông tin chi tiết cho tuyến cáp quang mới
+            </Typography>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={handleOpenCreate}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <div className="max-h-[80vh] overflow-y-auto">
+          <Formik
+            initialValues={{ coreQuantity: 24, nearSite: { id: null }, farSite: { id: null }, designedDistance: 0, finalDistance: 0, fiberType: { id: 1 }, active: true, note: "" }}
+            validationSchema={Yup.object({
+              coreQuantity: Yup.number().required("Bắt buộc").min(1, "Phải > 0"),
+              nearSite: Yup.object({ id: Yup.number().required("Bắt buộc") }),
+              farSite: Yup.object({ id: Yup.number().required("Bắt buộc") }),
+            })}
+            onSubmit={handleCreate}
+          >
+            {({ setFieldValue, values }) => (
+              <Form className="flex flex-col">
+                <DialogBody className="p-6 space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Trạm đầu (Site A)</Typography>
+                      <Select
+                        options={simpleSiteList}
+                        getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("nearSite.id", val?.id)}
+                        components={{ MenuList: CustomMenuList }}
+                        styles={whiteSelectStyles}
+                        placeholder="Chọn trạm..."
+                      />
+                      <ErrorMessage name="nearSite.id" component="div" className="text-red-500 text-[10px] mt-0.5" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Trạm cuối (Site B)</Typography>
+                      <Select
+                        options={simpleSiteList}
+                        getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("farSite.id", val?.id)}
+                        components={{ MenuList: CustomMenuList }}
+                        styles={whiteSelectStyles}
+                        placeholder="Chọn trạm..."
+                      />
+                      <ErrorMessage name="farSite.id" component="div" className="text-red-500 text-[10px] mt-0.5" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Số core</Typography>
+                      <Field
+                        name="coreQuantity"
+                        type="number"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại cáp</Typography>
+                      <Field
+                        as="select"
+                        name="fiberType.id"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white h-[38px]"
+                      >
+                        {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
+                    <Field
+                      name="finalDistance"
+                      type="number"
+                      step="0.01"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-bold opacity-70">Site B</label>
-                    <Select
-                      options={simpleSiteList}
-                      getOptionLabel={(o) => o.siteId}
-                      getOptionValue={(o) => o.id}
-                      onChange={(val) => setFieldValue("farSite.id", val.id)}
-                      components={{ MenuList: CustomMenuList }}
-                      styles={whiteSelectStyles}
+
+                  <div>
+                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Ghi chú</Typography>
+                    <Field
+                      name="note"
+                      as="textarea"
+                      rows={3}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
+                      placeholder="Nhập ghi chú..."
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-bold opacity-70">Số core</label>
-                    <Field name="coreQuantity" className="w-full border rounded p-2" type="number" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold opacity-70">Loại cáp</label>
-                    <Field as="select" name="fiberType.id" className="w-full border rounded p-2 h-[42px]">
-                      {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </Field>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-bold opacity-70">Chiều dài thực tế (km)</label>
-                  <Field name="finalDistance" className="w-full border rounded p-2" type="number" step="0.01" />
-                </div>
-                <div>
-                  <label className="text-sm font-bold opacity-70">Ghi chú</label>
-                  <Field name="note" as="textarea" className="w-full border rounded p-2 h-20" />
-                </div>
-              </DialogBody>
-              <DialogFooter>
-                <Button variant="text" onClick={handleOpenCreate}>Hủy</Button>
-                <CustomButton type="submit">Lưu</CustomButton>
-              </DialogFooter>
-            </Form>
-          )}
-        </Formik>
+                </DialogBody>
+                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                  <CustomButton variant="text" color="blue-gray" onClick={handleOpenCreate} size="sm">
+                    Hủy bỏ
+                  </CustomButton>
+                  <CustomButton type="submit" size="sm" className="bg-[#0d47a1] hover:bg-[#0a3a82]">
+                    Lưu tuyến mới
+                  </CustomButton>
+                </DialogFooter>
+              </Form>
+            )}
+          </Formik>
+        </div>
       </Dialog>
 
-      {/* Edit Modal (similar to Create) */}
       <Dialog
         open={openEdit}
         handler={() => setOpenEdit(false)}
@@ -623,15 +677,11 @@ function OwnFoList() {
       >
         <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography
-              variant="h5"
-              color="blue-gray"
-              className="font-semibold text-gray-900"
-            >
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
               Cập nhật tuyến cáp
             </Typography>
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
-              Chỉnh sửa thông tin tuyến cáp quang
+              Chỉnh sửa thông tin tuyến cáp quang: <span className="font-bold text-blue-700">{editFoLine.nearSite?.siteId} - {editFoLine.farSite?.siteId}</span>
             </Typography>
           </div>
           <IconButton
@@ -645,15 +695,14 @@ function OwnFoList() {
         </div>
 
         <div className="max-h-[80vh] overflow-y-auto">
-        <Formik
-          enableReinitialize
-          initialValues={editFoLine}
-          onSubmit={handleEditSubmit}
-        >
-          {({ setFieldValue, values }) => (
-            <Form className="flex flex-col">
-              <DialogBody className="p-6">
-                <div className="grid grid-cols-1 gap-5">
+          <Formik
+            enableReinitialize
+            initialValues={editFoLine}
+            onSubmit={handleEditSubmit}
+          >
+            {({ setFieldValue, values }) => (
+              <Form className="flex flex-col">
+                <DialogBody className="p-6 space-y-5">
                   {/* Status Switch */}
                   <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                     <div>
@@ -669,7 +718,6 @@ function OwnFoList() {
                       checked={values.active}
                       onChange={(e) => setFieldValue("active", e.target.checked)}
                       className="scale-90"
-                      circleProps={{ className: "border-none" }}
                     />
                   </div>
 
@@ -681,7 +729,7 @@ function OwnFoList() {
                         value={simpleSiteList.find(o => o.id === values.nearSite?.id)}
                         getOptionLabel={(o) => o.siteId}
                         getOptionValue={(o) => o.id}
-                        onChange={(val) => setFieldValue("nearSite.id", val.id)}
+                        onChange={(val) => setFieldValue("nearSite.id", val?.id)}
                         components={{ MenuList: CustomMenuList }}
                         styles={whiteSelectStyles}
                       />
@@ -693,7 +741,7 @@ function OwnFoList() {
                         value={simpleSiteList.find(o => o.id === values.farSite?.id)}
                         getOptionLabel={(o) => o.siteId}
                         getOptionValue={(o) => o.id}
-                        onChange={(val) => setFieldValue("farSite.id", val.id)}
+                        onChange={(val) => setFieldValue("farSite.id", val?.id)}
                         components={{ MenuList: CustomMenuList }}
                         styles={whiteSelectStyles}
                       />
@@ -703,11 +751,19 @@ function OwnFoList() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Số core</Typography>
-                      <Field name="coreQuantity" className="w-full border rounded p-2 text-sm" type="number" />
+                      <Field
+                        name="coreQuantity"
+                        type="number"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      />
                     </div>
                     <div>
                       <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại cáp</Typography>
-                      <Field as="select" name="fiberType.id" className="w-full border rounded p-2 h-[38px] text-sm bg-white">
+                      <Field
+                        as="select"
+                        name="fiberType.id"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white h-[38px]"
+                      >
                         {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                       </Field>
                     </div>
@@ -715,20 +771,26 @@ function OwnFoList() {
 
                   <div>
                     <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
-                    <Field name="finalDistance" className="w-full border rounded p-2 text-sm" type="number" step="0.01" />
+                    <Field
+                      name="finalDistance"
+                      type="number"
+                      step="0.01"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                    />
                   </div>
 
                   {/* KML Upload Section */}
                   <div className="rounded-lg border border-gray-200 p-3 bg-gray-50/50">
                     <Typography variant="small" color="blue-gray" className="mb-2 font-bold flex items-center gap-2">
-                      <GlobeAsiaAustraliaIcon className="h-4 w-4 text-blue-500" /> File bản đồ (KML/KMZ)
+                      <PlusIcon className="h-4 w-4 text-blue-500" />
+                      File bản đồ (KML/KMZ)
                     </Typography>
 
                     {values.kmlFileName && (
                       <div className="mb-3 flex items-center justify-between bg-white p-2 rounded border border-gray-200 shadow-sm">
                         <div className="flex items-center gap-2 overflow-hidden">
                           <CloudArrowUpIcon className="h-4 w-4 text-green-500 flex-shrink-0" />
-                          <span className="text-xs font-medium text-blue-gray-700 truncate" title={values.kmlFileName}>
+                          <span className="text-[10px] font-medium text-blue-gray-700 truncate" title={values.kmlFileName}>
                             {values.kmlFileName}
                           </span>
                         </div>
@@ -744,8 +806,8 @@ function OwnFoList() {
                       <input
                         type="file"
                         accept=".kml,.kmz"
-                        className="block w-full text-xs text-slate-500
-                                  file:mr-4 file:py-2 file:px-4
+                        className="block w-full text-[10px] text-slate-500
+                                  file:mr-4 file:py-1 file:px-3
                                   file:rounded-full file:border-0
                                   file:text-xs file:font-semibold
                                   file:bg-blue-50 file:text-blue-700
@@ -756,7 +818,7 @@ function OwnFoList() {
                       {kmlFile && (
                         <div className="mt-2 flex items-center gap-2">
                           <Chip size="sm" variant="ghost" value="Mới" color="green" className="rounded-full px-2 py-0.5 text-[10px]" />
-                          <span className="text-xs text-green-700 font-medium truncate">{kmlFile.name}</span>
+                          <span className="text-[10px] text-green-700 font-medium truncate">{kmlFile.name}</span>
                         </div>
                       )}
                     </div>
@@ -764,126 +826,176 @@ function OwnFoList() {
 
                   <div>
                     <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Ghi chú</Typography>
-                    <Field name="note" as="textarea" className="w-full border rounded p-2 h-20 text-sm resize-none" placeholder="Nhập ghi chú..." />
+                    <Field
+                      name="note"
+                      as="textarea"
+                      rows={3}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
+                      placeholder="Nhập ghi chú..."
+                    />
                   </div>
-                </div>
-              </DialogBody>
-              <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
-                <Button variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
-                  Hủy bỏ
-                </Button>
-                <CustomButton type="submit" size="sm" className="flex items-center gap-2">
-                  <PencilIcon className="h-4 w-4" /> Cập nhật
-                </CustomButton>
-              </DialogFooter>
-            </Form>
-          )}
-        </Formik>
+                </DialogBody>
+                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                  <CustomButton variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
+                    Hủy bỏ
+                  </CustomButton>
+                  <CustomButton type="submit" size="sm" className="bg-[#0d47a1] hover:bg-[#0a3a82] flex items-center gap-2">
+                    <PencilIcon className="h-4 w-4" />
+                    Cập nhật tuyến
+                  </CustomButton>
+                </DialogFooter>
+              </Form>
+            )}
+          </Formik>
         </div>
       </Dialog>
 
-      {/* Import Modal */}
-      <Dialog open={openImport} handler={() => setOpenImport(false)} size="lg" className="flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
+      <Dialog
+        open={openImport}
+        handler={() => setOpenImport(false)}
+        className="overflow-hidden rounded-lg bg-white shadow-xl flex flex-col max-h-[90vh]"
+        size="lg"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography variant="h4" color="blue-gray" className="font-bold">
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
               Import Tuyến cáp tự đầu tư
             </Typography>
-            <Typography variant="small" color="gray" className="font-normal mt-1">
-              Tải lên file Excel để cập nhật dữ liệu hàng loạt
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Tải lên tệp Excel để thêm hàng loạt tuyến cáp vào hệ thống
             </Typography>
           </div>
-          <IconButton variant="text" color="blue-gray" onClick={() => setOpenImport(false)}>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={() => setOpenImport(false)}
+          >
             <XMarkIcon className="h-5 w-5" />
           </IconButton>
         </div>
 
-        <DialogBody className="overflow-y-auto p-4 flex-1">
-          {/* File Selection Area */}
-          <div className="mb-6 p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-gray-50 transition-colors relative">
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="p-3 bg-blue-50 rounded-full">
-                <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
-              </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
-                <br />
-                <span className="text-xs text-gray-400">Hỗ trợ định dạng .xlsx, .xls</span>
-              </div>
-              
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={handleFileChange}
-              />
+        <DialogBody className="overflow-y-auto p-6 space-y-6 flex-1">
+          {/* Step 1: Template */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center justify-between">
+            <div className="flex-1 pr-4">
+              <Typography variant="small" color="blue" className="font-bold uppercase mb-1">
+                Bước 1: Tải tệp mẫu và chuẩn bị dữ liệu
+              </Typography>
+              <Typography variant="small" color="blue-gray" className="text-[11px] leading-relaxed">
+                Sử dụng tệp mẫu Excel đúng định dạng để đảm bảo dữ liệu được nhập chính xác.
+                Vui lòng không thay đổi cấu trúc các cột trong tệp mẫu.
+              </Typography>
             </div>
+            <CustomButton
+              size="sm"
+              variant="outlined"
+              color="blue"
+              className="flex items-center gap-2 bg-white shrink-0 shadow-sm"
+              onClick={handleDownloadTemplate}
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              <span>Tải tệp mẫu</span>
+            </CustomButton>
           </div>
 
-          {importFile && (
-            <div className="mb-6 flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg border border-blue-100">
-                  <DocumentIcon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <Typography variant="small" color="blue-gray" className="font-bold">
-                    {importFile.name}
-                  </Typography>
-                  <Typography variant="small" className="text-blue-gray-500 text-xs">
-                    {(importFile.size / 1024).toFixed(2)} KB
-                  </Typography>
+          {/* Step 2: File Selection */}
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <Typography variant="small" color="blue-gray" className="font-bold uppercase mb-3 text-[11px] tracking-wider">
+              Bước 2: Chọn tệp Excel từ máy tính
+            </Typography>
+
+            {!importFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-blue-50/30 hover:border-blue-300 transition-all p-8 relative group">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <div className="p-3 bg-white rounded-full shadow-sm border border-gray-200 group-hover:scale-110 transition-transform">
+                    <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
+                    <br />
+                    <span className="text-xs text-gray-400 mt-1 block tracking-tight">Hỗ trợ các định dạng tiêu chuẩn .xlsx, .xls</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={handleFileChange}
+                  />
                 </div>
               </div>
-              <IconButton variant="text" color="red" size="sm" onClick={() => {
-                setImportFile(null);
-                setImportSuccess(false);
-                setImportPreview([]);
-                setImportErrors(null);
-              }}>
-                <TrashIcon className="h-4 w-4" />
-              </IconButton>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center mb-4">
-             <Typography variant="small" className="text-gray-500">
-                Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
-             </Typography>
+            ) : (
+              <div className="flex items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl animate-fadeIn">
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <div className="p-2.5 bg-white rounded-lg border border-blue-100 shadow-sm flex-shrink-0">
+                    <DocumentIcon className="h-7 w-7 text-blue-600" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <Typography variant="small" color="blue-gray" className="font-bold truncate max-w-[300px]" title={importFile.name}>
+                      {importFile.name}
+                    </Typography>
+                    <Typography variant="small" className="text-blue-gray-400 text-[10px] font-medium uppercase mt-0.5">
+                      Excel Spreadsheet • {(importFile.size / 1024).toFixed(2)} KB
+                    </Typography>
+                  </div>
+                </div>
+                <IconButton
+                  variant="text"
+                  color="red"
+                  size="sm"
+                  className="rounded-full hover:bg-red-50 flex-shrink-0"
+                  onClick={() => {
+                    setImportFile(null);
+                    setImportSuccess(false);
+                    setImportPreview([]);
+                    setImportErrors(null);
+                  }}
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </IconButton>
+              </div>
+            )}
           </div>
 
-          {/* Status Messages */}
+          {/* Verification Result */}
           {importSuccess && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5" />
-              <div>
-                <Typography variant="small" color="green" className="font-bold">
+            <div className="p-5 bg-green-50 border border-green-100 rounded-xl flex items-start gap-4 animate-fadeIn shadow-sm">
+              <div className="bg-green-100 p-2 rounded-full flex-shrink-0">
+                <CheckCircleIcon className="h-6 w-6 text-green-700" />
+              </div>
+              <div className="flex-1">
+                <Typography variant="small" color="green" className="font-bold mb-0.5">
                   Kiểm tra dữ liệu thành công!
                 </Typography>
-                <Typography variant="small" className="text-green-700">
-                  Đã tìm thấy <b>{importPreview.length}</b> dòng dữ liệu hợp lệ. Nhấn "Lưu vào hệ thống" để tiến hành import.
+                <Typography variant="small" className="text-gray-700 text-xs">
+                  Sẵn sàng import <span className="font-bold text-green-800 text-sm mx-0.5">{importPreview.length}</span> tuyến cáp vào hệ thống. Nhấn "Lưu vào hệ thống" để hoàn tất.
                 </Typography>
               </div>
             </div>
           )}
 
-          {/* Error Display */}
+          {/* Errors */}
           {importErrors && Object.keys(importErrors).length > 0 && (
-            <div className="mb-4 border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm">
-              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2 text-red-700 font-medium">
-                <ExclamationTriangleIcon className="h-5 w-5" />
-                <span>Phát hiện lỗi trong file ({Object.keys(importErrors).length} dòng)</span>
+            <div className="border border-red-200 rounded-xl overflow-hidden bg-white shadow-sm animate-fadeIn">
+              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+                <div className="bg-red-100 p-1.5 rounded-full flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-4 w-4 text-red-700" />
+                </div>
+                <Typography variant="small" className="text-red-800 font-bold uppercase tracking-wider text-[11px]">
+                  Phát hiện lỗi trong file ({Object.keys(importErrors).length} dòng)
+                </Typography>
               </div>
-              <div className="max-h-60 overflow-y-auto p-0">
+              <div className="max-h-64 overflow-y-auto">
                 <ul className="divide-y divide-gray-100">
                   {Object.entries(importErrors).map(([row, errorGroup]) => (
-                    <li key={row} className="p-3 hover:bg-gray-50">
-                      <div className="flex gap-2 text-sm">
-                        <span className="font-bold text-gray-700 whitespace-nowrap">Dòng {row}:</span>
-                        <ul className="list-disc list-inside text-red-600 flex-1">
+                    <li key={row} className="p-4 hover:bg-red-50/30 transition-colors">
+                      <div className="flex gap-4">
+                        <span className="font-bold text-gray-900 bg-red-100/50 px-2.5 py-1 rounded-md h-fit text-xs border border-red-200">Dòng {row}</span>
+                        <ul className="space-y-2 flex-1 mt-0.5">
                           {errorGroup.errors?.map((err, idx) => (
-                            <li key={idx}>
-                              <span className="font-medium text-gray-800">{err.columnName || err.column}:</span> {err.message}
+                            <li key={idx} className="flex flex-col gap-0.5">
+                              <span className="font-bold text-gray-700 text-[11px] uppercase tracking-tight">{err.columnName || err.column}</span>
+                              <span className="text-red-600 font-medium text-xs">{err.message}</span>
                             </li>
                           ))}
                         </ul>
@@ -897,37 +1009,44 @@ function OwnFoList() {
 
           {/* Preview Table */}
           {importSuccess && importPreview.length > 0 && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 font-bold text-gray-700 text-xs uppercase tracking-wider">
-                Xem trước dữ liệu ({importPreview.length} dòng)
+            <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-fadeIn bg-white">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <Typography variant="small" className="font-bold text-gray-700 uppercase tracking-wider text-[11px]">
+                  Xem trước dữ liệu (Tối đa 10 dòng)
+                </Typography>
+                <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-200">
+                  TỔNG {importPreview.length} DÒNG
+                </span>
               </div>
-              <div className="overflow-x-auto max-h-60">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0 z-10">
+              <div className="overflow-x-auto max-h-64">
+                <table className="w-full text-xs text-left">
+                  <thead className="text-[10px] text-gray-500 uppercase bg-gray-100 sticky top-0 z-10 border-b">
                     <tr>
-                      <th className="px-4 py-3 border-b font-medium">Trạm đầu</th>
-                      <th className="px-4 py-3 border-b font-medium">Trạm cuối</th>
-                      <th className="px-4 py-3 border-b font-medium">Core</th>
-                      <th className="px-4 py-3 border-b font-medium">KC Thiết kế</th>
-                      <th className="px-4 py-3 border-b font-medium">KC Thực tế</th>
-                      <th className="px-4 py-3 border-b font-medium">Loại cáp</th>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">Trạm đầu</th>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">Trạm cuối</th>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0 text-center">Core</th>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0 text-center">Khoảng cách</th>
+                      <th className="px-4 py-3 font-bold">Loại cáp</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {importPreview.slice(0, 10).map((row, idx) => (
-                      <tr key={idx} className="bg-white hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium text-blue-600">{row.nearSite}</td>
-                        <td className="px-4 py-2">{row.farSite}</td>
-                        <td className="px-4 py-2">{row.coreQuantity}</td>
-                        <td className="px-4 py-2">{row.designedDistance}</td>
-                        <td className="px-4 py-2">{row.finalDistance}</td>
-                        <td className="px-4 py-2">{row.fiberTypeName}</td>
+                      <tr key={idx} className="bg-white hover:bg-blue-50/30 transition-colors">
+                        <td className="px-4 py-2.5 font-bold text-blue-700 border-r border-gray-50">{row.nearSite}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-900 border-r border-gray-50">{row.farSite}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50 text-center">{row.coreQuantity}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50 text-center">{row.finalDistance} km</td>
+                        <td className="px-4 py-2.5">
+                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-bold border border-gray-200">
+                            {row.fiberTypeName}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                     {importPreview.length > 10 && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-3 text-center text-gray-500 italic bg-gray-50">
-                          ... và {importPreview.length - 10} dòng khác ...
+                      <tr className="bg-gray-50/50">
+                        <td colSpan={5} className="px-4 py-4 text-center text-gray-400 italic text-[11px] font-medium">
+                          ... và {importPreview.length - 10} dòng khác không được hiển thị trong bản xem trước ...
                         </td>
                       </tr>
                     )}
@@ -937,28 +1056,34 @@ function OwnFoList() {
             </div>
           )}
         </DialogBody>
-        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg">
-          <Button variant="text" color="blue-gray" onClick={() => setOpenImport(false)} className="normal-case">
+
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg shadow-inner">
+          <CustomButton variant="text" color="blue-gray" onClick={() => setOpenImport(false)} size="sm">
             Hủy bỏ
-          </Button>
+          </CustomButton>
           {!importSuccess ? (
-            <CustomButton 
-              color="blue" 
+            <CustomButton
+              className="bg-[#0d47a1] hover:bg-[#0a3a82] flex items-center gap-2"
               onClick={handleCheckImport}
               disabled={!importFile}
-              className="flex items-center gap-2"
+              size="sm"
             >
-              <MagnifyingGlassIcon className="h-4 w-4" /> Kiểm tra dữ liệu
+              <MagnifyingGlassIcon className="h-4 w-4" />
+              <span>Kiểm tra dữ liệu</span>
             </CustomButton>
           ) : (
-            <CustomButton 
-              color="green" 
+            <CustomButton
+              className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
               onClick={handleSaveImport}
               disabled={saving}
-              className="flex items-center gap-2"
+              size="sm"
             >
-              {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ArrowDownTrayIcon className="h-4 w-4" />}
-              {saving ? "Đang lưu..." : "Lưu vào hệ thống"}
+              {saving ? (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircleIcon className="h-4 w-4" />
+              )}
+              <span>{saving ? "Đang lưu..." : "Lưu vào hệ thống"}</span>
             </CustomButton>
           )}
         </DialogFooter>
@@ -967,26 +1092,60 @@ function OwnFoList() {
       {/* Map Modal */}
       <Dialog open={openMap} handler={() => setOpenMap(false)} size="xl" className="overflow-hidden">
         <DialogBody className="p-0 h-[85vh]">
-            {selectedFoMap && openMap && <KmlMap 
-              foId={selectedFoMap.id} 
-              onClose={() => setOpenMap(false)} 
-              title={`${selectedFoMap.nearSite?.siteId} - ${selectedFoMap.farSite?.siteId}`}
-            />}
+          {selectedFoMap && openMap && <KmlMap
+            foId={selectedFoMap.id}
+            onClose={() => setOpenMap(false)}
+            title={`${selectedFoMap.nearSite?.siteId} - ${selectedFoMap.farSite?.siteId}`}
+          />}
         </DialogBody>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <Dialog open={openDelete} handler={() => setOpenDelete(false)} size="xs">
-        <DialogHeader className="flex flex-col items-center gap-2">
-          <ExclamationTriangleIcon className="h-12 w-12 text-red-500" />
-          <Typography variant="h5">Xác nhận xóa</Typography>
-        </DialogHeader>
-        <DialogBody className="text-center">
-          Bạn có chắc chắn muốn xóa tuyến cáp này? Hành động này không thể hoàn tác.
+      <Dialog
+        open={openDelete}
+        handler={() => setOpenDelete(false)}
+        size="xs"
+        className="rounded-lg overflow-hidden shadow-xl"
+      >
+        <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+          <div className="bg-red-100 p-2 rounded-full">
+            <TrashIcon className="h-5 w-5 text-red-600" />
+          </div>
+          <Typography variant="h5" color="red" className="font-semibold">
+            Xác nhận xóa
+          </Typography>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={() => setOpenDelete(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <DialogBody className="p-6 text-blue-gray-700">
+          <Typography variant="paragraph" color="blue-gray" className="font-medium">
+            Bạn có chắc chắn muốn xóa tuyến cáp này?
+          </Typography>
+          <Typography variant="small" color="gray" className="mt-3 italic">
+            Hành động này không thể phục hồi và dữ liệu sẽ bị xóa vĩnh viễn khỏi hệ thống.
+          </Typography>
         </DialogBody>
-        <DialogFooter className="flex justify-center gap-3">
-          <Button variant="text" onClick={() => setOpenDelete(false)}>Hủy</Button>
-          <Button color="red" onClick={handleDeleteSubmit}>Xóa</Button>
+
+        <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
+          <CustomButton variant="text" color="blue-gray" onClick={() => setOpenDelete(false)} size="sm">
+            Hủy bỏ
+          </CustomButton>
+          <CustomButton
+            variant="filled"
+            color="red"
+            onClick={handleDeleteSubmit}
+            size="sm"
+            className="flex items-center gap-2 shadow-md shadow-red-500/20 bg-red-600 hover:bg-red-700"
+          >
+            <TrashIcon className="h-4 w-4" />
+            <span>Xác nhận xóa</span>
+          </CustomButton>
         </DialogFooter>
       </Dialog>
     </div>

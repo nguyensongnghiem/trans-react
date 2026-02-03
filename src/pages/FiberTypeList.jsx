@@ -4,6 +4,7 @@ import {
   TrashIcon,
   PlusIcon,
   MagnifyingGlassIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/solid";
 import {
   Card,
@@ -211,47 +212,95 @@ function FiberTypeList() {
         </table>
       </Card>
 
-      {/* Create Modal */}
-      <Dialog open={openCreate} handler={() => setOpenCreate(!openCreate)} size="sm">
-        <DialogHeader>Thêm mới Loại cáp</DialogHeader>
+      <Dialog
+        open={openCreate}
+        handler={() => setOpenCreate(false)}
+        size="sm"
+        className="rounded-lg overflow-hidden shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Thêm mới Loại cáp
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Nhập thông tin loại cáp quang mới
+            </Typography>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={() => setOpenCreate(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
         <Formik
           initialValues={{ name: "", description: "", colorCode: "#000000", lineStyle: "solid", active: true }}
           validationSchema={validationSchema}
           onSubmit={handleCreate}
         >
-          {({ errors, touched, values, setFieldValue }) => (
-            <Form>
-              <DialogBody>
-                <div className="flex flex-col gap-4">
-                  <div>
+          {({ errors, touched, values, setFieldValue, handleSubmit }) => (
+            <Form onSubmit={handleSubmit}>
+              <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <Typography variant="small" color="blue-gray" className="font-bold">
+                      Tên loại cáp
+                    </Typography>
                     <Field name="name">
                       {({ field }) => (
-                        <Input {...field} label="Tên loại cáp" error={touched.name && Boolean(errors.name)} />
+                        <Input
+                          {...field}
+                          size="lg"
+                          className="!border-t-blue-gray-200 focus:!border-blue-500"
+                          labelProps={{
+                            className: "before:content-none after:content-none",
+                          }}
+                          placeholder="Nhập tên loại cáp..."
+                          error={touched.name && Boolean(errors.name)}
+                        />
                       )}
                     </Field>
-                    <ErrorMessage name="name" component="div" className="text-red-500 text-xs mt-1" />
+                    <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
                   </div>
-                  <div>
+                  <div className="space-y-1">
+                    <Typography variant="small" color="blue-gray" className="font-bold">
+                      Mô tả
+                    </Typography>
                     <Field name="description">
                       {({ field }) => (
-                        <Textarea {...field} label="Mô tả" />
+                        <Textarea
+                          {...field}
+                          rows={3}
+                          className="!border-t-blue-gray-200 focus:!border-blue-500"
+                          labelProps={{
+                            className: "before:content-none after:content-none",
+                          }}
+                          placeholder="Mô tả chi tiết..."
+                        />
                       )}
                     </Field>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Màu sắc</label>
-                      <div className="flex items-center gap-2">
-                        <Field name="colorCode" type="color" className="h-10 w-14 p-0 border-0" />
-                        <span className="text-sm">{values.colorCode}</span>
+                    <div className="space-y-1">
+                      <Typography variant="small" color="blue-gray" className="font-bold">
+                        Màu sắc
+                      </Typography>
+                      <div className="flex items-center gap-2 p-2 border border-blue-gray-200 rounded-lg">
+                        <Field name="colorCode" type="color" className="h-8 w-14 p-0 border-0 bg-transparent cursor-pointer" />
+                        <span className="text-sm font-medium">{values.colorCode}</span>
                       </div>
                     </div>
-                    <div>
-                      <label className="text-sm text-gray-600 mb-1 block">Kiểu đường</label>
+                    <div className="space-y-1">
+                      <Typography variant="small" color="blue-gray" className="font-bold">
+                        Kiểu đường
+                      </Typography>
                       <Field
                         as="select"
                         name="lineStyle"
-                        className="w-full p-2 border border-blue-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                        className="w-full p-2.5 border border-blue-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
                       >
                         <option value="solid">Solid (Nét liền)</option>
                         <option value="dashed">Dashed (Nét đứt)</option>
@@ -259,30 +308,57 @@ function FiberTypeList() {
                       </Field>
                     </div>
                   </div>
-                  <div>
+                  <div className="pt-2">
                     <Switch
-                      label="Hoạt động"
+                      label={<Typography color="blue-gray" className="font-medium text-sm ml-2">Trạng thái hoạt động</Typography>}
                       checked={values.active}
                       onChange={(e) => setFieldValue("active", e.target.checked)}
-                      color="green"
+                      color="blue"
                     />
                   </div>
                 </div>
               </DialogBody>
-              <DialogFooter>
-                <Button variant="text" onClick={() => setOpenCreate(false)} className="mr-2">
-                  Hủy
-                </Button>
-                <CustomButton type="submit">Lưu</CustomButton>
+              <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
+                <CustomButton variant="text" color="blue-gray" onClick={() => setOpenCreate(false)} size="sm">
+                  Hủy bỏ
+                </CustomButton>
+                <CustomButton
+                  type="submit"
+                  size="sm"
+                  className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20"
+                >
+                  Lưu thông tin
+                </CustomButton>
               </DialogFooter>
             </Form>
           )}
         </Formik>
       </Dialog>
 
-      {/* Edit Modal */}
-      <Dialog open={openEdit} handler={() => setOpenEdit(!openEdit)} size="sm">
-        <DialogHeader>Cập nhật Loại cáp</DialogHeader>
+      <Dialog
+        open={openEdit}
+        handler={() => setOpenEdit(false)}
+        size="sm"
+        className="rounded-lg overflow-hidden shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Cập nhật Loại cáp
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Chỉnh sửa thông tin loại cáp quang #{selectedItem?.id}
+            </Typography>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={() => setOpenEdit(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
         {selectedItem && (
           <Formik
             initialValues={{
@@ -295,39 +371,64 @@ function FiberTypeList() {
             validationSchema={validationSchema}
             onSubmit={handleUpdate}
           >
-            {({ errors, touched, values, setFieldValue }) => (
-              <Form>
-                <DialogBody>
-                  <div className="flex flex-col gap-4">
-                    <div>
+            {({ errors, touched, values, setFieldValue, handleSubmit }) => (
+              <Form onSubmit={handleSubmit}>
+                <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <Typography variant="small" color="blue-gray" className="font-bold">
+                        Tên loại cáp
+                      </Typography>
                       <Field name="name">
                         {({ field }) => (
-                          <Input {...field} label="Tên loại cáp" error={touched.name && Boolean(errors.name)} />
+                          <Input
+                            {...field}
+                            size="lg"
+                            className="!border-t-blue-gray-200 focus:!border-blue-500"
+                            labelProps={{
+                              className: "before:content-none after:content-none",
+                            }}
+                            error={touched.name && Boolean(errors.name)}
+                          />
                         )}
                       </Field>
-                      <ErrorMessage name="name" component="div" className="text-red-500 text-xs mt-1" />
+                      <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
                     </div>
-                    <div>
+                    <div className="space-y-1">
+                      <Typography variant="small" color="blue-gray" className="font-bold">
+                        Mô tả
+                      </Typography>
                       <Field name="description">
                         {({ field }) => (
-                          <Textarea {...field} label="Mô tả" />
+                          <Textarea
+                            {...field}
+                            rows={3}
+                            className="!border-t-blue-gray-200 focus:!border-blue-500"
+                            labelProps={{
+                              className: "before:content-none after:content-none",
+                            }}
+                          />
                         )}
                       </Field>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Màu sắc</label>
-                        <div className="flex items-center gap-2">
-                          <Field name="colorCode" type="color" className="h-10 w-14 p-0 border-0" />
-                          <span className="text-sm">{values.colorCode}</span>
+                      <div className="space-y-1">
+                        <Typography variant="small" color="blue-gray" className="font-bold">
+                          Màu sắc
+                        </Typography>
+                        <div className="flex items-center gap-2 p-2 border border-blue-gray-200 rounded-lg">
+                          <Field name="colorCode" type="color" className="h-8 w-14 p-0 border-0 bg-transparent cursor-pointer" />
+                          <span className="text-sm font-medium">{values.colorCode}</span>
                         </div>
                       </div>
-                      <div>
-                        <label className="text-sm text-gray-600 mb-1 block">Kiểu đường</label>
+                      <div className="space-y-1">
+                        <Typography variant="small" color="blue-gray" className="font-bold">
+                          Kiểu đường
+                        </Typography>
                         <Field
                           as="select"
                           name="lineStyle"
-                          className="w-full p-2 border border-blue-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                          className="w-full p-2.5 border border-blue-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
                         >
                           <option value="solid">Solid (Nét liền)</option>
                           <option value="dashed">Dashed (Nét đứt)</option>
@@ -335,21 +436,28 @@ function FiberTypeList() {
                         </Field>
                       </div>
                     </div>
-                    <div>
+                    <div className="pt-2">
                       <Switch
-                        label="Hoạt động"
+                        label={<Typography color="blue-gray" className="font-medium text-sm ml-2">Trạng thái hoạt động</Typography>}
                         checked={values.active}
                         onChange={(e) => setFieldValue("active", e.target.checked)}
-                        color="green"
+                        color="blue"
                       />
                     </div>
                   </div>
                 </DialogBody>
-                <DialogFooter>
-                  <Button variant="text" onClick={() => setOpenEdit(false)} className="mr-2">
-                    Hủy
-                  </Button>
-                  <CustomButton type="submit">Cập nhật</CustomButton>
+                <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
+                  <CustomButton variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
+                    Hủy bỏ
+                  </CustomButton>
+                  <CustomButton
+                    type="submit"
+                    size="sm"
+                    className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20 flex items-center gap-2"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                    Cập nhật
+                  </CustomButton>
                 </DialogFooter>
               </Form>
             )}
@@ -357,18 +465,48 @@ function FiberTypeList() {
         )}
       </Dialog>
 
-      {/* Delete Modal */}
-      <Dialog open={openDelete} handler={() => setOpenDelete(!openDelete)} size="xs">
-        <DialogHeader>Xác nhận xóa</DialogHeader>
-        <DialogBody>
-          Bạn có chắc chắn muốn xóa loại cáp <b>{selectedItem?.name}</b> không?
+      <Dialog
+        open={openDelete}
+        handler={() => setOpenDelete(false)}
+        size="xs"
+        className="rounded-lg overflow-hidden shadow-xl"
+      >
+        <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+          <div className="bg-red-100 p-2 rounded-full">
+            <TrashIcon className="h-5 w-5 text-red-600" />
+          </div>
+          <Typography variant="h5" color="red" className="font-semibold">
+            Xác nhận xóa
+          </Typography>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={() => setOpenDelete(false)}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+        <DialogBody className="p-6 text-blue-gray-700">
+          <Typography variant="paragraph" color="blue-gray" className="font-medium">
+            Bạn có chắc chắn muốn xóa loại cáp <b>{selectedItem?.name}</b> không?
+          </Typography>
+          <Typography variant="small" color="gray" className="mt-3 italic">
+            Dữ liệu sẽ bị xóa vĩnh viễn và không thể phục hồi.
+          </Typography>
         </DialogBody>
-        <DialogFooter>
-          <Button variant="text" onClick={() => setOpenDelete(false)} className="mr-2">
-            Hủy
-          </Button>
-          <Button color="red" onClick={handleDelete}>
-            Xóa
+        <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
+          <CustomButton variant="text" color="blue-gray" onClick={() => setOpenDelete(false)} size="sm">
+            Hủy bỏ
+          </CustomButton>
+          <Button
+            color="red"
+            onClick={handleDelete}
+            size="sm"
+            className="flex items-center gap-2 shadow-md shadow-red-500/20 bg-red-600 hover:bg-red-700"
+          >
+            <TrashIcon className="h-4 w-4" />
+            Xác nhận xóa
           </Button>
         </DialogFooter>
       </Dialog>
