@@ -114,7 +114,7 @@ function SiteList2() {
       "Tên trạm": site.siteName,
       "Loại truyền dẫn trạm": site.siteTransmissionType?.name,
       "Đơn vị sở hữu TD": site.transmissionOwner?.name,
-      "Chủ sở hữu CSHT": site.siteOwner?.name,
+      "Đơn vị sở hữu CSHT": site.siteOwner?.name,
       "Vĩ độ": site.latitude,
       "Kinh độ": site.longitude,
       "Địa chỉ": site.address,
@@ -441,7 +441,7 @@ function SiteList2() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
-              Chủ sở hữu CSHT
+              Đơn vị sở hữu CSHT
             </span>
             <Select
               isClearable
@@ -956,7 +956,7 @@ function SiteList2() {
                     />
 
                     <FormSelect
-                      label="Chủ nhà trạm"
+                      label="Đơn vị sở hữu CSHT"
                       name="siteOwner.id"
                       options={siteOwnerList}
                       getOptionLabel={(option) => option.name}
@@ -1230,7 +1230,7 @@ function SiteList2() {
                     />
 
                     <FormSelect
-                      label="Chủ nhà trạm"
+                      label="Đơn vị sở hữu CSHT"
                       name="siteOwner.id"
                       options={siteOwnerList}
                       getOptionLabel={(option) => option.name}
