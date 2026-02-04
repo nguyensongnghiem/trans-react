@@ -56,9 +56,6 @@ const BackupDashboard = () => {
   const itemsPerPage = 10;
   const axiosInstance = useAxiosPrivate();
 
-  const API_URL =
-    import.meta.env.VITE_BE_API_URL || "http://localhost:8088/api";
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -70,22 +67,13 @@ const BackupDashboard = () => {
       // Gọi song song các API để lấy dữ liệu
       const [routersRes, summaryRes, historyRes] = await Promise.all([
         axiosInstance.get("/routers"),
-        fetch(`${API_URL}/routers/backups/summary`),
-        fetch(`${API_URL}/routers/backups/history`),
+        axiosInstance.get("/routers/backups/summary"),
+        axiosInstance.get("/routers/backups/history"),
       ]);
 
-      if (!summaryRes.ok) {
-        const errText = await summaryRes.text();
-        throw new Error(`Lỗi Summary: ${errText || summaryRes.statusText}`);
-      }
-      if (!historyRes.ok) {
-        const errText = await historyRes.text();
-        throw new Error(`Lỗi History: ${errText || historyRes.statusText}`);
-      }
-
       const allRouters = routersRes.data;
-      const summaryData = await summaryRes.json();
-      const historyData = await historyRes.json();
+      const summaryData = summaryRes.data;
+      const historyData = historyRes.data;
 
       // Merge router list with backup summary
       const summaryMap = new Map(
@@ -154,12 +142,10 @@ const BackupDashboard = () => {
     setLoadingDetail(true);
     setDeviceBackups([]); // Reset data cũ
     try {
-      const response = await fetch(
-        `${API_URL}/routers/backups/files/${routerName}`,
+      const response = await axiosInstance.get(
+        `/routers/backups/files/${routerName}`,
       );
-      if (!response.ok) throw new Error("Failed to fetch backups");
-      const data = await response.json();
-      setDeviceBackups(data);
+      setDeviceBackups(response.data);
     } catch (err) {
       console.error(err);
       // Có thể hiển thị thông báo lỗi nếu cần
@@ -170,11 +156,11 @@ const BackupDashboard = () => {
 
   const handleDownload = async (filename) => {
     try {
-      const response = await fetch(
-        `${API_URL}/routers/backups/files/${selectedRouter}/${filename}`,
+      const response = await axiosInstance.get(
+        `/routers/backups/files/${selectedRouter}/${filename}`,
+        { responseType: "blob" }
       );
-      if (!response.ok) throw new Error("Download failed");
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -190,11 +176,11 @@ const BackupDashboard = () => {
 
   const handleDownloadFromHistory = async (routerName, filename) => {
     try {
-      const response = await fetch(
-        `${API_URL}/routers/backups/files/${routerName}/${filename}`,
+      const response = await axiosInstance.get(
+        `/routers/backups/files/${routerName}/${filename}`,
+        { responseType: "blob" }
       );
-      if (!response.ok) throw new Error("Download failed");
-      const blob = await response.blob();
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -235,17 +221,12 @@ const BackupDashboard = () => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/routers/backups/export`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ provinces: selectedExportProvinces }),
-      });
-
-      if (!response.ok) throw new Error("Export failed");
-
-      const blob = await response.blob();
+      const response = await axiosInstance.post(
+        `/routers/backups/export`,
+        { provinces: selectedExportProvinces },
+        { responseType: "blob" }
+      );
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
