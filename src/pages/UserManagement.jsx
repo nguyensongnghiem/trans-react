@@ -220,7 +220,7 @@ const UserManagement = () => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="p-4 w-20">
-                <Typography variant="small" color="blue-gray" className="font-bold">ID</Typography>
+                <Typography variant="small" color="blue-gray" className="font-bold">STT</Typography>
               </th>
               <th className="p-4">
                 <Typography variant="small" color="blue-gray" className="font-bold">Username</Typography>
@@ -240,11 +240,11 @@ const UserManagement = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredUsers.map((user) => (
+            {filteredUsers.map((user, index) => (
               <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                 <td className="p-4">
                   <Typography variant="small" color="blue-gray" className="font-normal">
-                    {user.id}
+                    {index + 1}
                   </Typography>
                 </td>
                 <td className="p-4">

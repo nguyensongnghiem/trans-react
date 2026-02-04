@@ -534,6 +534,7 @@ function MWLineList() {
         <table className="w-full text-left table-auto">
           <thead className="bg-gray-50">
             <tr>
+              <th className="p-4 font-bold text-sm">STT</th>
               <th className="p-4 font-bold text-sm">Tỉnh</th>
               <th className="p-4 font-bold text-sm">Near Site</th>
               <th className="p-4 font-bold text-sm">Far Site</th>
@@ -545,8 +546,11 @@ function MWLineList() {
             </tr>
           </thead>
           <tbody>
-            {paginatedMWLines.map((mw) => (
+            {paginatedMWLines.map((mw, index) => (
               <tr key={mw.id} className="border-t hover:bg-gray-50">
+                <td className="p-4 text-sm">
+                  {(currentPage - 1) * rowsPerPage + index + 1}
+                </td>
                 <td className="p-4 text-sm font-medium">
                   {mw.nearSite?.province?.name}
                   {mw.farSite?.province &&

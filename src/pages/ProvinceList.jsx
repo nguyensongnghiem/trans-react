@@ -141,6 +141,9 @@ function ProvinceList() {
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="p-4 w-20">
+                <Typography variant="small" color="blue-gray" className="font-bold">STT</Typography>
+              </th>
               <th className="p-4 w-32">
                 <Typography variant="small" color="blue-gray" className="font-bold">Mã Tỉnh</Typography>
               </th>
@@ -155,8 +158,11 @@ function ProvinceList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredList.map((item) => (
+            {filteredList.map((item, index) => (
               <tr key={item.id} className="hover:bg-gray-50">
+                <td className="p-4">
+                  <Typography variant="small" color="blue-gray">{index + 1}</Typography>
+                </td>
                 <td className="p-4 font-medium">{item.id}</td>
                 <td className="p-4">{item.name}</td>
                 {isAdmin && (
@@ -189,7 +195,7 @@ function ProvinceList() {
             ))}
             {filteredList.length === 0 && (
               <tr>
-                <td colSpan={isAdmin ? 3 : 2} className="p-4 text-center text-gray-500">
+                <td colSpan={isAdmin ? 4 : 3} className="p-4 text-center text-gray-500">
                   Không tìm thấy dữ liệu
                 </td>
               </tr>

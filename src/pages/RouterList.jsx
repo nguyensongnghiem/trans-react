@@ -545,6 +545,15 @@ function RouterList() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
+                    STT
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
                     Tỉnh
                   </Typography>
                 </th>
@@ -632,11 +641,20 @@ function RouterList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginatedRouters.map((router) => (
+              {paginatedRouters.map((router, index) => (
                 <tr
                   key={router.id}
                   className="hover:bg-gray-50/80 transition-colors"
                 >
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </Typography>
+                  </td>
                   <td className="p-4">
                     <Typography
                       variant="small"

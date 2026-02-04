@@ -150,6 +150,9 @@ function MicrowaveLicenseList() {
                     <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
                             <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">STT</Typography>
+                            </th>
+                            <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Số GP</Typography>
                             </th>
                             <th className="p-4">
@@ -175,8 +178,11 @@ function MicrowaveLicenseList() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {filteredList.map((item) => (
+                        {filteredList.map((item, index) => (
                             <tr key={item.id} className="hover:bg-gray-50">
+                                <td className="p-4">
+                                    <Typography variant="small" color="blue-gray">{index + 1}</Typography>
+                                </td>
                                 <td className="p-4 font-medium">{item.licenseNumber}</td>
                                 <td className="p-4">{formatDateLabel(item.issueDate)}</td>
                                 <td className="p-4">{formatDateLabel(item.expiryDate)}</td>

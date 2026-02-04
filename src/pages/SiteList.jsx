@@ -363,6 +363,15 @@ function SiteList() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
+                    STT
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
                     Tỉnh
                   </Typography>
                 </th>
@@ -450,6 +459,15 @@ function SiteList() {
 
                 return (
                   <tr key={site.id} className="text-left hover:bg-gray-50">
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
+                      >
+                        {page * siteList.size + index + 1}
+                      </Typography>
+                    </td>
                     <td className={classes}>
                       <Typography
                         variant="small"

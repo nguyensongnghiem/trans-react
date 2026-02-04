@@ -106,15 +106,18 @@ function SiteList2() {
 
   const onBtnExport = () => {
     const dataToExport = filteredSites.map((site) => ({
-      Tỉnh: site.province?.name,
+      "Tỉnh": site.province?.name,
       "Site ID": site.siteId,
-      "Site ID 2": site.siteId2,
+      "Mã tài sản": site.assetCode,
+      "SiteName ERP": site.siteErp,
+      "Site ID khác": site.siteId2,
       "Tên trạm": site.siteName,
-      "Loại truyền dẫn": site.siteTransmissionType?.name,
+      "Loại truyền dẫn trạm": site.siteTransmissionType?.name,
       "Đơn vị sở hữu TD": site.transmissionOwner?.name,
-      "Chủ nhà trạm": site.siteOwner?.name,
+      "Chủ sở hữu CSHT": site.siteOwner?.name,
       "Vĩ độ": site.latitude,
       "Kinh độ": site.longitude,
+      "Địa chỉ": site.address,
       "Ghi chú": site.note,
     }));
 
@@ -175,10 +178,13 @@ function SiteList2() {
     return {
       id: values.id,
       siteId: values.siteId,
+      assetCode: values.assetCode,
+      siteErp: values.siteErp,
       siteId2: values.siteId2,
       siteName: values.siteName,
       latitude: +values.latitude,
       longitude: +values.longitude,
+      address: values.address,
       note: values.note,
       active: values.active,
       provinceId: values.province?.id || null,
@@ -379,7 +385,7 @@ function SiteList2() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
-              Sở hữu truyền dẫn
+              Đơn vị sở hữu truyền dẫn
             </span>
             <Select
               isClearable
@@ -407,7 +413,7 @@ function SiteList2() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
-              Loại truyền dẫn
+              Loại truyền dẫn của trạm
             </span>
             <Select
               isClearable
@@ -435,7 +441,7 @@ function SiteList2() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
-              Chủ nhà trạm
+              Chủ sở hữu CSHT
             </span>
             <Select
               isClearable
@@ -495,6 +501,15 @@ function SiteList2() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
+                    STT
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
                     Tỉnh
                   </Typography>
                 </th>
@@ -513,7 +528,16 @@ function SiteList2() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
-                    Site ID 2
+                    Mã tài sản
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Site ID khác (nếu có)
                   </Typography>
                 </th>
                 <th className="p-4">
@@ -549,6 +573,15 @@ function SiteList2() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
+                    Địa chỉ
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
                     Ghi chú
                   </Typography>
                 </th>
@@ -564,11 +597,20 @@ function SiteList2() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {paginatedSites.map((site) => (
+              {paginatedSites.map((site, index) => (
                 <tr
                   key={site.id}
                   className="hover:bg-gray-50/80 transition-colors"
                 >
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </Typography>
+                  </td>
                   <td className="p-4">
                     <Typography
                       variant="small"
@@ -585,6 +627,15 @@ function SiteList2() {
                       className="font-bold"
                     >
                       {site.siteId}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {site.assetCode || "-"}
                     </Typography>
                   </td>
                   <td className="p-4">
@@ -626,6 +677,16 @@ function SiteList2() {
                       className="font-normal text-xs italic"
                     >
                       {site.latitude?.toFixed(4)}, {site.longitude?.toFixed(4)}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal opacity-70 max-w-[200px] truncate"
+                      title={site.address}
+                    >
+                      {site.address || "-"}
                     </Typography>
                   </td>
                   <td className="p-4">
@@ -762,10 +823,13 @@ function SiteList2() {
             initialValues={{
               province: { id: "DN" },
               siteId: "",
+              assetCode: "",
+              siteErp: "",
               siteId2: "",
               siteName: "",
               latitude: "",
               longitude: "",
+              address: "",
               transmissionOwner: { id: 1 },
               siteTransmissionType: { id: 1 },
               siteOwner: { id: 1 },
@@ -831,6 +895,37 @@ function SiteList2() {
                         <Field
                           name="siteId2"
                           placeholder="VD: DN_001_OLD"
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
+                          Mã tài sản
+                        </Typography>
+                        <Field
+                          name="assetCode"
+                          placeholder="Mã tài sản..."
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
+                          SiteName ERP
+                        </Typography>
+                        <Field
+                          name="siteErp"
+                          placeholder="Mã ERP..."
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                         />
                       </div>
@@ -907,6 +1002,21 @@ function SiteList2() {
                           className="mt-1 text-xs text-red-600 font-medium"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
+                        Địa chỉ
+                      </Typography>
+                      <Field
+                        name="address"
+                        placeholder="Nhập địa chỉ trạm..."
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1064,6 +1174,37 @@ function SiteList2() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
+                          Mã tài sản
+                        </Typography>
+                        <Field
+                          name="assetCode"
+                          placeholder="Mã tài sản..."
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="mb-1 font-bold"
+                        >
+                          Mã ERP
+                        </Typography>
+                        <Field
+                          name="siteErp"
+                          placeholder="Mã ERP..."
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <Typography
                         variant="small"
@@ -1135,6 +1276,21 @@ function SiteList2() {
                           className="mt-1 text-xs text-red-600 font-medium"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="mb-1 font-bold"
+                      >
+                        Địa chỉ
+                      </Typography>
+                      <Field
+                        name="address"
+                        placeholder="Nhập địa chỉ trạm..."
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
