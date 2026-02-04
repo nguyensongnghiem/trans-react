@@ -840,15 +840,9 @@ function LeaselineList() {
                         </label>
                         <Select
                           placeholder="Site ID"
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("site.id", selectedOption.id);
+                          value={simpleSiteList.find(o => o.id === values.site.id) || null}
+                          onChange={(opt) => {
+                            setFieldValue("site.id", opt?.id || null);
                           }}
                           classNames={{
                             control: (state) =>
@@ -856,13 +850,11 @@ function LeaselineList() {
                                 ? "border-blue-500"
                                 : "border-grey-300",
                           }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
+                          components={{ MenuList: CustomMenuList }}
                           isSearchable={true}
                           options={simpleSiteList}
-                          name="site.id"
                           getOptionLabel={(option) => option.siteId}
+                          getOptionValue={(option) => option.id}
                           isLoading={false}
                           loadingMessage={() => "Đang lấy thông tin trạm..."}
                           noOptionsMessage={() => "Site ID không tìm thấy"}
@@ -1075,18 +1067,9 @@ function LeaselineList() {
                         </label>
                         <Select
                           placeholder="Site ID"
-                          defaultValue={simpleSiteList.find(
-                            ({ id }) => id === values.site.id
-                          )}
-                          value={
-                            simpleSiteList
-                              ? simpleSiteList.find((option) => {
-                                  return option.id === getFieldProps("site.id");
-                                })
-                              : ""
-                          }
-                          onChange={(selectedOption) => {
-                            setFieldValue("site.id", selectedOption.id);
+                          value={simpleSiteList.find(o => o.id === values.site?.id) || null}
+                          onChange={(opt) => {
+                            setFieldValue("site.id", opt?.id || null);
                           }}
                           classNames={{
                             control: (state) =>
@@ -1094,13 +1077,11 @@ function LeaselineList() {
                                 ? "border-blue-300"
                                 : "border-grey-300",
                           }}
-                          components={{
-                            MenuList: CustomMenuList,
-                          }}
+                          components={{ MenuList: CustomMenuList }}
                           isSearchable={true}
                           options={simpleSiteList}
-                          name="site.id"
                           getOptionLabel={(option) => option.siteId}
+                          getOptionValue={(option) => option.id}
                           isLoading={false}
                           loadingMessage={() => "Đang lấy thông tin trạm..."}
                           noOptionsMessage={() => "Không có thông tin trạm"}

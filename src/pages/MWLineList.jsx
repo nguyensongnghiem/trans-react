@@ -701,6 +701,7 @@ function MWLineList() {
                         name="nearSite.id"
                         options={siteList}
                         getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
                         required
                       />
 
@@ -709,6 +710,7 @@ function MWLineList() {
                         name="farSite.id"
                         options={siteList}
                         getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
                         required
                       />
 
@@ -734,6 +736,7 @@ function MWLineList() {
                         name="microwaveType.id"
                         options={microwaveTypeList}
                         getOptionLabel={(o) => `${o.vendor.name} - ${o.name}`}
+                        getOptionValue={(o) => o.id}
                         required
                       />
                     </div>
@@ -952,6 +955,7 @@ function MWLineList() {
                         name="nearSite.id"
                         options={siteList}
                         getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
                         required
                       />
 
@@ -960,6 +964,7 @@ function MWLineList() {
                         name="farSite.id"
                         options={siteList}
                         getOptionLabel={(o) => o.siteId}
+                        getOptionValue={(o) => o.id}
                         required
                       />
 
@@ -983,6 +988,7 @@ function MWLineList() {
                         name="microwaveType.id"
                         options={microwaveTypeList}
                         getOptionLabel={(o) => `${o.vendor.name} - ${o.name}`}
+                        getOptionValue={(o) => o.id}
                         required
                       />
                     </div>

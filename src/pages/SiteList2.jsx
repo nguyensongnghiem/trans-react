@@ -37,6 +37,43 @@ import OwnerChip from "../components/OwnerChip";
 import CustomButton from "../components/CustomButton";
 import FormSelect from "../components/FormSelect";
 
+const SiteValidationSchema = Yup.object().shape({
+  siteId: Yup.string().required("Vui lòng nhập Site ID"),
+  siteName: Yup.string().required("Vui lòng nhập tên trạm"),
+  latitude: Yup.number()
+    .required("Vui lòng nhập vĩ độ")
+    .typeError("Vĩ độ phải là một số")
+    .test(
+      "max-digits",
+      "Vĩ độ có tối đa 2 chữ số phần nguyên và 8 chữ số thập phân",
+      (value) => {
+        if (value === null || value === undefined) return true;
+        const parts = String(value).split(".");
+        const integerPart = parts[0].replace('-', '');
+        const fractionPart = parts[1] || "";
+        return integerPart.length <= 2 && fractionPart.length <= 8;
+      }
+    ),
+  longitude: Yup.number()
+    .required("Vui lòng nhập kinh độ")
+    .typeError("Kinh độ phải là một số")
+    .test(
+      "max-digits",
+      "Kinh độ có tối đa 3 chữ số phần nguyên và 8 chữ số thập phân",
+      (value) => {
+        if (value === null || value === undefined) return true;
+        const parts = String(value).split(".");
+        const integerPart = parts[0].replace('-', '');
+        const fractionPart = parts[1] || "";
+        return integerPart.length <= 3 && fractionPart.length <= 8;
+      }
+    ),
+  province: Yup.object().shape({ id: Yup.string().required("Vui lòng chọn tỉnh/thành phố") }),
+  siteTransmissionType: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn loại truyền dẫn") }),
+  transmissionOwner: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn đơn vị sở hữu truyền dẫn") }),
+  siteOwner: Yup.object().shape({ id: Yup.number().nullable() }), // Cho phép null
+});
+
 function SiteList2() {
   const navigate = useNavigate();
   const [siteListFull, setSiteListFull] = useState([]);
@@ -174,9 +211,8 @@ function SiteList2() {
   };
 
   // Helper: Map Formik values (Nested) to Backend DTO (Flat)
-  const mapFormToRequest = (values) => {
-    return {
-      id: values.id,
+  const mapFormToRequest = (values, isCreate = false) => {
+    const payload = {
       siteId: values.siteId,
       assetCode: values.assetCode,
       siteErp: values.siteErp,
@@ -186,17 +222,23 @@ function SiteList2() {
       longitude: +values.longitude,
       address: values.address,
       note: values.note,
-      active: values.active,
       provinceId: values.province?.id || null,
       siteOwnerId: values.siteOwner?.id || null,
       siteTransmissionTypeId: values.siteTransmissionType?.id || null,
       transmissionOwnerId: values.transmissionOwner?.id || null,
     };
+
+    if (!isCreate) {
+      payload.id = values.id;
+      payload.active = values.active;
+    }
+
+    return payload;
   };
 
   const handleCreate = async (values, { setErrors }) => {
     console.log("Giá trị từ Form:" + values);
-    const payload = mapFormToRequest(values);
+    const payload = mapFormToRequest(values, true);
     try {
       const response = await axiosInstance.post("sites", payload);
       const newSite = response.data;
@@ -289,16 +331,6 @@ function SiteList2() {
     deleteSiteId = siteListFull.find((site) => site.id === deleteId)?.siteId;
     console.log(deleteSiteId);
   }
-
-  const validate = {
-    siteId: Yup.string().required("Site Id không để trống"),
-    latitude: Yup.number()
-      .required("Không để trống")
-      .typeError("(Yêu cầu nhập số)"),
-    longitude: Yup.number()
-      .required("Không để trống")
-      .typeError("Yêu cầu nhập số"),
-  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -821,22 +853,22 @@ function SiteList2() {
           <Formik
             onSubmit={handleCreate}
             initialValues={{
-              province: { id: "DN" },
+              province: { id: "" },
               siteId: "",
               assetCode: "",
               siteErp: "",
               siteId2: "",
               siteName: "",
-              latitude: "",
-              longitude: "",
+              latitude: null,
+              longitude: null,
               address: "",
-              transmissionOwner: { id: 1 },
-              siteTransmissionType: { id: 1 },
-              siteOwner: { id: 1 },
+              transmissionOwner: { id: "" },
+              siteTransmissionType: { id: "" },
+              siteOwner: { id: "" },
               note: "",
               active: true,
             }}
-            validationSchema={Yup.object(validate)}
+            validationSchema={SiteValidationSchema}
           >
             {({ setFieldValue, values }) => (
               <Form className="flex flex-col">
@@ -944,6 +976,11 @@ function SiteList2() {
                         placeholder="Nhập tên trạm..."
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                       />
+                       <ErrorMessage
+                          name="siteName"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                     </div>
 
                     <FormSelect
@@ -951,16 +988,21 @@ function SiteList2() {
                       name="province.id"
                       options={provinces}
                       getOptionLabel={(option) => option.name}
+                      getOptionValue={(option) => option.id}
                       required
                       useVirtualization={false}
+                      isClearable
                     />
 
                     <FormSelect
                       label="Đơn vị sở hữu CSHT"
                       name="siteOwner.id"
                       options={siteOwnerList}
+                        placeholder="Không có thông tin"
                       getOptionLabel={(option) => option.name}
+                      getOptionValue={(option) => option.id}
                       useVirtualization={false}
+                      isClearable
                     />
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1025,14 +1067,18 @@ function SiteList2() {
                         name="siteTransmissionType.id"
                         options={siteTransmissionTypeList}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
+                        isClearable
                       />
                       <FormSelect
                         label="Đơn vị sở hữu TD"
                         name="transmissionOwner.id"
                         options={transmissionOwnerList}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
+                        isClearable
                       />
                     </div>
 
@@ -1117,7 +1163,7 @@ function SiteList2() {
             initialValues={{
               ...editSite,
             }}
-            validationSchema={Yup.object(validate)}
+            validationSchema={SiteValidationSchema}
           >
             {({ setFieldValue, values }) => (
               <Form className="flex flex-col">
@@ -1225,16 +1271,21 @@ function SiteList2() {
                       name="province.id"
                       options={provinces}
                       getOptionLabel={(option) => option.name}
+                      getOptionValue={(option) => option.id}
                       required
                       useVirtualization={false}
+                      isClearable
                     />
 
                     <FormSelect
                       label="Đơn vị sở hữu CSHT"
                       name="siteOwner.id"
                       options={siteOwnerList}
+                        placeholder="Không có thông tin"
                       getOptionLabel={(option) => option.name}
+                      getOptionValue={(option) => option.id}
                       useVirtualization={false}
+                      isClearable
                     />
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1299,15 +1350,19 @@ function SiteList2() {
                         name="siteTransmissionType.id"
                         options={siteTransmissionTypeList}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
+                        isClearable
                       />
                       <FormSelect
                         label="Đơn vị sở hữu TD"
                         name="transmissionOwner.id"
                         options={transmissionOwnerList}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
-                      />
+                        isClearable
+                      />                      
                     </div>
 
                     <div>

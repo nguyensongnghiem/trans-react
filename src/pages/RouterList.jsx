@@ -938,6 +938,7 @@ function RouterList() {
                       placeholder="Chọn Site ID..."
                       options={simpleSiteList || []}
                       getOptionLabel={(option) => option.siteId}
+                      getOptionValue={(option) => option.id}
                       required
                     />
 
@@ -968,6 +969,7 @@ function RouterList() {
                         name="transmissionDeviceType.id"
                         options={transmissionDeviceTypeList || []}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
                       />
                       <FormSelect
@@ -975,6 +977,7 @@ function RouterList() {
                         name="routerType.id"
                         options={routerTypeList || []}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
                       />
                     </div>
@@ -1132,6 +1135,7 @@ function RouterList() {
                       placeholder="Chọn Site ID..."
                       options={simpleSiteList || []}
                       getOptionLabel={(option) => option.siteId}
+                      getOptionValue={(option) => option.id}
                       required
                     />
 
@@ -1162,6 +1166,7 @@ function RouterList() {
                         name="transmissionDeviceType.id"
                         options={transmissionDeviceTypeList || []}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
                       />
                       <FormSelect
@@ -1169,6 +1174,7 @@ function RouterList() {
                         name="routerType.id"
                         options={routerTypeList || []}
                         getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
                         useVirtualization={false}
                       />
                     </div>
