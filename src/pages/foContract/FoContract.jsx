@@ -673,6 +673,7 @@ function FoContract() {
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
                 {[
+                  "STT",
                   "Số HĐ",
                   "Tên hợp đồng",
                   "Nhà cung cấp",
@@ -695,11 +696,20 @@ function FoContract() {
             </thead>
             {/* Table Body */}
             <tbody className="divide-y divide-gray-100">
-              {paginatedContracts.map((contract) => (
+              {paginatedContracts.map((contract, index) => (
                 <tr
                   key={contract.id}
                   className="hover:bg-gray-50/80 transition-colors"
                 >
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </Typography>
+                  </td>
                   <td className="p-4">
                     <Typography
                       variant="small"

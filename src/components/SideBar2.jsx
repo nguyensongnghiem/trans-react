@@ -40,29 +40,28 @@ const menuConfig = [
     icon: HomeIcon,
     children: [
       { title: "Danh sách trạm", path: "/site" },
-      { title: "Tra cứu thông tin trạm", path: "/site/lookup" },
-      { title: "Quản lý Tỉnh", path: "/province" },
+      { title: "Tra cứu thông tin trạm", path: "/site/lookup" },     
     ],
   },
-  {
+  { 
     id: 3,
     title: "Quản lý thiết bị",
     icon: ServerIcon,
     children: [
       { title: "Danh sách thiết bị", path: "/router" },
-      { title: "Quản lý backup thiết bị", path: "/router/backup-dashboard" },
-      { title: "Lập lịch backup cấu hình", path: "/router/backup-scheduler" },
+      { title: "Quản lý cấu hình thiết bị", path: "/router/backup-dashboard" },
+      { title: "Lập lịch sao lưu cấu hình", path: "/router/backup-scheduler" },
     ],
   },
   {
     id: 4,
-    title: "Quản lý mạng cáp quang",
+    title: "Quản lý cáp quang",
     icon: BoltIcon,
     children: [
-      { title: "Cáp quang thuê", path: "/hired-fo" },
-      { title: "Cáp quang đầu tư", path: "/own-fo" },
+      { title: "Tuyến cáp quang thuê", path: "/hired-fo" },
+      { title: "Tuyến cáp quang đầu tư", path: "/own-fo" },
       {
-        title: "Hạ tầng cột cống bể",
+        title: "Hạ tầng mạng ngoại vi",
         path: "/under-construction/infrastructure",
       },
     ],
@@ -72,12 +71,20 @@ const menuConfig = [
     title: "Quản lý tuyến viba",
     icon: RssIcon,
     children: [
-      { title: "Dữ liệu tuyến viba", path: "/microwave" },
-      { title: "Quản lý Giấy phép Viba", path: "/admin/microwave-licenses" },
+      { title: "Tuyến viba", path: "/microwave" },
+      { title: "Quản lý giấy phép tần số", path: "/admin/microwave-licenses" },
     ],
   },
   {
     id: 6,
+    title: "Quản lý kênh thuê",
+    icon: SignalIcon,
+    children: [
+      { title: "Danh sách kênh thuê", path: "/leaseline" },
+    ],
+  },
+  {
+    id: 7,
     title: "Quản lý hợp đồng",
     icon: BookOpenIcon,
     children: [
@@ -91,16 +98,9 @@ const menuConfig = [
       { title: "Hợp đồng cống bể", path: "/under-construction/contract-duct" },
     ],
   },
+  
   {
-    id: 9,
-    title: "Quản lý kênh thuê",
-    icon: SignalIcon,
-    children: [
-      { title: "Danh sách kênh thuê", path: "/leaseline" },
-    ],
-  },
-  {
-    id: 7,
+    id: 8,
     title: "Báo cáo",
     icon: TableCellsIcon,
     children: [
@@ -117,20 +117,21 @@ const menuConfig = [
     ],
   },
   {
-    id: 8,
+    id: 9,
     title: "Quản trị hệ thống",
     icon: UserGroupIcon,
     requiredRole: "ROLE_ADMIN",
     children: [
+      { title: "Quản lý Tỉnh/TP", path: "/province" },
       { title: "Quản lý người dùng", path: "/admin/users" },
       { title: "Quản lý loại cáp", path: "/admin/fiber-types" },
       { title: "Quản lý loại Viba", path: "/admin/microwave-types" },
-      { title: "Quản lý loại Router", path: "/admin/router-types" },
-      { title: "Quản lý Nhà cung cấp", path: "/admin/vendors" },
-      { title: "Quản lý Vai trò", path: "/admin/roles" },
-      { title: "Quản lý Chủ trạm", path: "/admin/site-owners" },
-      { title: "Quản lý Đơn vị truyền dẫn", path: "/admin/transmission-owners" },
-      { title: "Quản lý Database", path: "/admin/database" },
+      { title: "Quản lý model thiết bị", path: "/admin/router-types" },
+      { title: "Quản lý nhà cung cấp", path: "/admin/vendors" },
+      { title: "Quản lý phân quyền", path: "/admin/roles" },
+      { title: "Quản lý đơn vị sở hữu CSHT", path: "/admin/site-owners" },
+      { title: "Quản lý đơn vị sở hữu truyền dẫn", path: "/admin/transmission-owners" },
+      { title: "Quản lý database", path: "/admin/database" },
     ],
   },
 ];

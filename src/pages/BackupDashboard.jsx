@@ -122,15 +122,15 @@ const BackupDashboard = () => {
       const result = response.data;
 
       if (result.success) {
-        toast.success(`Backup thành công: ${routerName}`);
+        toast.success(`Sao lưu thành công: ${routerName}`);
         fetchData(); // Refresh data
       } else {
         toast.error(
-          `Lỗi backup ${routerName}: ${result.message || "Lỗi không xác định"}`,
+          `Lỗi sao lưu ${routerName}: ${result.message || "Lỗi không xác định"}`,
         );
       }
     } catch (error) {
-      toast.error(`Lỗi kết nối khi backup ${routerName}`);
+      toast.error(`Lỗi kết nối khi sao lưu ${routerName}`);
     } finally {
       setProcessing((prev) => ({ ...prev, [routerName]: false }));
     }
@@ -291,15 +291,15 @@ const BackupDashboard = () => {
 
   const backupStatusOptions = [
     { value: "all", label: "Tất cả trạng thái" },
-    { value: "backed_up", label: "Đã backup" },
-    { value: "not_backed_up", label: "Chưa backup" },
+    { value: "backed_up", label: "Đã sao lưu" },
+    { value: "not_backed_up", label: "Chưa sao lưu" },
   ];
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
-          Dashboard Quản Lý Backup
+          Quản Lý cấu hình thiết bị
         </h1>
         <div className="flex gap-2">
           <CustomButton
@@ -343,7 +343,7 @@ const BackupDashboard = () => {
             <CheckCircleIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-semibold">Đã Backup</p>
+            <p className="text-gray-500 text-sm font-semibold">Đã sao lưu</p>
             <p className="text-2xl font-bold text-gray-800">{backedUpCount}</p>
           </div>
         </div>
@@ -352,7 +352,7 @@ const BackupDashboard = () => {
             <ExclamationTriangleIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-semibold">Chưa Backup</p>
+            <p className="text-gray-500 text-sm font-semibold">Chưa sao lưu</p>
             <p className="text-2xl font-bold text-gray-800">{notBackedUpCount}</p>
           </div>
         </div>
@@ -361,7 +361,7 @@ const BackupDashboard = () => {
             <ArchiveBoxIcon className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-semibold">Tổng file Backup</p>
+            <p className="text-gray-500 text-sm font-semibold">Tổng file cấu hình</p>
             <p className="text-2xl font-bold text-gray-800">{totalFiles}</p>
           </div>
         </div>
@@ -433,7 +433,7 @@ const BackupDashboard = () => {
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-700 flex">
                 <QueueListIcon className="h-5 w-5 mr-2" />
-                Thống kê Backup Thiết bị
+                Quản lý cấu hình thiết bị
               </h2>
             </div>
             <div className="overflow-x-auto">
@@ -441,19 +441,19 @@ const BackupDashboard = () => {
                 <thead>
                   <tr>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Tên Router
+                      Tên thiết bị
                     </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Số lượng File
+                      Số lượng file
                     </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Lần Backup Cuối
+                      Lần sao lưu cuối
                     </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Backup
+                      Sao lưu
                     </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Hành động
+                      Tác động
                     </th>
                   </tr>
                 </thead>
@@ -464,7 +464,7 @@ const BackupDashboard = () => {
                         colSpan="5"
                         className="text-center py-4 text-gray-500"
                       >
-                        Chưa có dữ liệu backup nào.
+                        Chưa có dữ liệu sao lư nào.
                       </td>
                     </tr>
                   ) : (
@@ -498,7 +498,7 @@ const BackupDashboard = () => {
                             )}
                             {processing[item.router_name]
                               ? "Đang chạy..."
-                              : "Backup"}
+                              : "Sao lưu"}
                           </CustomButton>
                         </td>
                         <td className="px-5 py-4 border-b border-gray-200 text-sm text-center">
@@ -575,7 +575,7 @@ const BackupDashboard = () => {
             <div className="p-4 max-h-[600px] overflow-y-auto">
               {filteredHistory.length === 0 ? (
                 <div className="text-center text-gray-500 text-sm py-4">
-                  Chưa có lịch sử.
+                  Chưa có lịch sử sao lưu.
                 </div>
               ) : (
                 <Timeline>
@@ -690,7 +690,7 @@ const BackupDashboard = () => {
       >
         <DialogHeader className="justify-between border-b border-gray-200">
           <div className="flex items-center gap-2">
-            Lịch sử Backup:{" "}
+            Lịch sử sao lưu:{" "}
             <span className="text-blue-600">{selectedRouter}</span>
           </div>
           <IconButton
@@ -707,14 +707,14 @@ const BackupDashboard = () => {
             <div className="text-center py-10">Đang tải danh sách...</div>
           ) : deviceBackups.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
-              Không có file backup nào.
+              Không có file cấu hình nào.
             </div>
           ) : (
             <table className="w-full min-w-max table-auto text-left">
               <thead>
                 <tr>
                   <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">
-                    Tên File
+                    Tên file
                   </th>
                   <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-4 text-sm text-blue-gray-900">
                     Ngày tạo
