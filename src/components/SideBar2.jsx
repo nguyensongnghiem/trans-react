@@ -40,10 +40,10 @@ const menuConfig = [
     icon: HomeIcon,
     children: [
       { title: "Danh sách trạm", path: "/site" },
-      { title: "Tra cứu thông tin trạm", path: "/site/lookup" },     
+      { title: "Tra cứu thông tin trạm", path: "/site/lookup" },
     ],
   },
-  { 
+  {
     id: 3,
     title: "Quản lý thiết bị",
     icon: ServerIcon,
@@ -98,7 +98,7 @@ const menuConfig = [
       { title: "Hợp đồng cống bể", path: "/under-construction/contract-duct" },
     ],
   },
-  
+
   {
     id: 8,
     title: "Báo cáo",
@@ -130,6 +130,7 @@ const menuConfig = [
       { title: "Quản lý nhà cung cấp", path: "/admin/vendors" },
       { title: "Quản lý phân quyền", path: "/admin/roles" },
       { title: "Quản lý đơn vị sở hữu CSHT", path: "/admin/site-owners" },
+      { title: "Quản lý loại CSHT", path: "/admin/site-types" },
       { title: "Quản lý đơn vị sở hữu truyền dẫn", path: "/admin/transmission-owners" },
       { title: "Quản lý database", path: "/admin/database" },
     ],

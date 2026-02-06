@@ -38,6 +38,7 @@ import SiteOwnerList from "./pages/SiteOwnerList.jsx";
 import TransmissionOwnerList from "./pages/TransmissionOwnerList.jsx";
 import MicrowaveLicenseList from "./pages/MicrowaveLicenseList.jsx";
 import DatabaseManagement from "./pages/DatabaseManagement.jsx";
+import SiteTypeList from "./pages/SiteTypeList.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -160,6 +161,10 @@ const router = createBrowserRouter([
           {
             path: "/admin/transmission-owners",
             element: <TransmissionOwnerList />,
+          },
+          {
+            path: "/admin/site-types",
+            element: <SiteTypeList />,
           },
           {
             path: "/admin/microwave-licenses",
