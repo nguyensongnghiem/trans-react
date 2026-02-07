@@ -98,11 +98,10 @@ function ProvinceList() {
 
   const filteredList = provinces.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (item.id && item.id.toLowerCase().includes(searchTerm.toLowerCase()))
+    (item.id && String(item.id).toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const validationSchema = Yup.object({
-    id: Yup.string().required("Mã tỉnh là bắt buộc"),
     name: Yup.string().required("Tên tỉnh là bắt buộc"),
   });
 
@@ -208,7 +207,7 @@ function ProvinceList() {
       <Dialog open={openCreate} handler={() => setOpenCreate(!openCreate)} size="xs">
         <DialogHeader>Thêm mới Tỉnh</DialogHeader>
         <Formik
-          initialValues={{ id: "", name: "" }}
+          initialValues={{ name: "" }}
           validationSchema={validationSchema}
           onSubmit={handleCreate}
         >
@@ -216,14 +215,6 @@ function ProvinceList() {
             <Form>
               <DialogBody>
                 <div className="flex flex-col gap-4">
-                  <div>
-                    <Field name="id">
-                      {({ field }) => (
-                        <Input {...field} label="Mã Tỉnh (VD: HNI)" error={touched.id && Boolean(errors.id)} />
-                      )}
-                    </Field>
-                    <ErrorMessage name="id" component="div" className="text-red-500 text-xs mt-1" />
-                  </div>
                   <div>
                     <Field name="name">
                       {({ field }) => (

@@ -68,7 +68,7 @@ const SiteValidationSchema = Yup.object().shape({
         return integerPart.length <= 3 && fractionPart.length <= 8;
       }
     ),
-  province: Yup.object().shape({ id: Yup.string().required("Vui lòng chọn tỉnh/thành phố") }),
+  province: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn tỉnh/thành phố") }),
   siteTransmissionType: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn loại truyền dẫn") }),
   transmissionOwner: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn đơn vị sở hữu truyền dẫn") }),
   siteOwner: Yup.object().shape({ id: Yup.number().nullable() }), // Cho phép null
@@ -911,7 +911,7 @@ function SiteList2() {
           <Formik
             onSubmit={handleCreate}
             initialValues={{
-              province: { id: "" },
+              province: { id: null },
               siteId: "",
               assetCode: "",
               siteErp: "",

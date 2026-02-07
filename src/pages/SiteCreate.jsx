@@ -40,7 +40,7 @@ function SiteCreate() {
   return (
     <Formik
       initialValues={{
-        province: { id: "DN" },
+        province: { id: null },
         siteId: "",
         siteId2: "",
         siteName: "",
