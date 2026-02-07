@@ -158,9 +158,9 @@ const Sidebar2 = ({ sidebarOpen }) => {
   return (
     <div
       className={`h-full p-2 shadow-xl bg-blue-gray-900 shadow-blue-gray-900/5 ${sidebarOpen ? "w-[20rem]" : "w-[4rem]"
-        } transition-all duration-300`}
+        } transition-all duration-300 flex flex-col`}
     >
-      <List className="overflow-y-auto py-3 gap-3">
+      <List className="overflow-y-auto py-3 gap-3 flex-1 min-h-0">
         {menuConfig.map((menu) => {
           if (menu.requiredRole === "ROLE_ADMIN" && !isAdmin) return null;
 
