@@ -36,6 +36,8 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import OwnerChip from "../components/OwnerChip";
 import CustomButton from "../components/CustomButton";
 import FormSelect from "../components/FormSelect";
+import StatusBadge from "../components/StatusBadge";
+import { SiteStatus, SiteStatusLabels, SiteStatusColors, getSiteStatusOptions } from "../constants/statusConstants";
 
 const SiteValidationSchema = Yup.object().shape({
   siteId: Yup.string().required("Vui lòng nhập Site ID"),
@@ -224,24 +226,24 @@ function SiteList2() {
   const mapFormToRequest = (values, isCreate = false) => {
     const payload = {
       siteId: values.siteId,
-      assetCode: values.assetCode,
-      siteErp: values.siteErp,
-      siteId2: values.siteId2,
+      assetCode: values.assetCode || null,
+      siteErp: values.siteErp || null,
+      siteId2: values.siteId2 || null,
       siteName: values.siteName,
       latitude: +values.latitude,
       longitude: +values.longitude,
-      address: values.address,
-      note: values.note,
+      address: values.address || null,
+      note: values.note || null,
       provinceId: values.province?.id || null,
       siteOwnerId: values.siteOwner?.id || null,
       siteTypeId: values.siteType?.id || null,
       siteTransmissionTypeId: values.siteTransmissionType?.id || null,
       transmissionOwnerId: values.transmissionOwner?.id || null,
+      status: values.status || SiteStatus.OPERATING, // Default to OPERATING
     };
 
     if (!isCreate) {
       payload.id = values.id;
-      payload.active = values.active;
     }
 
     return payload;
@@ -271,11 +273,26 @@ function SiteList2() {
 
   const handleEdit = async (id) => {
     try {
+      console.log("id cần edit:" + id);
       const response = await axiosInstance.get(`sites/${id}`);
       const site = response.data;
-      console.log("site cần edit:" + site);
+      console.log("site cần edit:", site); // Fixed logging
       setEditId(id);
-      setEditSite({ ...site });
+      
+      // Sanitizing null objects to ensure Formik doesn't choke on null values for nested fields
+      setEditSite({
+        ...site,
+        assetCode: site.assetCode || "",
+        siteErp: site.siteErp || "",
+        siteId2: site.siteId2 || "",
+        address: site.address || "",
+        note: site.note || "",
+        province: site.province || { id: null },
+        transmissionOwner: site.transmissionOwner || { id: null },
+        siteTransmissionType: site.siteTransmissionType || { id: null },
+        siteOwner: site.siteOwner || { id: null },
+        siteType: site.siteType || { id: null },
+      });
       handleOpenEdit();
     } catch (error) {
       console.log("Lỗi api:", error);
@@ -288,10 +305,10 @@ function SiteList2() {
   };
 
   const handleEditSubmit = async (values) => {
-    console.log("Giá trị từ Form:" + values);
+    console.log("Giá trị từ Form:", values);
     const payload = mapFormToRequest(values);
 
-    console.log("payload:" + payload);
+    console.log("payload:", payload);
     try {
       const response = await axiosInstance.put(`sites/${values.id}`, payload);
       const updatedSite = response.data;
@@ -302,8 +319,8 @@ function SiteList2() {
       toast.success("Đã cập nhật thành công trạm");
     } catch (error) {
       console.log(error);
-      if (error.response && error.response.status === 400) {
-        toast.error(error.data.message);
+      if (error.response && error.response.data) {
+        toast.error(error.response.data.message || "Có lỗi xảy ra");
       } else {
         toast.error("Có lỗi bất thường xảy ra");
       }
@@ -663,6 +680,15 @@ function SiteList2() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
+                    Trạng thái
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
                     Ghi chú
                   </Typography>
                 </th>
@@ -778,6 +804,13 @@ function SiteList2() {
                     >
                       {site.address || "-"}
                     </Typography>
+                  </td>
+                  <td className="p-4">
+                    <StatusBadge 
+                      status={site.status} 
+                      labels={SiteStatusLabels} 
+                      colors={SiteStatusColors} 
+                    />
                   </td>
                   <td className="p-4">
                     <Typography
@@ -925,7 +958,7 @@ function SiteList2() {
               siteOwner: { id: "" },
               siteType: { id: "" },
               note: "",
-              active: true,
+              status: SiteStatus.OPERATING,
             }}
             validationSchema={SiteValidationSchema}
           >
@@ -933,27 +966,17 @@ function SiteList2() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    {/* Trạng thái Switch */}
-                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-bold"
-                        >
-                          Trạng thái hoạt động
-                        </Typography>
-                      </div>
-                      <Switch
-                        name="active"
-                        color="green"
-                        checked={values.active}
-                        onChange={({ target }) =>
-                          setFieldValue("active", target.checked)
-                        }
-                        className="scale-90"
-                      />
-                    </div>
+                    {/* Trạng thái Dropdown */}
+                    <FormSelect
+                      label="Trạng thái"
+                      name="status"
+                      options={getSiteStatusOptions()}
+                      getOptionLabel={(option) => option.label}
+                      getOptionValue={(option) => option.value}
+                      useVirtualization={false}
+                      value={getSiteStatusOptions().find(opt => opt.value === values.status)}
+                      onChange={(option) => setFieldValue("status", option?.value || SiteStatus.OPERATING)}
+                    />
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1052,28 +1075,37 @@ function SiteList2() {
                       useVirtualization={false}
                       isClearable
                     />
+                    <ErrorMessage
+                      name="province.id"
+                      component="div"
+                      className="mt-1 text-xs text-red-600 font-medium"
+                    />
 
                     <div className="grid grid-cols-2 gap-4">
-                      <FormSelect
-                        label="Đơn vị sở hữu CSHT"
-                        name="siteOwner.id"
-                        options={siteOwnerList}
-                        placeholder="Chọn chủ sở hữu"
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
-                      <FormSelect
-                        label="Loại trạm"
-                        name="siteType.id"
-                        options={siteTypeList}
-                        placeholder="Chọn loại trạm"
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
+                      <div>
+                        <FormSelect
+                          label="Đơn vị sở hữu CSHT"
+                          name="siteOwner.id"
+                          options={siteOwnerList}
+                          placeholder="Chọn chủ sở hữu"
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />                       
+                      </div>
+                      <div>
+                        <FormSelect
+                          label="Loại trạm"
+                          name="siteType.id"
+                          options={siteTypeList}
+                          placeholder="Chọn loại trạm"
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />                      
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1133,24 +1165,38 @@ function SiteList2() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <FormSelect
-                        label="Loại truyền dẫn"
-                        name="siteTransmissionType.id"
-                        options={siteTransmissionTypeList}
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
-                      <FormSelect
-                        label="Đơn vị sở hữu TD"
-                        name="transmissionOwner.id"
-                        options={transmissionOwnerList}
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
+                      <div>
+                        <FormSelect
+                          label="Loại truyền dẫn"
+                          name="siteTransmissionType.id"
+                          options={siteTransmissionTypeList}
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />
+                        <ErrorMessage
+                          name="siteTransmissionType.id"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
+                      </div>
+                      <div>
+                        <FormSelect
+                          label="Đơn vị sở hữu TD"
+                          name="transmissionOwner.id"
+                          options={transmissionOwnerList}
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />
+                        <ErrorMessage
+                          name="transmissionOwner.id"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -1235,26 +1281,26 @@ function SiteList2() {
               ...editSite,
             }}
             validationSchema={SiteValidationSchema}
+            validate={(values) => {
+              console.log("Values:", values);
+    return {};
+            }}
           >
             {({ setFieldValue, values }) => (
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    {/* Trạng thái Switch */}
-                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                      <div>
-                        <Typography variant="small" color="blue-gray" className="font-bold">
-                          Trạng thái hoạt động
-                        </Typography>
-                      </div>
-                      <Switch
-                        name="active"
-                        color="green"
-                        checked={values.active}
-                        onChange={({ target }) => setFieldValue("active", target.checked)}
-                        className="scale-90"
-                      />
-                    </div>
+                    {/* Trạng thái Dropdown */}
+                    <FormSelect
+                      label="Trạng thái"
+                      name="status"
+                      options={getSiteStatusOptions()}
+                      getOptionLabel={(option) => option.label}
+                      getOptionValue={(option) => option.value}
+                      useVirtualization={false}
+                      value={getSiteStatusOptions().find(opt => opt.value === values.status)}
+                      onChange={(option) => setFieldValue("status", option?.value || values.status)}
+                    />
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Typography
@@ -1288,6 +1334,11 @@ function SiteList2() {
                           placeholder="VD: DN_001_OLD"
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                         />
+                        <ErrorMessage
+                          name="siteId2"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                     </div>
 
@@ -1305,6 +1356,11 @@ function SiteList2() {
                           placeholder="Mã tài sản..."
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                         />
+                        <ErrorMessage
+                          name="assetCode"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
                       </div>
                       <div>
                         <Typography
@@ -1318,6 +1374,11 @@ function SiteList2() {
                           name="siteErp"
                           placeholder="Mã ERP..."
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                        />
+                        <ErrorMessage
+                          name="siteErp"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
                         />
                       </div>
                     </div>
@@ -1335,40 +1396,66 @@ function SiteList2() {
                         placeholder="Nhập tên trạm..."
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                       />
+                      <ErrorMessage
+                        name="siteName"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
                     </div>
 
-                    <FormSelect
-                      label="Tỉnh"
-                      name="province.id"
-                      options={provinces}
-                      getOptionLabel={(option) => option.name}
-                      getOptionValue={(option) => option.id}
-                      required
-                      useVirtualization={false}
-                      isClearable
-                    />
+                    <div>
+                      <FormSelect
+                        label="Tỉnh"
+                        name="province.id"
+                        options={provinces}
+                        getOptionLabel={(option) => option.name}
+                        getOptionValue={(option) => option.id}
+                        required
+                        useVirtualization={false}
+                        isClearable
+                      />
+                      <ErrorMessage
+                        name="province.id"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <FormSelect
-                        label="Đơn vị sở hữu CSHT"
-                        name="siteOwner.id"
-                        options={siteOwnerList}
-                        placeholder="Chọn chủ sở hữu"
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
-                      <FormSelect
-                        label="Loại trạm"
-                        name="siteType.id"
-                        options={siteTypeList}
-                        placeholder="Chọn loại trạm"
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
+                      <div>
+                        <FormSelect
+                          label="Đơn vị sở hữu CSHT"
+                          name="siteOwner.id"
+                          options={siteOwnerList}
+                          placeholder="Chọn chủ sở hữu"
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />
+                        <ErrorMessage
+                          name="siteOwner.id"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
+                      </div>
+                      <div>
+                        <FormSelect
+                          label="Loại trạm"
+                          name="siteType.id"
+                          options={siteTypeList}
+                          placeholder="Chọn loại trạm"
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />
+                        <ErrorMessage
+                          name="siteType.id"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1425,27 +1512,46 @@ function SiteList2() {
                         placeholder="Nhập địa chỉ trạm..."
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                       />
+                      <ErrorMessage
+                        name="address"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <FormSelect
-                        label="Loại truyền dẫn"
-                        name="siteTransmissionType.id"
-                        options={siteTransmissionTypeList}
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
-                      <FormSelect
-                        label="Đơn vị sở hữu TD"
-                        name="transmissionOwner.id"
-                        options={transmissionOwnerList}
-                        getOptionLabel={(option) => option.name}
-                        getOptionValue={(option) => option.id}
-                        useVirtualization={false}
-                        isClearable
-                      />
+                      <div>
+                        <FormSelect
+                          label="Loại truyền dẫn"
+                          name="siteTransmissionType.id"
+                          options={siteTransmissionTypeList}
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />
+                        <ErrorMessage
+                          name="siteTransmissionType.id"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
+                      </div>
+                      <div>
+                        <FormSelect
+                          label="Đơn vị sở hữu TD"
+                          name="transmissionOwner.id"
+                          options={transmissionOwnerList}
+                          getOptionLabel={(option) => option.name}
+                          getOptionValue={(option) => option.id}
+                          useVirtualization={false}
+                          isClearable
+                        />
+                        <ErrorMessage
+                          name="transmissionOwner.id"
+                          component="div"
+                          className="mt-1 text-xs text-red-600 font-medium"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -1462,6 +1568,11 @@ function SiteList2() {
                         rows={3}
                         placeholder="Nhập ghi chú..."
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all resize-none"
+                      />
+                      <ErrorMessage
+                        name="note"
+                        component="div"
+                        className="mt-1 text-xs text-red-600 font-medium"
                       />
                     </div>
                   </div>

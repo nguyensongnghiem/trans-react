@@ -41,6 +41,8 @@ import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import FormSelect from "../components/FormSelect";
+import StatusBadge from "../components/StatusBadge";
+import { DeviceStatus, DeviceStatusLabels, DeviceStatusColors, getDeviceStatusOptions } from "../constants/statusConstants";
 function RouterList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
@@ -153,7 +155,7 @@ function RouterList() {
         if (
           excludeKey !== "status" &&
           filters.status &&
-          r.active !== filters.status.value
+          r.status !== filters.status.value
         )
           return false;
         if (excludeKey !== "search" && filters.search) {
@@ -192,7 +194,7 @@ function RouterList() {
         !filters.transDeviceType ||
         router.transmissionDeviceType?.id === filters.transDeviceType.id;
       const matchStatus =
-        !filters.status || router.active === filters.status.value;
+        !filters.status || router.status === filters.status.value;
       const matchSearch =
         !filters.search ||
         router.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -291,7 +293,7 @@ function RouterList() {
       "Loại thiết bị TD": router.transmissionDeviceType?.name,
       "IP quản lý": router.ip,
       "Nhà sản xuất": router.routerType?.vendor?.name,
-      "Trạng thái": router.active ? "Hoạt động" : "Không hoạt động",
+      "Trạng thái": DeviceStatusLabels[router.status] || router.status,
       "Ghi chú": router.note,
     }));
 
@@ -491,10 +493,7 @@ function RouterList() {
               isClearable
               placeholder="Tất cả trạng thái"
               className="text-sm"
-              options={[
-                { label: "Hoạt động", value: true },
-                { label: "Không hoạt động", value: false },
-              ]}
+              options={getDeviceStatusOptions().map(opt => ({ label: opt.label, value: opt.value }))}
               value={filters.status}
               onChange={(val) =>
                 setFilters((prev) => ({ ...prev, status: val }))
@@ -729,10 +728,10 @@ function RouterList() {
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center">
-                      <StatusChip
-                        active={router.active}
-                        labelOn="Hoạt động"
-                        labelOff="Không hoạt động"
+                      <StatusBadge 
+                        status={router.status} 
+                        labels={DeviceStatusLabels} 
+                        colors={DeviceStatusColors} 
                       />
                     </div>
                   </td>
@@ -864,7 +863,7 @@ function RouterList() {
               ip: "",
               transmissionDeviceType: { id: 1 },
               routerType: { id: 1 },
-              active: true, // Default to active
+              status: DeviceStatus.OPERATING,
               note: "",
             }}
             validationSchema={Yup.object({
@@ -879,36 +878,17 @@ function RouterList() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    {/* Trạng thái Switch */}
-                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-bold"
-                        >
-                          Trạng thái hoạt động
-                        </Typography>
-                        <Typography
-                          variant="small"
-                          className="text-gray-500 text-xs font-normal"
-                        >
-                          Bật/tắt để thiết lập trạng thái ban đầu
-                        </Typography>
-                      </div>
-                      <Switch
-                        name="active"
-                        color="green"
-                        checked={values.active}
-                        onChange={({ target }) =>
-                          setFieldValue("active", target.checked)
-                        }
-                        className="scale-90"
-                        circleProps={{
-                          className: "border-none",
-                        }}
-                      />
-                    </div>
+                    {/* Trạng thái Dropdown */}
+                    <FormSelect
+                      label="Trạng thái"
+                      name="status"
+                      options={getDeviceStatusOptions()}
+                      getOptionLabel={(option) => option.label}
+                      getOptionValue={(option) => option.value}
+                      useVirtualization={false}
+                      value={getDeviceStatusOptions().find(opt => opt.value === values.status)}
+                      onChange={(option) => setFieldValue("status", option?.value || DeviceStatus.OPERATING)}
+                    />
 
                     {/* Tên thiết bị */}
                     <div>
@@ -1076,36 +1056,17 @@ function RouterList() {
               <Form className="flex flex-col">
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 gap-5">
-                    {/* Trạng thái Switch */}
-                    <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                      <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="font-bold"
-                        >
-                          Trạng thái hoạt động
-                        </Typography>
-                        <Typography
-                          variant="small"
-                          className="text-gray-500 text-xs font-normal"
-                        >
-                          Bật/tắt để thay đổi trạng thái thiết bị
-                        </Typography>
-                      </div>
-                      <Switch
-                        name="active"
-                        color="green"
-                        checked={values.active}
-                        onChange={({ target }) =>
-                          setFieldValue("active", target.checked)
-                        }
-                        className="scale-90"
-                        circleProps={{
-                          className: "border-none",
-                        }}
-                      />
-                    </div>
+                    {/* Trạng thái Dropdown */}
+                    <FormSelect
+                      label="Trạng thái"
+                      name="status"
+                      options={getDeviceStatusOptions()}
+                      getOptionLabel={(option) => option.label}
+                      getOptionValue={(option) => option.value}
+                      useVirtualization={false}
+                      value={getDeviceStatusOptions().find(opt => opt.value === values.status)}
+                      onChange={(option) => setFieldValue("status", option?.value || values.status)}
+                    />
 
                     {/* Tên thiết bị */}
                     <div>

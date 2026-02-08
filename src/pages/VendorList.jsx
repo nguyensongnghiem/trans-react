@@ -94,11 +94,14 @@ function VendorList() {
     };
 
     const filteredList = items.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.alias && item.alias.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const validationSchema = Yup.object({
         name: Yup.string().required("Tên nhà cung cấp là bắt buộc"),
+        alias: Yup.string().required("Tên viết tắt là bắt buộc"),
+        email: Yup.string().email("Email không hợp lệ"),
     });
 
     return (
@@ -140,6 +143,18 @@ function VendorList() {
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Tên nhà cung cấp</Typography>
                             </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Mã số thuế</Typography>
+                            </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Liên hệ</Typography>
+                            </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Địa chỉ</Typography>
+                            </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Ghi chú</Typography>
+                            </th>
                             {isAdmin && (
                                 <th className="p-4 w-32 text-center">
                                     <Typography variant="small" color="blue-gray" className="font-bold">Hành động</Typography>
@@ -153,7 +168,22 @@ function VendorList() {
                                 <td className="p-4">
                                     <Typography variant="small" color="blue-gray">{index + 1}</Typography>
                                 </td>
-                                <td className="p-4 font-medium">{item.name}</td>
+                                <td className="p-4">
+                                    <div className="flex flex-col">
+                                        <Typography variant="small" color="blue-gray" className="font-medium">{item.name}</Typography>
+                                        <Typography variant="small" color="gray" className="text-xs opacity-70">{item.alias}</Typography>
+                                    </div>
+                                </td>
+                                <td className="p-4 text-sm">{item.taxCode}</td>
+                                <td className="p-4">
+                                    <div className="flex flex-col">
+                                        {item.contactPerson && <Typography variant="small" color="blue-gray" className="font-medium text-xs">{item.contactPerson}</Typography>}
+                                        {item.phone && <Typography variant="small" color="gray" className="text-[10px]">{item.phone}</Typography>}
+                                        {item.email && <Typography variant="small" color="blue" className="text-[10px]">{item.email}</Typography>}
+                                    </div>
+                                </td>
+                                <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={item.address}>{item.address}</td>
+                                <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={item.note}>{item.note}</td>
                                 {isAdmin && (
                                     <td className="p-4 flex justify-center gap-2">
                                         <IconButton
@@ -190,7 +220,7 @@ function VendorList() {
             <Dialog
                 open={openCreate}
                 handler={() => setOpenCreate(false)}
-                size="sm"
+                size="md"
                 className="rounded-lg overflow-hidden shadow-xl"
             >
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
@@ -212,32 +242,101 @@ function VendorList() {
                     </IconButton>
                 </div>
                 <Formik
-                    initialValues={{ name: "" }}
+                    initialValues={{ name: "", alias: "", note: "", address: "", taxCode: "", contactPerson: "", phone: "", email: "" }}
                     validationSchema={validationSchema}
                     onSubmit={handleCreate}
                 >
                     {({ errors, touched, handleSubmit }) => (
                         <Form onSubmit={handleSubmit}>
                             <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-2 space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Tên nhà cung cấp
+                                        </Typography>
+                                        <Field name="name">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" placeholder="VD: Huawei, Ericsson..." className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.name && Boolean(errors.name)} />
+                                            )}
+                                        </Field>
+                                        <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Viết tắt (Alias)
+                                        </Typography>
+                                        <Field name="alias">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" placeholder="VD: HUA" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.alias && Boolean(errors.alias)} />
+                                            )}
+                                        </Field>
+                                        <ErrorMessage name="alias" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Mã số thuế
+                                        </Typography>
+                                        <Field name="taxCode">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                            )}
+                                        </Field>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Người liên hệ
+                                        </Typography>
+                                        <Field name="contactPerson">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                            )}
+                                        </Field>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Số điện thoại
+                                        </Typography>
+                                        <Field name="phone">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                            )}
+                                        </Field>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Email
+                                        </Typography>
+                                        <Field name="email">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.email && Boolean(errors.email)} />
+                                            )}
+                                        </Field>
+                                        <ErrorMessage name="email" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                </div>
                                 <div className="space-y-1">
                                     <Typography variant="small" color="blue-gray" className="font-bold">
-                                        Tên nhà cung cấp
+                                        Địa chỉ
                                     </Typography>
-                                    <Field name="name">
+                                    <Field name="address">
                                         {({ field }) => (
-                                            <Input
-                                                {...field}
-                                                size="lg"
-                                                placeholder="VD: Huawei, Ericsson, Nokia, ..."
-                                                className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                labelProps={{
-                                                    className: "before:content-none after:content-none",
-                                                }}
-                                                error={touched.name && Boolean(errors.name)}
-                                            />
+                                            <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
                                         )}
                                     </Field>
-                                    <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Typography variant="small" color="blue-gray" className="font-bold">
+                                        Ghi chú
+                                    </Typography>
+                                    <Field name="note">
+                                        {({ field }) => (
+                                            <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                        )}
+                                    </Field>
                                 </div>
                             </DialogBody>
                             <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
@@ -261,7 +360,7 @@ function VendorList() {
             <Dialog
                 open={openEdit}
                 handler={() => setOpenEdit(false)}
-                size="sm"
+                size="md"
                 className="rounded-lg overflow-hidden shadow-xl"
             >
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
@@ -284,31 +383,101 @@ function VendorList() {
                 </div>
                 {selectedItem && (
                     <Formik
-                        initialValues={{ name: selectedItem.name }}
+                        initialValues={{ name: selectedItem.name, alias: selectedItem.alias || "", note: selectedItem.note || "", address: selectedItem.address || "", taxCode: selectedItem.taxCode || "", contactPerson: selectedItem.contactPerson || "", phone: selectedItem.phone || "", email: selectedItem.email || "" }}
                         validationSchema={validationSchema}
                         onSubmit={handleUpdate}
                     >
                         {({ errors, touched, handleSubmit }) => (
                             <Form onSubmit={handleSubmit}>
                                 <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="col-span-2 space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                Tên nhà cung cấp
+                                            </Typography>
+                                            <Field name="name">
+                                                {({ field }) => (
+                                                    <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.name && Boolean(errors.name)} />
+                                                )}
+                                            </Field>
+                                            <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                Viết tắt (Alias)
+                                            </Typography>
+                                            <Field name="alias">
+                                                {({ field }) => (
+                                                    <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.alias && Boolean(errors.alias)} />
+                                                )}
+                                            </Field>
+                                            <ErrorMessage name="alias" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                Mã số thuế
+                                            </Typography>
+                                            <Field name="taxCode">
+                                                {({ field }) => (
+                                                    <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                                )}
+                                            </Field>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                Người liên hệ
+                                            </Typography>
+                                            <Field name="contactPerson">
+                                                {({ field }) => (
+                                                    <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                                )}
+                                            </Field>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                Số điện thoại
+                                            </Typography>
+                                            <Field name="phone">
+                                                {({ field }) => (
+                                                    <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                                )}
+                                            </Field>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                Email
+                                            </Typography>
+                                            <Field name="email">
+                                                {({ field }) => (
+                                                    <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.email && Boolean(errors.email)} />
+                                                )}
+                                            </Field>
+                                            <ErrorMessage name="email" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                        </div>
+                                    </div>
                                     <div className="space-y-1">
                                         <Typography variant="small" color="blue-gray" className="font-bold">
-                                            Tên nhà cung cấp
+                                            Địa chỉ
                                         </Typography>
-                                        <Field name="name">
+                                        <Field name="address">
                                             {({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    size="lg"
-                                                    className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                    labelProps={{
-                                                        className: "before:content-none after:content-none",
-                                                    }}
-                                                    error={touched.name && Boolean(errors.name)}
-                                                />
+                                                <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
                                             )}
                                         </Field>
-                                        <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">
+                                            Ghi chú
+                                        </Typography>
+                                        <Field name="note">
+                                            {({ field }) => (
+                                                <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />
+                                            )}
+                                        </Field>
                                     </div>
                                 </DialogBody>
                                 <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">

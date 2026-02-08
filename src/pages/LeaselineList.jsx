@@ -35,6 +35,8 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import OwnerChip from "../components/OwnerChip";
 import StatusChip from "../components/StatusChip";
 import CustomButton from "../components/CustomButton";
+import StatusBadge from "../components/StatusBadge";
+import { LeaseLineStatus, LeaseLineStatusLabels, LeaseLineStatusColors, getLeaseLineStatusOptions } from "../constants/statusConstants";
 
 function LeaselineList() {
   // const navigate = useNavigate();
@@ -77,7 +79,7 @@ function LeaselineList() {
       const matchSite = !filters.site || item.site?.id === filters.site.value;
       const matchOwner = !filters.transmissionOwner || item.transmissionOwner?.id === filters.transmissionOwner.value;
       const matchType = !filters.leaseLineConnectType || item.leaseLineConnectType?.id === filters.leaseLineConnectType.value;
-      const matchStatus = !filters.status || item.active === filters.status.value;
+      const matchStatus = !filters.status || item.status === filters.status.value;
       const matchSearch = !filters.search ||
         item.site?.siteId?.toLowerCase().includes(filters.search.toLowerCase()) ||
         item.note?.toLowerCase().includes(filters.search.toLowerCase());
@@ -323,7 +325,7 @@ function LeaselineList() {
       "Đơn giá (VNĐ)": item.cost,
       "Loại kênh": item.leaseLineConnectType?.name,
       "Ghi chú": item.note,
-      "Trạng thái": item.active ? "Hoạt động" : "Không hoạt động",
+      "Trạng thái": LeaseLineStatusLabels[item.status] || item.status,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -623,10 +625,7 @@ function LeaselineList() {
               isClearable
               placeholder="Tất cả trạng thái"
               className="text-sm"
-              options={[
-                { label: "Hoạt động", value: true },
-                { label: "Không hoạt động", value: false },
-              ]}
+              options={getLeaseLineStatusOptions().map(opt => ({ label: opt.label, value: opt.value }))}
               value={filters.status}
               onChange={(val) => setFilters((prev) => ({ ...prev, status: val }))}
               menuPortalTarget={document.body}
@@ -709,7 +708,11 @@ function LeaselineList() {
                     </Typography>
                   </td>
                   <td className="p-4">
-                    <StatusChip active={item.active} />
+                    <StatusBadge 
+                      status={item.status} 
+                      labels={LeaseLineStatusLabels} 
+                      colors={LeaseLineStatusColors} 
+                    />
                   </td>
                   <td className="p-4 max-w-xs truncate">
                     <Typography variant="small" color="blue-gray" className="font-normal italic opacity-70">
@@ -818,6 +821,7 @@ function LeaselineList() {
               site: { id: null },
               leaseLineConnectType: { id: 1 },
               transmissionOwner: { id: 1 },
+              status: LeaseLineStatus.OPERATING,
               note: "",
             }}
             validationSchema={Yup.object({
@@ -968,9 +972,27 @@ function LeaselineList() {
                             );
                           })}
                         </Field>
-                      </div>
+                    </div>
 
-                      <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
+                    {/* Trạng thái */}
+                    <div className="col-span-full flex flex-col items-stretch gap-2">
+                      <label className="text-slate-400 font-semibold">
+                        Trạng thái
+                      </label>
+                      <Field
+                        className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        as="select"
+                        name="status"
+                      >
+                        {getLeaseLineStatusOptions().map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </Field>
+                    </div>
+
+                    <div className="col-span-full col-start-1 mb-3 flex flex-col items-stretch gap-2 md:col-span-12">
                         <label className="text-slate-400 font-semibold">
                           Ghi chú
                         </label>
@@ -1039,27 +1061,22 @@ function LeaselineList() {
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex justify-end gap-2">
-                        {/*<label className="text-slate-400 font-semibold">*/}
-                        {/*  Trạng thái*/}
-                        {/*</label>*/}
-                        <Field
-                          as={Switch}
-                          name="active"
-                          color="green"
-                          label={
-                            <Typography variant="h6">
-                              {values.active
-                                ? "Đang hoạt động"
-                                : "Không hoạt động"}
-                            </Typography>
-                          }
-                          checked={values.active}
-                          onChange={({ target }) =>
-                            setFieldValue("active", target.checked)
-                          } // Thiết lập giá trị true/false
-                        />
-                      </div>
+                    <div className="col-span-full flex flex-col gap-2">
+                      <label className="text-slate-400 font-semibold">
+                        Trạng thái
+                      </label>
+                      <Field
+                        className="h-8 rounded border border-gray-300 px-2 py-1 text-gray-600 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        as="select"
+                        name="status"
+                      >
+                        {getLeaseLineStatusOptions().map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </Field>
+                    </div>
 
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">

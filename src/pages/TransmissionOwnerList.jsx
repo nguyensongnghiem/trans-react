@@ -11,11 +11,11 @@ import {
     Typography,
     Button,
     Dialog,
-    DialogHeader,
     DialogBody,
     DialogFooter,
     Input,
     IconButton,
+    Textarea,
 } from "@material-tailwind/react";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
@@ -94,11 +94,14 @@ function TransmissionOwnerList() {
     };
 
     const filteredList = items.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.alias && item.alias.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const validationSchema = Yup.object({
         name: Yup.string().required("Tên đơn vị là bắt buộc"),
+        alias: Yup.string().required("Tên viết tắt là bắt buộc"),
+        email: Yup.string().email("Email không hợp lệ"),
     });
 
     return (
@@ -123,7 +126,7 @@ function TransmissionOwnerList() {
 
             <div className="bg-white p-4 rounded-xl shadow-sm mb-6 border border-gray-200">
                 <Input
-                    label="Tìm kiếm theo tên"
+                    label="Tìm kiếm theo tên hoặc viết tắt"
                     icon={<MagnifyingGlassIcon className="h-5 w-5" />}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -140,6 +143,18 @@ function TransmissionOwnerList() {
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Tên đơn vị</Typography>
                             </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Mã số thuế</Typography>
+                            </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Liên hệ</Typography>
+                            </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Địa chỉ</Typography>
+                            </th>
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Ghi chú</Typography>
+                            </th>
                             {isAdmin && (
                                 <th className="p-4 w-32 text-center">
                                     <Typography variant="small" color="blue-gray" className="font-bold">Hành động</Typography>
@@ -153,7 +168,22 @@ function TransmissionOwnerList() {
                                 <td className="p-4">
                                     <Typography variant="small" color="blue-gray">{index + 1}</Typography>
                                 </td>
-                                <td className="p-4 font-medium">{item.name}</td>
+                                <td className="p-4">
+                                    <div className="flex flex-col">
+                                        <Typography variant="small" color="blue-gray" className="font-medium">{item.name}</Typography>
+                                        <Typography variant="small" color="gray" className="text-xs opacity-70">{item.alias}</Typography>
+                                    </div>
+                                </td>
+                                <td className="p-4 text-sm">{item.taxCode}</td>
+                                <td className="p-4">
+                                    <div className="flex flex-col">
+                                        {item.contactPerson && <Typography variant="small" color="blue-gray" className="font-medium text-xs">{item.contactPerson}</Typography>}
+                                        {item.phoneNumber && <Typography variant="small" color="gray" className="text-[10px]">{item.phoneNumber}</Typography>}
+                                        {item.email && <Typography variant="small" color="blue" className="text-[10px]">{item.email}</Typography>}
+                                    </div>
+                                </td>
+                                <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={item.address}>{item.address}</td>
+                                <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={item.note}>{item.note}</td>
                                 {isAdmin && (
                                     <td className="p-4 flex justify-center gap-2">
                                         <IconButton
@@ -186,10 +216,11 @@ function TransmissionOwnerList() {
                 </table>
             </Card>
 
+            {/* Create Modal */}
             <Dialog
                 open={openCreate}
                 handler={() => setOpenCreate(false)}
-                size="sm"
+                size="md"
                 className="rounded-lg overflow-hidden shadow-xl"
             >
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
@@ -198,7 +229,7 @@ function TransmissionOwnerList() {
                             Thêm mới Đơn vị truyền dẫn
                         </Typography>
                         <Typography className="text-xs font-normal text-gray-500 mt-0.5">
-                            Nhập thông tin đơn vị truyền dẫn mới
+                            Thêm đơn vị sở hữu hạ tầng truyền dẫn
                         </Typography>
                     </div>
                     <IconButton
@@ -211,64 +242,98 @@ function TransmissionOwnerList() {
                     </IconButton>
                 </div>
                 <Formik
-                    initialValues={{ name: "" }}
+                    initialValues={{ name: "", alias: "", note: "", address: "", taxCode: "", contactPerson: "", phoneNumber: "", email: "" }}
                     validationSchema={validationSchema}
                     onSubmit={handleCreate}
                 >
                     {({ errors, touched, handleSubmit }) => (
                         <Form onSubmit={handleSubmit}>
                             <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-2 space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Tên đơn vị</Typography>
+                                        <Field name="name">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.name && Boolean(errors.name)} />}
+                                        </Field>
+                                        <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Viết tắt (Alias)</Typography>
+                                        <Field name="alias">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.alias && Boolean(errors.alias)} />}
+                                        </Field>
+                                        <ErrorMessage name="alias" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Mã số thuế</Typography>
+                                        <Field name="taxCode">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                        </Field>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Người liên hệ</Typography>
+                                        <Field name="contactPerson">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                        </Field>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Số điện thoại</Typography>
+                                        <Field name="phoneNumber">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                        </Field>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Email</Typography>
+                                        <Field name="email">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.email && Boolean(errors.email)} />}
+                                        </Field>
+                                        <ErrorMessage name="email" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+                                </div>
+
                                 <div className="space-y-1">
-                                    <Typography variant="small" color="blue-gray" className="font-bold">
-                                        Tên đơn vị
-                                    </Typography>
-                                    <Field name="name">
-                                        {({ field }) => (
-                                            <Input
-                                                {...field}
-                                                size="lg"
-                                                placeholder="VD: Trung tâm Mạng lưới MobiFone miền Bắc, ..."
-                                                className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                labelProps={{
-                                                    className: "before:content-none after:content-none",
-                                                }}
-                                                error={touched.name && Boolean(errors.name)}
-                                            />
-                                        )}
+                                    <Typography variant="small" color="blue-gray" className="font-bold">Địa chỉ</Typography>
+                                    <Field name="address">
+                                        {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
                                     </Field>
-                                    <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Typography variant="small" color="blue-gray" className="font-bold">Ghi chú</Typography>
+                                    <Field name="note">
+                                        {({ field }) => <Textarea {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                    </Field>
                                 </div>
                             </DialogBody>
                             <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
-                                <CustomButton variant="text" color="blue-gray" onClick={() => setOpenCreate(false)} size="sm">
-                                    Hủy bỏ
-                                </CustomButton>
-                                <CustomButton
-                                    type="submit"
-                                    size="sm"
-                                    className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20"
-                                >
-                                    Lưu thông tin
-                                </CustomButton>
+                                <CustomButton variant="text" color="blue-gray" onClick={() => setOpenCreate(false)} size="sm">Hủy bỏ</CustomButton>
+                                <CustomButton type="submit" size="sm" className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20">Lưu thông tin</CustomButton>
                             </DialogFooter>
                         </Form>
                     )}
                 </Formik>
             </Dialog>
 
+            {/* Edit Modal */}
             <Dialog
                 open={openEdit}
                 handler={() => setOpenEdit(false)}
-                size="sm"
+                size="md"
                 className="rounded-lg overflow-hidden shadow-xl"
             >
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
                     <div>
                         <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
-                            Cập nhật Đơn vị
+                            Cập nhật Đơn vị truyền dẫn
                         </Typography>
                         <Typography className="text-xs font-normal text-gray-500 mt-0.5">
-                            Chỉnh sửa thông tin đơn vị truyền dẫn #{selectedItem?.id}
+                            Chỉnh sửa thông tin đơn vị #{selectedItem?.id}
                         </Typography>
                     </div>
                     <IconButton
@@ -282,44 +347,88 @@ function TransmissionOwnerList() {
                 </div>
                 {selectedItem && (
                     <Formik
-                        initialValues={{ name: selectedItem.name }}
+                        initialValues={{
+                            name: selectedItem.name,
+                            alias: selectedItem.alias || "",
+                            note: selectedItem.note || "",
+                            address: selectedItem.address || "",
+                            taxCode: selectedItem.taxCode || "",
+                            contactPerson: selectedItem.contactPerson || "",
+                            phoneNumber: selectedItem.phoneNumber || "",
+                            email: selectedItem.email || ""
+                        }}
                         validationSchema={validationSchema}
                         onSubmit={handleUpdate}
                     >
                         {({ errors, touched, handleSubmit }) => (
                             <Form onSubmit={handleSubmit}>
                                 <DialogBody className="p-6 space-y-4 text-blue-gray-700">
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="col-span-2 space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Tên đơn vị</Typography>
+                                            <Field name="name">
+                                                {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.name && Boolean(errors.name)} />}
+                                            </Field>
+                                            <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Viết tắt (Alias)</Typography>
+                                            <Field name="alias">
+                                                {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.alias && Boolean(errors.alias)} />}
+                                            </Field>
+                                            <ErrorMessage name="alias" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Mã số thuế</Typography>
+                                            <Field name="taxCode">
+                                                {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                            </Field>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Người liên hệ</Typography>
+                                            <Field name="contactPerson">
+                                                {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                            </Field>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Số điện thoại</Typography>
+                                            <Field name="phoneNumber">
+                                                {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                            </Field>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">Email</Typography>
+                                            <Field name="email">
+                                                {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} error={touched.email && Boolean(errors.email)} />}
+                                            </Field>
+                                            <ErrorMessage name="email" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-1">
-                                        <Typography variant="small" color="blue-gray" className="font-bold">
-                                            Tên đơn vị
-                                        </Typography>
-                                        <Field name="name">
-                                            {({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    size="lg"
-                                                    className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                    labelProps={{
-                                                        className: "before:content-none after:content-none",
-                                                    }}
-                                                    error={touched.name && Boolean(errors.name)}
-                                                />
-                                            )}
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Địa chỉ</Typography>
+                                        <Field name="address">
+                                            {({ field }) => <Input {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
                                         </Field>
-                                        <ErrorMessage name="name" component="div" className="text-red-500 text-[10px] font-medium mt-1 ml-1" />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <Typography variant="small" color="blue-gray" className="font-bold">Ghi chú</Typography>
+                                        <Field name="note">
+                                            {({ field }) => <Textarea {...field} size="lg" className="!border-t-blue-gray-200 focus:!border-blue-500" labelProps={{ className: "before:content-none after:content-none" }} />}
+                                        </Field>
                                     </div>
                                 </DialogBody>
                                 <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-100">
-                                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">
-                                        Hủy bỏ
-                                    </CustomButton>
-                                    <CustomButton
-                                        type="submit"
-                                        size="sm"
-                                        className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20 flex items-center gap-2"
-                                    >
-                                        <PencilIcon className="h-4 w-4" />
-                                        Cập nhật
+                                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenEdit(false)} size="sm">Hủy bỏ</CustomButton>
+                                    <CustomButton type="submit" size="sm" className="bg-[#0d47a1] hover:bg-[#0a3a82] shadow-md shadow-blue-500/20 flex items-center gap-2">
+                                        <PencilIcon className="h-4 w-4" /> Cập nhật
                                     </CustomButton>
                                 </DialogFooter>
                             </Form>
@@ -328,6 +437,7 @@ function TransmissionOwnerList() {
                 )}
             </Dialog>
 
+            {/* Delete Modal */}
             <Dialog
                 open={openDelete}
                 handler={() => setOpenDelete(false)}
@@ -338,15 +448,8 @@ function TransmissionOwnerList() {
                     <div className="bg-red-100 p-2 rounded-full">
                         <TrashIcon className="h-5 w-5 text-red-600" />
                     </div>
-                    <Typography variant="h5" color="red" className="font-semibold">
-                        Xác nhận xóa
-                    </Typography>
-                    <IconButton
-                        size="sm"
-                        variant="text"
-                        className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full"
-                        onClick={() => setOpenDelete(false)}
-                    >
+                    <Typography variant="h5" color="red" className="font-semibold">Xác nhận xóa</Typography>
+                    <IconButton size="sm" variant="text" className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full" onClick={() => setOpenDelete(false)}>
                         <XMarkIcon className="h-5 w-5" />
                     </IconButton>
                 </div>
@@ -355,21 +458,13 @@ function TransmissionOwnerList() {
                         Bạn có chắc chắn muốn xóa đơn vị <b>{selectedItem?.name}</b>?
                     </Typography>
                     <Typography variant="small" color="gray" className="mt-3 italic">
-                        Thao tác này sẽ gỡ bỏ đơn vị khỏi hệ thống và không thể hoàn tác.
+                        Dữ liệu sẽ bị xóa vĩnh viễn và không thể phục hồi.
                     </Typography>
                 </DialogBody>
                 <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
-                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenDelete(false)} size="sm">
-                        Hủy bỏ
-                    </CustomButton>
-                    <Button
-                        color="red"
-                        onClick={handleDelete}
-                        size="sm"
-                        className="flex items-center gap-2 shadow-md shadow-red-500/20 bg-red-600 hover:bg-red-700"
-                    >
-                        <TrashIcon className="h-4 w-4" />
-                        Xác nhận xóa
+                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenDelete(false)} size="sm">Hủy bỏ</CustomButton>
+                    <Button color="red" onClick={handleDelete} size="sm" className="flex items-center gap-2 shadow-md shadow-red-500/20 bg-red-600 hover:bg-red-700">
+                        <TrashIcon className="h-4 w-4" /> Xác nhận xóa
                     </Button>
                 </DialogFooter>
             </Dialog>
