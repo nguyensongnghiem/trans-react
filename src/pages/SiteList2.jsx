@@ -4,6 +4,10 @@ import {
   TrashIcon,
   PlusIcon,
   ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  CloudArrowUpIcon,
+  DocumentIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/solid";
 import Select from "react-select";
 import * as Yup from "yup";
@@ -16,6 +20,7 @@ import {
   ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import {
   Button,
@@ -40,8 +45,7 @@ import StatusBadge from "../components/StatusBadge";
 import { SiteStatus, SiteStatusLabels, SiteStatusColors, getSiteStatusOptions } from "../constants/statusConstants";
 
 const SiteValidationSchema = Yup.object().shape({
-  siteId: Yup.string().required("Vui lòng nhập Site ID"),
-  siteName: Yup.string().required("Vui lòng nhập tên trạm"),
+  siteId: Yup.string().required("Vui lòng nhập Site ID"),  
   latitude: Yup.number()
     .required("Vui lòng nhập vĩ độ")
     .typeError("Vĩ độ phải là một số")
@@ -93,6 +97,14 @@ function SiteList2() {
   const [isLoading, setIsLoading] = useState(true);
   const [editSite, setEditSite] = useState({});
   const [editId, setEditId] = useState(null);
+  
+  // Import states
+  const [openImport, setOpenImport] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState([]);
+  const [importErrors, setImportErrors] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
 
   const [filters, setFilters] = useState({
     province: null,
@@ -354,6 +366,86 @@ function SiteList2() {
     }
   };
 
+  // Import functions
+  const handleOpenImport = () => {
+    setOpenImport(!openImport);
+    if (!openImport) {
+      setImportFile(null);
+      setImportPreview([]);
+      setImportErrors(null);
+      setImportSuccess(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    setImportFile(e.target.files[0]);
+    setImportPreview([]);
+    setImportErrors(null);
+    setImportSuccess(false);
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      const response = await axiosInstance.get("sites/import-excel/template", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "site-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error("Không thể tải file mẫu");
+    }
+  };
+
+  const handleCheckImport = async () => {
+    if (!importFile) {
+      toast.warning("Vui lòng chọn file Excel");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", importFile);
+    setIsImporting(true);
+
+    try {
+      const res = await axiosInstance.post("sites/import-excel/check", formData);
+      setImportPreview(res.data.rows || []);
+      setImportErrors(null);
+      setImportSuccess(true);
+      toast.success("✔ File Excel hợp lệ");
+    } catch (error) {
+      setImportErrors(error.response?.data || {});
+      setImportPreview([]);
+      setImportSuccess(false);
+      toast.error("❌ Dữ liệu Excel không hợp lệ");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleSaveImport = async () => {
+    if (!importSuccess) return;
+    const formData = new FormData();
+    formData.append("file", importFile);
+    setIsImporting(true);
+
+    try {
+      const res = await axiosInstance.post("sites/import-excel/save", formData);
+      toast.success(res.data.message || "Import trạm thành công!");
+      handleOpenImport();
+      // Reload sites
+      const sitesRes = await axiosInstance.get("sites");
+      setSiteListFull(sitesRes.data || []);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi lưu dữ liệu import");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   let deleteSiteId;
   if (deleteId != null) {
     deleteSiteId = siteListFull.find((site) => site.id === deleteId)?.siteId;
@@ -381,6 +473,14 @@ function SiteList2() {
           >
             <PlusIcon className="h-4 w-4" />
             Thêm mới
+          </CustomButton>
+          <CustomButton
+            className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]"
+            size="sm"
+            onClick={handleOpenImport}
+          >
+            <ArrowUpTrayIcon className="h-4 w-4" />
+            Import Excel
           </CustomButton>
           <CustomButton
             className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
@@ -1051,7 +1151,7 @@ function SiteList2() {
                         color="blue-gray"
                         className="mb-1 font-bold"
                       >
-                        Tên trạm <span className="text-red-500">*</span>
+                        Tên trạm 
                       </Typography>
                       <Field
                         name="siteName"
@@ -1075,12 +1175,7 @@ function SiteList2() {
                       useVirtualization={false}
                       isClearable
                     />
-                    <ErrorMessage
-                      name="province.id"
-                      component="div"
-                      className="mt-1 text-xs text-red-600 font-medium"
-                    />
-
+                  
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <FormSelect
@@ -1175,11 +1270,7 @@ function SiteList2() {
                           useVirtualization={false}
                           isClearable
                         />
-                        <ErrorMessage
-                          name="siteTransmissionType.id"
-                          component="div"
-                          className="mt-1 text-xs text-red-600 font-medium"
-                        />
+                      
                       </div>
                       <div>
                         <FormSelect
@@ -1190,12 +1281,9 @@ function SiteList2() {
                           getOptionValue={(option) => option.id}
                           useVirtualization={false}
                           isClearable
+                          required
                         />
-                        <ErrorMessage
-                          name="transmissionOwner.id"
-                          component="div"
-                          className="mt-1 text-xs text-red-600 font-medium"
-                        />
+                      
                       </div>
                     </div>
 
@@ -1414,11 +1502,7 @@ function SiteList2() {
                         useVirtualization={false}
                         isClearable
                       />
-                      <ErrorMessage
-                        name="province.id"
-                        component="div"
-                        className="mt-1 text-xs text-red-600 font-medium"
-                      />
+                      
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1432,12 +1516,9 @@ function SiteList2() {
                           getOptionValue={(option) => option.id}
                           useVirtualization={false}
                           isClearable
+                          required
                         />
-                        <ErrorMessage
-                          name="siteOwner.id"
-                          component="div"
-                          className="mt-1 text-xs text-red-600 font-medium"
-                        />
+                       
                       </div>
                       <div>
                         <FormSelect
@@ -1450,11 +1531,7 @@ function SiteList2() {
                           useVirtualization={false}
                           isClearable
                         />
-                        <ErrorMessage
-                          name="siteType.id"
-                          component="div"
-                          className="mt-1 text-xs text-red-600 font-medium"
-                        />
+                        
                       </div>
                     </div>
 
@@ -1529,12 +1606,9 @@ function SiteList2() {
                           getOptionValue={(option) => option.id}
                           useVirtualization={false}
                           isClearable
+                          required
                         />
-                        <ErrorMessage
-                          name="siteTransmissionType.id"
-                          component="div"
-                          className="mt-1 text-xs text-red-600 font-medium"
-                        />
+                       
                       </div>
                       <div>
                         <FormSelect
@@ -1545,6 +1619,7 @@ function SiteList2() {
                           getOptionValue={(option) => option.id}
                           useVirtualization={false}
                           isClearable
+                          required
                         />
                         <ErrorMessage
                           name="transmissionOwner.id"
@@ -1654,6 +1729,248 @@ function SiteList2() {
             <TrashIcon className="h-4 w-4" />
             <span>Xác nhận xóa</span>
           </CustomButton>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Modal Import Site */}
+      <Dialog
+        open={openImport}
+        handler={handleOpenImport}
+        className="overflow-hidden rounded-lg bg-white shadow-xl flex flex-col max-h-[90vh]"
+        size="lg"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Import Danh sách trạm
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Tải lên tệp Excel để thêm hàng loạt trạm vào hệ thống
+            </Typography>
+          </div>
+          <IconButton
+            size="sm"
+            variant="text"
+            className="text-gray-500 hover:bg-gray-200 rounded-full"
+            onClick={handleOpenImport}
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <DialogBody className="overflow-y-auto p-6 space-y-6 flex-1">
+          {/* Step 1: Template */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center justify-between">
+            <div className="flex-1 pr-4">
+              <Typography variant="small" color="blue" className="font-bold uppercase mb-1">
+                Bước 1: Tải tệp mẫu và chuẩn bị dữ liệu
+              </Typography>
+              <Typography variant="small" color="blue-gray" className="text-[11px] leading-relaxed">
+                Sử dụng tệp mẫu Excel đúng định dạng để đảm bảo dữ liệu được nhập chính xác.
+                Vui lòng không thay đổi cấu trúc các cột trong tệp mẫu.
+              </Typography>
+            </div>
+            <CustomButton
+              size="sm"
+              variant="outlined"
+              color="blue"
+              className="flex items-center gap-2 bg-white shrink-0 shadow-sm"
+              onClick={downloadTemplate}
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              <span>Tải file mẫu</span>
+            </CustomButton>
+          </div>
+
+          {/* Step 2: File Selection */}
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <Typography variant="small" color="blue-gray" className="font-bold uppercase mb-3 text-[11px] tracking-wider">
+              Bước 2: Chọn tệp Excel từ máy tính
+            </Typography>
+
+            {!importFile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-blue-50/30 hover:border-blue-300 transition-all p-8 relative group">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <div className="p-3 bg-white rounded-full shadow-sm border border-gray-200 group-hover:scale-110 transition-transform">
+                    <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
+                    <br />
+                    <span className="text-xs text-gray-400 mt-1 block tracking-tight">Hỗ trợ các định dạng tiêu chuẩn .xlsx, .xls</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl animate-fadeIn">
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <div className="p-2.5 bg-white rounded-lg border border-blue-100 shadow-sm flex-shrink-0">
+                    <DocumentIcon className="h-7 w-7 text-blue-600" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <Typography variant="small" color="blue-gray" className="font-bold truncate max-w-[300px]" title={importFile.name}>
+                      {importFile.name}
+                    </Typography>
+                    <Typography variant="small" className="text-blue-gray-400 text-[10px] font-medium uppercase mt-0.5">
+                      Excel Spreadsheet • {(importFile.size / 1024).toFixed(2)} KB
+                    </Typography>
+                  </div>
+                </div>
+                <IconButton
+                  variant="text"
+                  color="red"
+                  size="sm"
+                  className="rounded-full hover:bg-red-50 flex-shrink-0"
+                  onClick={() => {
+                    setImportFile(null);
+                    setImportSuccess(false);
+                    setImportPreview([]);
+                    setImportErrors(null);
+                  }}
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </IconButton>
+              </div>
+            )}
+          </div>
+
+          {/* Verification Result */}
+          {importSuccess && (
+            <div className="p-5 bg-green-50 border border-green-100 rounded-xl flex items-start gap-4 animate-fadeIn shadow-sm">
+              <div className="bg-green-100 p-2 rounded-full flex-shrink-0">
+                <CheckCircleIcon className="h-6 w-6 text-green-700" />
+              </div>
+              <div className="flex-1">
+                <Typography variant="small" color="green" className="font-bold mb-0.5">
+                  Kiểm tra dữ liệu thành công!
+                </Typography>
+                <Typography variant="small" className="text-gray-700 text-xs">
+                  Sẵn sàng import <span className="font-bold text-green-800 text-sm mx-0.5">{importPreview.length}</span> trạm vào hệ thống. Nhấn "Lưu vào hệ thống" để hoàn tất.
+                </Typography>
+              </div>
+            </div>
+          )}
+
+          {/* Errors */}
+          {importErrors && Object.keys(importErrors).length > 0 && (
+            <div className="border border-red-200 rounded-xl overflow-hidden bg-white shadow-sm animate-fadeIn">
+              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+                <div className="bg-red-100 p-1.5 rounded-full flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-4 w-4 text-red-700" />
+                </div>
+                <Typography variant="small" className="text-red-800 font-bold uppercase tracking-wider text-[11px]">
+                  Phát hiện lỗi trong file ({Object.keys(importErrors).length} dòng)
+                </Typography>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                <ul className="divide-y divide-gray-100">
+                  {Object.entries(importErrors).map(([row, errorGroup]) => (
+                    <li key={row} className="p-4 hover:bg-red-50/30 transition-colors">
+                      <div className="flex gap-4">
+                        <span className="font-bold text-gray-900 bg-red-100/50 px-2.5 py-1 rounded-md h-fit text-xs border border-red-200">Dòng {row}</span>
+                        <ul className="space-y-2 flex-1 mt-0.5">
+                          {errorGroup.errors?.map((err, idx) => (
+                            <li key={idx} className="flex flex-col gap-0.5">
+                              <span className="font-bold text-gray-700 text-[11px] uppercase tracking-tight">{err.columnName || err.column}</span>
+                              <span className="text-red-600 font-medium text-xs">{err.errorMessage || err.message}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Preview Table */}
+          {importSuccess && importPreview.length > 0 && (
+            <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-fadeIn bg-white">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <Typography variant="small" className="font-bold text-gray-700 uppercase tracking-wider text-[11px]">
+                  Xem trước dữ liệu (Tối đa 10 dòng)
+                </Typography>
+                <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-200">
+                  TỔNG {importPreview.length} DÒNG
+                </span>
+              </div>
+              <div className="overflow-x-auto max-h-64">
+                <table className="w-full text-xs text-left">
+                  <thead className="text-[10px] text-gray-500 uppercase bg-gray-100 sticky top-0 z-10 border-b">
+                    <tr>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">Mã trạm</th>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">Tên trạm</th>
+                      <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">Tỉnh/TP</th>
+                      <th className="px-4 py-3 font-bold">Loại truyền dẫn</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {importPreview.slice(0, 10).map((row, idx) => (
+                      <tr key={idx} className="bg-white hover:bg-blue-50/30 transition-colors">
+                        <td className="px-4 py-2.5 font-bold text-blue-700 border-r border-gray-50">{row.siteId}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-900 border-r border-gray-50">{row.siteName}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">{row.provinceName}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-bold border border-gray-200">
+                            {row.siteTransmissionTypeName}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {importPreview.length > 10 && (
+                      <tr className="bg-gray-50/50">
+                        <td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic text-[11px] font-medium">
+                          ... và {importPreview.length - 10} dòng khác không được hiển thị trong bản xem trước ...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </DialogBody>
+
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg shadow-inner">
+          <CustomButton variant="text" color="blue-gray" onClick={handleOpenImport} size="sm">
+            Hủy bỏ
+          </CustomButton>
+          {!importSuccess ? (
+            <CustomButton
+              className="bg-[#0d47a1] hover:bg-[#0a3a82] flex items-center gap-2"
+              onClick={handleCheckImport}
+              disabled={!importFile || isImporting}
+              size="sm"
+            >
+              {isImporting ? (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <MagnifyingGlassIcon className="h-4 w-4" />
+              )}
+              <span>Kiểm tra dữ liệu</span>
+            </CustomButton>
+          ) : (
+            <CustomButton
+              className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+              onClick={handleSaveImport}
+              disabled={isImporting}
+              size="sm"
+            >
+              {isImporting ? (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircleIcon className="h-4 w-4" />
+              )}
+              <span>{isImporting ? "Đang lưu..." : "Lưu vào hệ thống"}</span>
+            </CustomButton>
+          )}
         </DialogFooter>
       </Dialog>
     </div>
