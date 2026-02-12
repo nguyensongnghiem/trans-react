@@ -443,6 +443,9 @@ const BackupDashboard = () => {
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Tên thiết bị
                     </th>
+                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Phiên bản phần mềm
+                    </th>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Số lượng file
                     </th>
@@ -473,6 +476,10 @@ const BackupDashboard = () => {
                         <td className="px-5 py-4 border-b border-gray-200 text-sm font-medium text-gray-900">
                           {item.router_name}
                         </td>
+                        <td className="px-5 py-4 border-b border-gray-200 text-sm font-medium text-gray-900">
+                          Mock data
+                        </td>
+
                         <td className="px-5 py-4 border-b border-gray-200 text-sm text-center">
                           <span className="bg-blue-100 text-blue-800 py-1 px-3 rounded-full text-xs font-bold">
                             {item.backup_count}
@@ -497,7 +504,7 @@ const BackupDashboard = () => {
                               <PlayIcon className="h-4 w-4" />
                             )}
                             {processing[item.router_name]
-                              ? "Đang chạy..."
+                              ? "Đang sao lưu..."
                               : "Sao lưu"}
                           </CustomButton>
                         </td>

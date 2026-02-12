@@ -405,8 +405,8 @@ function RouterList() {
       Tỉnh: router.site?.province?.name,
       "Site ID": router.site?.siteId,
       "Tên thiết bị": router.name,
-      "Loại Router": router.routerType?.name,
-      "Loại thiết bị TD": router.transmissionDeviceType?.name,
+      "Model": router.routerType?.name,
+      "Chức năng": router.transmissionDeviceType?.name,
       "IP quản lý": router.ip,
       "Nhà sản xuất": router.routerType?.vendor?.name,
       "Mã tài sản": router.assetCode,
@@ -557,11 +557,11 @@ function RouterList() {
 
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">
-              Loại Router
+              Model
             </span>
             <Select
               isClearable
-              placeholder="Tất cả loại"
+              placeholder="Tất cả model"
               className="text-sm"
               options={filterOptions.routerTypes}
               getOptionLabel={(option) => option.name}
@@ -706,7 +706,7 @@ function RouterList() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
-                    Loại Router
+                    Model
                   </Typography>
                 </th>
                 <th className="p-4">
@@ -742,7 +742,7 @@ function RouterList() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
-                    Loại thiết bị TD
+                    Chức năng
                   </Typography>
                 </th>
                 <th className="p-4">
@@ -1107,7 +1107,7 @@ function RouterList() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <FormSelect
-                        label="Loại thiết bị TD"
+                        label="Chức năng"
                         name="transmissionDeviceType.id"
                         options={transmissionDeviceTypeList || []}
                         getOptionLabel={(option) => option.name}
@@ -1115,7 +1115,7 @@ function RouterList() {
                         useVirtualization={false}
                       />
                       <FormSelect
-                        label="Loại Router"
+                        label="Model"
                         name="routerType.id"
                         options={routerTypeList || []}
                         getOptionLabel={(option) => option.name}
@@ -1287,7 +1287,7 @@ function RouterList() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormSelect
-                        label="Loại thiết bị TD"
+                        label="Chức năng"
                         name="transmissionDeviceType.id"
                         options={transmissionDeviceTypeList || []}
                         getOptionLabel={(option) => option.name}
@@ -1295,7 +1295,7 @@ function RouterList() {
                         useVirtualization={false}
                       />
                       <FormSelect
-                        label="Loại Router"
+                        label="Model"
                         name="routerType.id"
                         options={routerTypeList || []}
                         getOptionLabel={(option) => option.name}
@@ -1455,7 +1455,7 @@ function RouterList() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="p-2 font-bold text-blue-gray-700">Tên Router</th>
-                      <th className="p-2 font-bold text-blue-gray-700">Loại Router</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Model</th>
                       <th className="p-2 font-bold text-blue-gray-700">Site ID</th>
                       <th className="p-2 font-bold text-blue-gray-700">IP</th>
                     </tr>

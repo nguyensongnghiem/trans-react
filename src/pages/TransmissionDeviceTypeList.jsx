@@ -102,7 +102,7 @@ function TransmissionDeviceTypeList() {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">
-                        Quản lý Loại thiết bị truyền dẫn
+                        Quản lý chức năng thiết bị truyền dẫn
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">
                         Tổng số: <span className="font-semibold text-blue-600">{filteredList.length}</span> loại
@@ -195,10 +195,10 @@ function TransmissionDeviceTypeList() {
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
                     <div>
                         <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
-                            Thêm mới Loại thiết bị truyền dẫn
+                            Thêm mới chức năng thiết bị truyền dẫn
                         </Typography>
                         <Typography className="text-xs font-normal text-gray-500 mt-0.5">
-                            Nhập thông tin loại thiết bị truyền dẫn mới
+                            Nhập thông tin chức năng thiết bị truyền dẫn mới
                         </Typography>
                     </div>
                     <IconButton
@@ -221,14 +221,14 @@ function TransmissionDeviceTypeList() {
                                 <div className="space-y-4">
                                     <div className="space-y-1">
                                         <Typography variant="small" color="blue-gray" className="font-bold">
-                                            Tên loại thiết bị
+                                            Tên chức năng thiết bị
                                         </Typography>
                                         <Field name="name">
                                             {({ field }) => (
                                                 <Input
                                                     {...field}
                                                     size="lg"
-                                                    placeholder="VD: Router, Switch, ..."
+                                                    placeholder="VD: CSG, AGG, ..."
                                                     className="!border-t-blue-gray-200 focus:!border-blue-500"
                                                     labelProps={{
                                                         className: "before:content-none after:content-none",
@@ -268,10 +268,10 @@ function TransmissionDeviceTypeList() {
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
                     <div>
                         <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
-                            Cập nhật Loại thiết bị truyền dẫn
+                            Cập nhật chức năng thiết bị truyền dẫn
                         </Typography>
                         <Typography className="text-xs font-normal text-gray-500 mt-0.5">
-                            Chỉnh sửa thông tin loại thiết bị #{selectedItem?.id}
+                            Chỉnh sửa thông tin chức năng thiết bị #{selectedItem?.id}
                         </Typography>
                     </div>
                     <IconButton
@@ -297,7 +297,7 @@ function TransmissionDeviceTypeList() {
                                     <div className="space-y-4">
                                         <div className="space-y-1">
                                             <Typography variant="small" color="blue-gray" className="font-bold">
-                                                Tên loại thiết bị
+                                                Tên chức năng thiết bị
                                             </Typography>
                                             <Field name="name">
                                                 {({ field }) => (
@@ -360,7 +360,7 @@ function TransmissionDeviceTypeList() {
                 </div>
                 <DialogBody className="p-6 text-blue-gray-700">
                     <Typography variant="paragraph" color="blue-gray" className="font-medium">
-                        Bạn có chắc chắn muốn xóa loại thiết bị <b>{selectedItem?.name}</b> không?
+                        Bạn có chắc chắn muốn xóa chức năng thiết bị <b>{selectedItem?.name}</b> không?
                     </Typography>
                     <Typography variant="small" color="gray" className="mt-3 italic">
                         Dữ liệu sẽ bị xóa vĩnh viễn và không thể phục hồi.
