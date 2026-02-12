@@ -5,6 +5,9 @@ import {
   TrashIcon,
   PlusIcon,
   ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  CloudArrowUpIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/solid";
 import Select from "react-select";
 import * as Yup from "yup";
@@ -17,6 +20,7 @@ import {
   ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Input, IconButton as MTIconButton } from "@material-tailwind/react";
 
@@ -57,6 +61,15 @@ function RouterList() {
   const [isLoading, setIsLoading] = useState(true);
   const [editRouter, setEditRouter] = useState({});
   const [editId, setEditId] = useState(null);
+
+  // Import states
+  const [openImport, setOpenImport] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState([]);
+  const [importErrors, setImportErrors] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+
   const [filters, setFilters] = useState({
     province: null,
     vendor: null,
@@ -164,7 +177,9 @@ function RouterList() {
             r.name?.toLowerCase().includes(search) ||
             r.ip?.toLowerCase().includes(search) ||
             r.site?.siteId?.toLowerCase().includes(search) ||
-            r.note?.toLowerCase().includes(search)
+            r.note?.toLowerCase().includes(search) ||
+            r.assetCode?.toLowerCase().includes(search) ||
+            r.serial?.toLowerCase().includes(search)
           );
         }
         return true;
@@ -202,6 +217,8 @@ function RouterList() {
         router.site?.siteId
           ?.toLowerCase()
           .includes(filters.search.toLowerCase()) ||
+        router.assetCode?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        router.serial?.toLowerCase().includes(filters.search.toLowerCase()) ||
         router.note?.toLowerCase().includes(filters.search.toLowerCase());
 
       return (
@@ -234,15 +251,37 @@ function RouterList() {
     }
   };
 
+  // Helper: Map Formik values (Nested) to Backend DTO (Flat)
+  const mapFormToRequest = (values, isCreate = false) => {
+    const payload = {
+      name: values.name,
+      routerTypeId: values.routerType?.id || null,
+      transmissionDeviceTypeId: values.transmissionDeviceType?.id || null,
+      siteId: values.site?.id || null,
+      ip: values.ip,
+      assetCode: values.assetCode || null,
+      serial: values.serial || null,
+      status: values.status || DeviceStatus.OPERATING,
+      note: values.note || null,
+    };
+
+    if (!isCreate) {
+      payload.id = values.id;
+    }
+
+    return payload;
+  };
+
   // Xử lý thêm mới
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
   };
 
   // Tạo mới Router
-  const handleCreate = async (router) => {
-    console.log(router);
-    await createRouter(router);
+  const handleCreate = async (values) => {
+    console.log("Giá trị từ Form:", values);
+    const payload = mapFormToRequest(values, true);
+    await createRouter(payload);
     setOpenCreate(!openCreate);
   };
   // Xử lý Edit
@@ -256,9 +295,10 @@ function RouterList() {
     setOpenEdit(!openEdit);
   };
 
-  const handleEditSubmit = async (router) => {
-    console.log(router);
-    await updateRouter(router.id, router);
+  const handleEditSubmit = async (values) => {
+    console.log("Giá trị từ Form:", values);
+    const payload = mapFormToRequest(values);
+    await updateRouter(payload.id, payload);
     setOpenEdit(!openEdit);
   };
 
@@ -283,6 +323,82 @@ function RouterList() {
     console.log(deleteRouterName);
   }
 
+  // Import functions
+  const handleOpenImport = () => {
+    setOpenImport(!openImport);
+    if (!openImport) {
+      setImportFile(null);
+      setImportPreview([]);
+      setImportErrors(null);
+      setImportSuccess(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    setImportFile(e.target.files[0]);
+    setImportPreview([]);
+    setImportErrors(null);
+    setImportSuccess(false);
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      const data = await routerService.getImportTemplate(axiosInstance);
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "router-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error("Không thể tải file mẫu");
+    }
+  };
+
+  const handleCheckImport = async () => {
+    if (!importFile) {
+      toast.warning("Vui lòng chọn file Excel");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", importFile);
+    setIsImporting(true);
+
+    try {
+      const res = await routerService.checkImport(axiosInstance, formData);
+      setImportPreview(res.rows || []);
+      setImportErrors(null);
+      setImportSuccess(true);
+      toast.success("✔ File Excel hợp lệ");
+    } catch (error) {
+      setImportErrors(error.response?.data || {});
+      setImportPreview([]);
+      setImportSuccess(false);
+      toast.error("❌ Dữ liệu Excel không hợp lệ");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleSaveImport = async () => {
+    if (!importSuccess) return;
+    const formData = new FormData();
+    formData.append("file", importFile);
+    setIsImporting(true);
+
+    try {
+      const res = await routerService.saveImport(axiosInstance, formData);
+      toast.success(res.message || "Import router thành công!");
+      handleOpenImport();
+      fetchRouters();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi lưu dữ liệu import");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
     const dataToExport = filteredRouters.map((router) => ({
@@ -293,6 +409,8 @@ function RouterList() {
       "Loại thiết bị TD": router.transmissionDeviceType?.name,
       "IP quản lý": router.ip,
       "Nhà sản xuất": router.routerType?.vendor?.name,
+      "Mã tài sản": router.assetCode,
+      Serial: router.serial,
       "Trạng thái": DeviceStatusLabels[router.status] || router.status,
       "Ghi chú": router.note,
     }));
@@ -339,6 +457,14 @@ function RouterList() {
             Thêm mới
           </CustomButton>
           <CustomButton
+            className="flex items-center gap-2 bg-[#e65100] hover:bg-[#bf360c]"
+            size="sm"
+            onClick={handleOpenImport}
+          >
+            <ArrowUpTrayIcon className="h-4 w-4" />
+            Import Excel
+          </CustomButton>
+          <CustomButton
             className="flex items-center gap-2 bg-[#1d6f42] hover:bg-[#155d36]"
             size="sm"
             onClick={onBtnExport}
@@ -362,14 +488,14 @@ function RouterList() {
             filters.transDeviceType ||
             filters.status ||
             filters.search) && (
-            <button
-              onClick={handleResetFilters}
-              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
-            >
-              <ArrowPathIcon className="h-3 w-3" />
-              Xóa bộ lọc
-            </button>
-          )}
+              <button
+                onClick={handleResetFilters}
+                className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+              >
+                <ArrowPathIcon className="h-3 w-3" />
+                Xóa bộ lọc
+              </button>
+            )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -598,6 +724,24 @@ function RouterList() {
                     color="blue-gray"
                     className="font-bold leading-none"
                   >
+                    Mã tài sản
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
+                    Serial
+                  </Typography>
+                </th>
+                <th className="p-4">
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-bold leading-none"
+                  >
                     Loại thiết bị TD
                   </Typography>
                 </th>
@@ -705,6 +849,24 @@ function RouterList() {
                       color="blue-gray"
                       className="font-normal"
                     >
+                      {router.assetCode || "-"}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {router.serial || "-"}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {router.transmissionDeviceType?.name}
                     </Typography>
                   </td>
@@ -728,10 +890,10 @@ function RouterList() {
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center">
-                      <StatusBadge 
-                        status={router.status} 
-                        labels={DeviceStatusLabels} 
-                        colors={DeviceStatusColors} 
+                      <StatusBadge
+                        status={router.status}
+                        labels={DeviceStatusLabels}
+                        colors={DeviceStatusColors}
                       />
                     </div>
                   </td>
@@ -1043,6 +1205,8 @@ function RouterList() {
             onSubmit={handleEditSubmit}
             initialValues={{
               ...editRouter,
+              assetCode: editRouter.assetCode || "",
+              serial: editRouter.serial || "",
             }}
             validationSchema={Yup.object({
               name: Yup.string().required("Yêu cầu nhập tên router"),
@@ -1196,6 +1360,181 @@ function RouterList() {
         message="Bạn có chắc chắn muốn xóa thiết bị"
         confirmText="Xác nhận xóa"
       />
+
+      {/* Modal Import Excel */}
+      <Dialog
+        open={openImport}
+        handler={handleOpenImport}
+        className="overflow-hidden rounded-lg bg-white shadow-xl"
+        size="lg"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div>
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Import Router từ Excel
+            </Typography>
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Tải lên file Excel mẫu để cập nhật danh sách router hàng loạt
+            </Typography>
+          </div>
+          <IconButton size="sm" variant="text" color="blue-gray" onClick={handleOpenImport}>
+            <XMarkIcon className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <DialogBody className="p-6">
+          {!importSuccess ? (
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-10 bg-gray-50/50">
+              <CloudArrowUpIcon className="h-16 w-16 text-blue-gray-200 mb-4" />
+              <Typography variant="h6" color="blue-gray" className="mb-1">
+                Kéo thả file hoặc click để chọn
+              </Typography>
+              <Typography variant="small" className="text-gray-500 mb-6">
+                Chỉ chấp nhận file .xlsx hoặc .xls
+              </Typography>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileChange}
+                className="hidden"
+                id="excel-upload"
+              />
+              <div className="flex gap-3">
+                <label
+                  htmlFor="excel-upload"
+                  className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                >
+                  Chọn file
+                </label>
+                <button
+                  onClick={downloadTemplate}
+                  className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <DocumentIcon className="h-4 w-4" />
+                  Tải file mẫu
+                </button>
+              </div>
+              {importFile && (
+                <div className="mt-6 flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
+                  <DocumentIcon className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">{importFile.name}</span>
+                  <button onClick={() => setImportFile(null)} className="ml-2 text-blue-400 hover:text-blue-600">
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between bg-green-50 border border-green-100 p-4 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <CheckCircleIcon className="h-8 w-8 text-green-500" />
+                  <div>
+                    <Typography variant="h6" color="green" className="leading-none mb-1">
+                      Kiểm tra dữ liệu thành công
+                    </Typography>
+                    <Typography className="text-xs text-green-700 font-medium">
+                      Tìm thấy {importPreview.length} dòng dữ liệu hợp lệ và sẵn sàng để lưu.
+                    </Typography>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setImportSuccess(false);
+                    setImportPreview([]);
+                  }}
+                  className="text-xs font-bold text-green-700 hover:underline"
+                >
+                  Thay đổi file
+                </button>
+              </div>
+
+              {/* Preview Table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="p-2 font-bold text-blue-gray-700">Tên Router</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Loại Router</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Site ID</th>
+                      <th className="p-2 font-bold text-blue-gray-700">IP</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {importPreview.slice(0, 10).map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="p-2">{row.name}</td>
+                        <td className="p-2">{row.routerTypeName}</td>
+                        <td className="p-2">{row.siteId}</td>
+                        <td className="p-2">{row.ip}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {importPreview.length > 10 && (
+                  <div className="p-2 bg-gray-50 text-center text-[10px] text-gray-500 italic">
+                    Và {importPreview.length - 10} dòng khác...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {importErrors && (
+            <div className="mt-4 bg-red-50 border border-red-100 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3 text-red-700">
+                <ExclamationTriangleIcon className="h-5 w-5" />
+                <Typography variant="h6" color="red">
+                  Lỗi dữ liệu ({Object.keys(importErrors).length} dòng bị lỗi)
+                </Typography>
+              </div>
+              <div className="max-h-[30vh] overflow-y-auto bg-white rounded-lg border border-red-100">
+                {Object.entries(importErrors).map(([rowNum, errorGroup]) => (
+                  <div key={rowNum} className="p-3 border-b border-red-50 last:border-none">
+                    <Typography className="text-xs font-bold text-gray-800 mb-1">
+                      Dòng {rowNum}:
+                    </Typography>
+                    <div className="flex flex-wrap gap-2">
+                      {errorGroup.errors.map((err, i) => (
+                        <div key={i} className="bg-red-50 text-[10px] px-2 py-0.5 rounded border border-red-100 text-red-700">
+                          <span className="font-bold">{err.column}:</span> {err.message}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogBody>
+
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+          <CustomButton variant="text" color="blue-gray" onClick={handleOpenImport} size="sm" disabled={isImporting}>
+            Hủy bỏ
+          </CustomButton>
+          {!importSuccess ? (
+            <CustomButton
+              className="bg-[#0d47a1] hover:bg-[#0a3a82]"
+              size="sm"
+              onClick={handleCheckImport}
+              loading={isImporting}
+              disabled={!importFile}
+            >
+              Kiểm tra dữ liệu
+            </CustomButton>
+          ) : (
+            <CustomButton
+              className="bg-[#1d6f42] hover:bg-[#155d36]"
+              size="sm"
+              onClick={handleSaveImport}
+              loading={isImporting}
+            >
+              Lưu dữ liệu vào hệ thống
+            </CustomButton>
+          )}
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

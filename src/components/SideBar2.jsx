@@ -133,6 +133,7 @@ const menuConfig = [
       { title: "Quản lý loại CSHT", path: "/admin/site-types" },
       { title: "Quản lý đơn vị sở hữu truyền dẫn", path: "/admin/transmission-owners" },
       { title: "Quản lý loại TD trạm", path: "/admin/site-transmission-types" },
+      { title: "Quản lý loại TD truyền dẫn", path: "/admin/transmission-device-types" },
       { title: "Quản lý database", path: "/admin/database" },
     ],
   },
