@@ -26,17 +26,17 @@ import "leaflet/dist/leaflet.css";
 
 import SiteInfoCard from "./component/SiteInfoCard.jsx";
 import DeviceInfoCard from "./component/DeviceInfoCard.jsx";
-import OfcInfoCard from "./component/OfcInfoCard.jsx";
+import SiteConnectionsTable from "./component/SiteConnectionsTable.jsx";
 import ContractInfoCard from "./component/ContractInfoCard.jsx";
-import LeaselineInfoCard from "./component/LeaselineInfoCard.jsx";
 import CustomButton from "../../components/CustomButton.jsx";
 
 function SiteLookup() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(false);
   const [searchId, setSearchId] = useState();
   const [simpleSiteList, setSimpleSiteList] = useState([]);
   const [site, setSite] = useState();
-  const [activeTab, setActiveTab] = React.useState("general");
+  const [activeTab, setActiveTab] = React.useState("devices");
   const axiosInstance = useAxiosPrivate();
 
   useEffect(() => {
@@ -59,17 +59,21 @@ function SiteLookup() {
     const loadData = async () => {
       if (!searchId) return;
       try {
-        setIsLoading(true);
+        setIsDataLoading(true);
 
         // 1. Fetch Site Detail (General Info, Devices, Leased Lines)
         const siteResult = await axiosInstance.get(`sites/${searchId}/detail`);
         const rawSite = siteResult.data;
 
-        // 2. Fetch Hired FO Lines from dedicated API
+        // 2. Fetch Unified Site Connections
+        const connectionsResult = await axiosInstance.get(`sites/${searchId}/connections`);
+        const connections = connectionsResult.data || [];
+
+        // 3. Fetch Hired FO Lines (needed for contracts extraction)
         const ofcResult = await axiosInstance.get(`hired-fos/site/${searchId}`);
         const ofcList = ofcResult.data || [];
 
-        // 3. Extract Contracts from the OFC list
+        // 4. Extract Contracts from the OFC list
         const uniqueContractsMap = new Map();
         ofcList.forEach((line) => {
           if (line.foContract) {
@@ -80,14 +84,14 @@ function SiteLookup() {
 
         setSite({
           ...rawSite,
-          ofcList: ofcList,
+          connections: connections,
           contractList: extractedContracts,
         });
       } catch (error) {
         console.log(error);
         toast.error("Lỗi khi tải thông tin trạm.");
       } finally {
-        setIsLoading(false);
+        setIsDataLoading(false);
       }
     };
     loadData();
@@ -111,35 +115,30 @@ function SiteLookup() {
   // Define Tabs Configuration
   const dataTabs = [
     {
-      label: "Tổng quan",
-      value: "general",
+      label: "Thiết bị",
+      value: "devices",
       icon: ServerIcon,
       content: (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-1">
-            <SiteInfoCard site={site} siteList={simpleSiteList} />
-          </div>
-          <div className="xl:col-span-2">
-            <DeviceInfoCard site={site} />
-          </div>
+        <div className="flex flex-col gap-6">
+          <DeviceInfoCard site={site} />
         </div>
       ),
     },
     {
       label: (
         <div className="flex items-center gap-2">
-          <span>Cáp quang (OFC)</span>
+          <span>Kết nối truyền dẫn</span>
           <span className="bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            {site?.ofcList?.length || 0}
+            {site?.connections?.length || 0}
           </span>
         </div>
       ),
-      value: "ofc",
+      value: "connections",
       icon: ShareIcon,
       content: (
-        <div>
-          <OfcInfoCard ofcList={site?.ofcList} />
-        </div>
+        <Card className="border border-gray-200 shadow-sm rounded-xl overflow-hidden p-0">
+          <SiteConnectionsTable connections={site?.connections} />
+        </Card>
       ),
     },
     {
@@ -160,20 +159,19 @@ function SiteLookup() {
       ),
     },
     {
-      label: (
-        <div className="flex items-center gap-2">
-          <span>Kênh thuê riêng</span>
-          <span className="bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            {site?.leaseLineList?.length || 0}
-          </span>
-        </div>
-      ),
-      value: "leaseline",
+      label: "Sơ đồ kết nối truyền dẫn",
+      value: "diagram",
       icon: SignalIcon,
       content: (
-        <div>
-          <LeaselineInfoCard leaselineList={site?.leaseLineList} />
-        </div>
+        <Card className="h-96 border border-gray-200 border-dashed bg-gray-50/50 flex flex-col items-center justify-center rounded-xl">
+          <SignalIcon className="h-16 w-16 text-gray-300 mb-4" />
+          <Typography variant="h6" color="blue-gray" className="opacity-50 font-normal">
+            Sơ đồ kết nối đang được phát triển
+          </Typography>
+          <Typography variant="small" className="text-gray-500 mt-2 italic">
+            (Mock data visualization will appear here)
+          </Typography>
+        </Card>
       ),
     },
   ];
@@ -236,6 +234,41 @@ function SiteLookup() {
 
       {site ? (
         <div className="w-full">
+          {/* Site Summary Card */}
+          <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
+              <div className="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-gray-100 p-5 bg-blue-50/30">
+                <Typography variant="small" className="text-gray-500 font-medium uppercase tracking-wider mb-1">Tên trạm</Typography>
+                <Typography variant="h5" color="blue-gray" className="font-bold mb-3">{site.siteName}</Typography>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Mã trạm:</span>
+                    <span className="font-bold text-gray-800">{site.siteId}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Tỉnh/TP:</span>
+                    <span className="font-medium text-gray-700">{site.province?.name || "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Chủ sở hữu:</span>
+                    <span className="font-medium text-gray-700">{site.siteOwner?.name || "N/A"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-3 p-0 relative h-64 lg:h-auto min-h-[250px]">
+                {isDataLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
+                    <Spinner className="h-8 w-8 text-blue-800" />
+                  </div>
+                ) : (
+                  <SiteInfoCard site={site} siteList={simpleSiteList} />
+                )}
+              </div>
+            </div>
+          </Card>
+
           <Tabs value={activeTab} className="flex flex-col">
             <TabsHeader
               className="rounded-none border-b border-gray-200 bg-transparent p-0 mb-6"
@@ -270,11 +303,17 @@ function SiteLookup() {
                 unmount: { y: 0, x: 0 },
               }}
             >
-              {dataTabs.map(({ value, content }) => (
-                <TabPanel key={value} value={value} className="p-0 h-full">
-                  {content}
-                </TabPanel>
-              ))}
+              {isDataLoading ? (
+                <div className="flex py-20 items-center justify-center">
+                  <Spinner className="h-10 w-10 text-blue-900" />
+                </div>
+              ) : (
+                dataTabs.map(({ value, content }) => (
+                  <TabPanel key={value} value={value} className="p-0 h-full">
+                    {content}
+                  </TabPanel>
+                ))
+              )}
             </TabsBody>
           </Tabs>
         </div>

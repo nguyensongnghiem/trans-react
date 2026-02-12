@@ -467,7 +467,7 @@ const BackupDashboard = () => {
                         colSpan="5"
                         className="text-center py-4 text-gray-500"
                       >
-                        Chưa có dữ liệu sao lư nào.
+                        Chưa có dữ liệu sao lưu nào.
                       </td>
                     </tr>
                   ) : (
