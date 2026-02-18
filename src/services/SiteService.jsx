@@ -45,3 +45,20 @@ export const countByTransmissionType = async (axiosInstance, transmissionType) =
     const response = await axiosInstance.get(`/sites/reports/count-by-transmission-type?transmission-type=${transmissionType}`);
     return response.data;
 };
+
+export const getImportTemplate = async (axiosInstance) => {
+    const response = await axiosInstance.get("sites/import-excel/template", {
+        responseType: "blob",
+    });
+    return response.data;
+};
+
+export const checkImport = async (axiosInstance, formData) => {
+    const res = await axiosInstance.post("sites/import-excel/check", formData);
+    return res.data;
+};
+
+export const saveImport = async (axiosInstance, formData) => {
+    const res = await axiosInstance.post("sites/import-excel/save", formData);
+    return res.data;
+};

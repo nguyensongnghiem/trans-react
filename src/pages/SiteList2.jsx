@@ -8,6 +8,7 @@ import {
   CloudArrowUpIcon,
   DocumentIcon,
   CheckCircleIcon,
+  XMarkIcon
 } from "@heroicons/react/24/solid";
 import Select from "react-select";
 import * as Yup from "yup";
@@ -34,15 +35,17 @@ import {
   Input,
   IconButton as MTIconButton,
   Switch,
+  
 } from "@material-tailwind/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
-import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import OwnerChip from "../components/OwnerChip";
 import CustomButton from "../components/CustomButton";
 import FormSelect from "../components/FormSelect";
 import StatusBadge from "../components/StatusBadge";
 import { SiteStatus, SiteStatusLabels, SiteStatusColors, getSiteStatusOptions } from "../constants/statusConstants";
+import useSites from "../hooks/useSites";
+import useMetadata from "../hooks/useMetadata";
+import useMultiLoading from "../hooks/useMultiLoading";
 
 const SiteValidationSchema = Yup.object().shape({
   siteId: Yup.string().required("Vui lòng nhập Site ID"),  
@@ -83,21 +86,13 @@ const SiteValidationSchema = Yup.object().shape({
 
 function SiteList2() {
   const navigate = useNavigate();
-  const [siteListFull, setSiteListFull] = useState([]);
-  const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
-  const [siteTransmissionTypeList, setSiteTransmissionTypeList] = useState([]);
-  const [siteOwnerList, setSiteOwnerList] = useState([]);
-  const [siteTypeList, setSiteTypeList] = useState([]);
-  const [provinces, setProvinces] = useState([]);
 
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [editSite, setEditSite] = useState({});
   const [editId, setEditId] = useState(null);
-  
   // Import states
   const [openImport, setOpenImport] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -117,7 +112,27 @@ function SiteList2() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
 
-  const axiosInstance = useAxiosPrivate();
+  const { 
+    sites: siteListFull, 
+    isLoading: sitesLoading, 
+    createSite, 
+    updateSite, 
+    deleteSite,
+    downloadImportTemplate,
+    checkImportData,
+    saveImportData
+  } = useSites();
+
+  const { 
+    provinces, 
+    siteOwners: siteOwnerList, 
+    transOwners: transmissionOwnerList, 
+    transTypes: siteTransmissionTypeList, 
+    siteTypes: siteTypeList,
+    isLoading: metaLoading,
+  } = useMetadata();
+
+  const isLoading = useMultiLoading([sitesLoading, metaLoading]);
 
   const filteredSites = useMemo(() => {
     return siteListFull.filter((site) => {
@@ -196,39 +211,6 @@ function SiteList2() {
     });
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // Load Sites
-        const sitesRes = await axiosInstance.get("sites");
-        setSiteListFull(sitesRes.data || []);
-
-        // Load Metadata concurrently
-        const [ownersRes, transOwnersRes, provincesRes, transTypesRes, siteTypesRes] =
-          await Promise.all([
-            axiosInstance.get("siteOwners"),
-            axiosInstance.get("transmissionOwners"),
-            axiosInstance.get("provinces"),
-            axiosInstance.get("site-transmission-types"),
-            axiosInstance.get("site-type"),
-          ]);
-
-        setSiteOwnerList(ownersRes.data || []);
-        setTransmissionOwnerList(transOwnersRes.data || []);
-        setProvinces(provincesRes.data || []);
-        setSiteTransmissionTypeList(transTypesRes.data || []);
-        setSiteTypeList(siteTypesRes.data || []);
-      } catch (error) {
-        console.log(error);
-        toast.error("Lỗi tải dữ liệu.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
   // Xử lý thêm mới
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
@@ -263,32 +245,20 @@ function SiteList2() {
 
   const handleCreate = async (values, { setErrors }) => {
     console.log("Giá trị từ Form:" + values);
-    const payload = mapFormToRequest(values, true);
-    try {
-      const response = await axiosInstance.post("sites", payload);
-      const newSite = response.data;
-      toast.success("Đã thêm mới trạm thành công.");
-      setSiteListFull((prevState) => [newSite, ...prevState]);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Có lỗi xảy ra khi thêm mới",
-        {
-          zIndex: 9999,
-        },
-      );
-    } finally {
-      setOpenCreate(!openCreate);
-    }
+    const payload = mapFormToRequest(values, true);    
+    await createSite(payload);
+    setOpenCreate(false);
   };
 
   // Xử lý Edit
 
   const handleEdit = async (id) => {
     try {
-      console.log("id cần edit:" + id);
-      const response = await axiosInstance.get(`sites/${id}`);
-      const site = response.data;
-      console.log("site cần edit:", site); // Fixed logging
+      const site = siteListFull.find(s => s.id === id);
+      if (!site) {
+        toast.error("Không tìm thấy thông tin trạm.");
+        return;
+      }
       setEditId(id);
       
       // Sanitizing null objects to ensure Formik doesn't choke on null values for nested fields
@@ -307,7 +277,6 @@ function SiteList2() {
       });
       handleOpenEdit();
     } catch (error) {
-      console.log("Lỗi api:", error);
       toast.error("Không thể lấy thông tin trạm");
     }
   };
@@ -321,24 +290,8 @@ function SiteList2() {
     const payload = mapFormToRequest(values);
 
     console.log("payload:", payload);
-    try {
-      const response = await axiosInstance.put(`sites/${values.id}`, payload);
-      const updatedSite = response.data;
-      setSiteListFull((prevState) =>
-        // Update local state optimistically or refetch
-        prevState.map((s) => (s.id === updatedSite.id ? updatedSite : s)),
-      );
-      toast.success("Đã cập nhật thành công trạm");
-    } catch (error) {
-      console.log(error);
-      if (error.response && error.response.data) {
-        toast.error(error.response.data.message || "Có lỗi xảy ra");
-      } else {
-        toast.error("Có lỗi bất thường xảy ra");
-      }
-    } finally {
-      setOpenEdit(!openEdit);
-    }
+    await updateSite(values.id, payload);
+    setOpenEdit(false);
   };
 
   // Xử lý Xóa
@@ -351,19 +304,9 @@ function SiteList2() {
     setOpenDelete(!openDelete);
   };
   const handleDeleteSubmit = async () => {
-    try {
-      await axiosInstance.delete("sites/" + deleteId);
-      toast.success("Đã xóa thành công trạm");
-      setSiteListFull((prevState) =>
-        prevState.filter((site) => site.id !== deleteId),
-      );
-      setDeleteId(null);
-    } catch (e) {
-      console.log(e);
-      toast.error("Có lỗi xảy ra khi xóa trạm");
-    } finally {
-      handleOpenDelete();
-    }
+    await deleteSite(deleteId);
+    setDeleteId(null);
+    setOpenDelete(false);
   };
 
   // Import functions
@@ -385,20 +328,7 @@ function SiteList2() {
   };
 
   const downloadTemplate = async () => {
-    try {
-      const response = await axiosInstance.get("sites/import-excel/template", {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "site-import-template.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      toast.error("Không thể tải file mẫu");
-    }
+    await downloadImportTemplate();
   };
 
   const handleCheckImport = async () => {
@@ -411,16 +341,14 @@ function SiteList2() {
     setIsImporting(true);
 
     try {
-      const res = await axiosInstance.post("sites/import-excel/check", formData);
+      const res = await checkImportData(formData);
       setImportPreview(res.data.rows || []);
       setImportErrors(null);
       setImportSuccess(true);
-      toast.success("✔ File Excel hợp lệ");
     } catch (error) {
       setImportErrors(error.response?.data || {});
       setImportPreview([]);
       setImportSuccess(false);
-      toast.error("❌ Dữ liệu Excel không hợp lệ");
     } finally {
       setIsImporting(false);
     }
@@ -433,14 +361,10 @@ function SiteList2() {
     setIsImporting(true);
 
     try {
-      const res = await axiosInstance.post("sites/import-excel/save", formData);
-      toast.success(res.data.message || "Import trạm thành công!");
+      await saveImportData(formData);
       handleOpenImport();
-      // Reload sites
-      const sitesRes = await axiosInstance.get("sites");
-      setSiteListFull(sitesRes.data || []);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi lưu dữ liệu import");
+      console.error("Save import failed:", error);
     } finally {
       setIsImporting(false);
     }

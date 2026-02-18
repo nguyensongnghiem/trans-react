@@ -78,7 +78,46 @@ function useSites() {
     fetchSites();
   }, [fetchSites]);
 
-  return { sites, isLoading, error, createSite, updateSite, deleteSite, fetchSites };
+  const downloadImportTemplate = async () => {
+    try {
+      const data = await siteService.getImportTemplate(axiosPrivate);
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "site-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Không thể tải file mẫu");
+      console.error("Template download error:", error);
+    }
+  };
+
+  const checkImportData = async (formData) => {
+    try {
+      const data = await siteService.checkImport(axiosPrivate, formData);
+      toast.success("✔ File Excel hợp lệ, sẵn sàng để lưu.");
+      return data;
+    } catch (error) {
+      toast.error("❌ Dữ liệu Excel không hợp lệ.");
+      throw error;
+    }
+  };
+
+  const saveImportData = async (formData) => {
+    try {
+      const res = await siteService.saveImport(axiosPrivate, formData);
+      toast.success(res.message || "Import trạm thành công!");
+      await fetchSites(); // Tải lại danh sách
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi lưu dữ liệu import");
+      throw error;
+    }
+  };
+
+  return { sites, isLoading, error, createSite, updateSite, deleteSite, fetchSites, downloadImportTemplate, checkImportData, saveImportData };
 }
 
 export default useSites;
