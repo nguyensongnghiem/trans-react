@@ -34,3 +34,19 @@ export const getTotalRouters = async (axiosInstance) => {
     const response = await axiosInstance.get(`/routers/reports/total`);
     return response.data;
 };
+export const getImportTemplate = async (axiosInstance) => {
+    const response = await axiosInstance.get("routers/import-excel/template", {
+        responseType: "blob",
+    });
+    return response.data;
+};
+
+export const checkImport = async (axiosInstance, formData) => {
+    const res = await axiosInstance.post("routers/import-excel/check", formData);
+    return res.data;
+};
+
+export const saveImport = async (axiosInstance, formData) => {
+    const res = await axiosInstance.post("routers/import-excel/save", formData);
+    return res.data;
+};

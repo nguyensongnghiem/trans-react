@@ -74,6 +74,46 @@ function useRouters() {
     }
   };
 
+  const downloadImportTemplate = async () => {
+    try {
+      const data = await routerService.getImportTemplate(axiosPrivate);
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "router-import-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Không thể tải file mẫu");
+      console.error("Template download error:", error);
+    }
+  };
+
+  const checkImportData = async (formData) => {
+    // Hàm này sẽ throw lỗi, để component có thể bắt và xử lý
+    try {
+      const data = await routerService.checkImport(axiosPrivate, formData);
+      toast.success("✔ File Excel hợp lệ, sẵn sàng để lưu.");
+      return data; // Component sẽ dùng dữ liệu này để xem trước
+    } catch (error) {
+      toast.error("❌ Dữ liệu Excel không hợp lệ.");
+      throw error; // Ném lỗi ra để component xử lý UI
+    }
+  };
+
+  const saveImportData = async (formData) => {
+    try {
+      const res = await routerService.saveImport(axiosPrivate, formData);
+      toast.success(res.message || "Import router thành công!");
+      await fetchRouters(); // Tải lại danh sách
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi lưu dữ liệu import");
+      throw error; // Ném lỗi ra để component xử lý
+    }
+  };
+
   useEffect(() => {
     fetchRouters();
   }, [fetchRouters]);
@@ -87,6 +127,9 @@ function useRouters() {
     updateRouter,
     deleteRouter,
     fetchRouters,
+    downloadImportTemplate,
+    checkImportData,
+    saveImportData,
   };
 }
 

@@ -94,6 +94,9 @@ function RouterList() {
     updateRouter,
     deleteRouter,
     fetchRouters,
+    downloadImportTemplate,
+    checkImportData,
+    saveImportData,
   } = useRouters();
 
   useEffect(() => {
@@ -342,18 +345,7 @@ function RouterList() {
   };
 
   const downloadTemplate = async () => {
-    try {
-      const data = await routerService.getImportTemplate(axiosInstance);
-      const url = window.URL.createObjectURL(new Blob([data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "router-import-template.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      toast.error("Không thể tải file mẫu");
-    }
+    await downloadImportTemplate();
   };
 
   const handleCheckImport = async () => {
@@ -366,16 +358,14 @@ function RouterList() {
     setIsImporting(true);
 
     try {
-      const res = await routerService.checkImport(axiosInstance, formData);
+      const res = await checkImportData(formData);
       setImportPreview(res.rows || []);
       setImportErrors(null);
       setImportSuccess(true);
-      toast.success("✔ File Excel hợp lệ");
     } catch (error) {
       setImportErrors(error.response?.data || {});
       setImportPreview([]);
       setImportSuccess(false);
-      toast.error("❌ Dữ liệu Excel không hợp lệ");
     } finally {
       setIsImporting(false);
     }
@@ -388,12 +378,11 @@ function RouterList() {
     setIsImporting(true);
 
     try {
-      const res = await routerService.saveImport(axiosInstance, formData);
-      toast.success(res.message || "Import router thành công!");
+      await saveImportData(formData);
       handleOpenImport();
-      fetchRouters();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi lưu dữ liệu import");
+      // Lỗi đã được xử lý và hiển thị toast trong hook
+      console.error("Save import failed:", error);
     } finally {
       setIsImporting(false);
     }
