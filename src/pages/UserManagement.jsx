@@ -262,7 +262,7 @@ const UserManagement = () => {
                     {user.userRoles && user.userRoles.length > 0 ? (
                       user.userRoles.map((ur, idx) => (
                         <div key={idx} className="px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
-                          {ur.role.name.replace("ROLE_", "")}
+                          {ur.role?.name?.replace("ROLE_", "") || ""}
                         </div>
                       ))
                     ) : (
@@ -332,7 +332,7 @@ const UserManagement = () => {
             password: "",
             email: selectedUser?.email || "",
             state: selectedUser?.state || "ACTIVE",
-            roles: selectedUser ? selectedUser.userRoles.map(r => r.role.name) : []
+            roles: selectedUser ? (selectedUser.userRoles || []).map(r => r.role?.name).filter(Boolean) : []
           }}
           validationSchema={UserSchema}
           onSubmit={handleSubmit}
