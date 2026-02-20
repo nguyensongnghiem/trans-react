@@ -23,6 +23,12 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../contexts/authContext";
 import { jwtDecode } from "jwt-decode";
+import {
+    getSiteTransmissionTypes,
+    createSiteTransmissionType,
+    updateSiteTransmissionType,
+    deleteSiteTransmissionType
+} from "../services/SiteTransmissionTypeService";
 
 function SiteTransmissionTypeList() {
     const [types, setTypes] = useState([]);
@@ -47,8 +53,8 @@ function SiteTransmissionTypeList() {
 
     const fetchTypes = async () => {
         try {
-            const res = await axiosInstance.get("site-transmission-types");
-            setTypes(res.data);
+            const data = await getSiteTransmissionTypes(axiosInstance);
+            setTypes(data);
         } catch (error) {
             console.error("Failed to fetch site transmission types", error);
             toast.error("Lỗi khi tải danh sách loại truyền dẫn");
@@ -61,7 +67,7 @@ function SiteTransmissionTypeList() {
 
     const handleCreate = async (values, { resetForm }) => {
         try {
-            await axiosInstance.post("site-transmission-types", values);
+            await createSiteTransmissionType(axiosInstance, values);
             toast.success("Thêm mới thành công");
             fetchTypes();
             setOpenCreate(false);
@@ -73,7 +79,7 @@ function SiteTransmissionTypeList() {
 
     const handleUpdate = async (values) => {
         try {
-            await axiosInstance.put(`site-transmission-types/${selectedItem.id}`, values);
+            await updateSiteTransmissionType(axiosInstance, selectedItem.id, values);
             toast.success("Cập nhật thành công");
             fetchTypes();
             setOpenEdit(false);
@@ -86,7 +92,7 @@ function SiteTransmissionTypeList() {
     const handleDelete = async () => {
         if (!selectedItem) return;
         try {
-            await axiosInstance.delete(`site-transmission-types/${selectedItem.id}`);
+            await deleteSiteTransmissionType(axiosInstance, selectedItem.id);
             toast.success("Xóa thành công");
             fetchTypes();
             setOpenDelete(false);

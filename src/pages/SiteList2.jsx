@@ -78,8 +78,8 @@ const SiteValidationSchema = Yup.object().shape({
       }
     ),
   province: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn tỉnh/thành phố") }),
-  siteTransmissionType: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn loại truyền dẫn") }),
-  transmissionOwner: Yup.object().shape({ id: Yup.number().required("Vui lòng chọn đơn vị sở hữu truyền dẫn") }),
+  siteTransmissionType: Yup.object().shape({ id: Yup.number().nullable() }),
+  transmissionOwner: Yup.object().shape({ id: Yup.number().nullable() }),
   siteOwner: Yup.object().shape({ id: Yup.number().nullable() }), // Cho phép null
   siteType: Yup.object().shape({ id: Yup.number().nullable() }), // Cho phép null
 });
@@ -447,7 +447,7 @@ function SiteList2() {
               isClearable
               placeholder="Tất cả tỉnh"
               className="text-sm"
-              options={provinces}
+              options={provinces || []}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.province}
@@ -475,7 +475,7 @@ function SiteList2() {
               isClearable
               placeholder="Tất cả đơn vị"
               className="text-sm"
-              options={transmissionOwnerList}
+              options={transmissionOwnerList || []}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.transmissionOwner}
@@ -503,7 +503,7 @@ function SiteList2() {
               isClearable
               placeholder="Tất cả loại"
               className="text-sm"
-              options={siteTransmissionTypeList}
+              options={siteTransmissionTypeList || []}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.siteTransmissionType}
@@ -531,7 +531,7 @@ function SiteList2() {
               isClearable
               placeholder="Tất cả chủ nhà"
               className="text-sm"
-              options={siteOwnerList}
+              options={siteOwnerList || []}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.siteOwner}
@@ -559,7 +559,7 @@ function SiteList2() {
               isClearable
               placeholder="Tất cả loại"
               className="text-sm"
-              options={siteTypeList}
+              options={siteTypeList || []}
               getOptionLabel={(option) => option.name}
               getOptionValue={(option) => option.id}
               value={filters.siteType}
@@ -1521,7 +1521,7 @@ function SiteList2() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div> 
                         <FormSelect
                           label="Loại truyền dẫn"
                           name="siteTransmissionType.id"
@@ -1532,7 +1532,6 @@ function SiteList2() {
                           isClearable
                           required
                         />
-                       
                       </div>
                       <div>
                         <FormSelect

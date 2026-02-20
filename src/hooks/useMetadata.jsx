@@ -22,10 +22,10 @@ export default function useMetadata() {
         setIsLoading(true);
         try {
             const [p, so, to, tt, st] = await Promise.all([
-                provinceService.getAll(axiosPrivate),
-                siteOwnerService.getAll(axiosPrivate),
-                transOwnerService.getAll(axiosPrivate),
-                siteTransTypeService.getAll(axiosPrivate),
+                provinceService.getProvinces(axiosPrivate),
+                siteOwnerService.getSiteOwners(axiosPrivate),
+                transOwnerService.getTransmissionOwners(axiosPrivate),
+                siteTransTypeService.getSiteTransmissionTypes(axiosPrivate),
                 siteTypeService.getSiteTypes(axiosPrivate),
             ]);
             setProvinces(p || []);

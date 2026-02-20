@@ -14,7 +14,7 @@ const FormSelect = ({
   options = [],
   placeholder = "Chọn...",
   isSearchable = true,
-  isClearable = false,
+  isClearable = true,
   getOptionLabel,
   getOptionValue, // Should return the unique ID/value of the option
   loadingMessage = () => "Đang tải...",

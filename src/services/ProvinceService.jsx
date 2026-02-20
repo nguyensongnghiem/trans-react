@@ -1,5 +1,5 @@
 // ProvinceService.js
-export const getAll = async (axiosInstance) => {
+export const getProvinces = async (axiosInstance) => {
     const response = await axiosInstance.get('/provinces');
     return response.data;
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     PencilIcon,
     TrashIcon,
@@ -17,76 +17,49 @@ import {
     Input,
     IconButton,
 } from "@material-tailwind/react";
-import { toast } from "react-toastify";
-import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import CustomButton from "../components/CustomButton";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import FormSelect from "../components/FormSelect";
-import { getVendors } from "../services/VendorService";
+import useMicrowaveTypes from "../hooks/useMicrowaveTypes";
 
 function MicrowaveTypeList() {
-    const [items, setItems] = useState([]);
-    const [vendors, setVendors] = useState([]);
+    const {
+        microwaveTypes: items,
+        vendors,
+        createMicrowaveType,
+        updateMicrowaveType,
+        deleteMicrowaveType,
+    } = useMicrowaveTypes();
+
     const [openCreate, setOpenCreate] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const axiosInstance = useAxiosPrivate();
-
-    const fetchData = async () => {
-        try {
-            const [typesRes, vendorsRes] = await Promise.all([
-                axiosInstance.get("microwave-types"),
-                getVendors(axiosInstance)
-            ]);
-            setItems(typesRes.data);
-            setVendors(vendorsRes);
-        } catch (error) {
-            console.error("Failed to fetch data", error);
-            toast.error("Lỗi khi tải dữ liệu");
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const handleCreate = async (values, { resetForm }) => {
-        try {
-            await axiosInstance.post("microwave-types", values);
-            toast.success("Thêm mới thành công");
-            fetchData();
+        const result = await createMicrowaveType(values);
+        if (result) {
             setOpenCreate(false);
             resetForm();
-        } catch (error) {
-            toast.error("Lỗi khi thêm mới");
         }
     };
 
     const handleUpdate = async (values) => {
-        try {
-            await axiosInstance.put(`microwave-types/${selectedItem.id}`, values);
-            toast.success("Cập nhật thành công");
-            fetchData();
+        const success = await updateMicrowaveType(selectedItem.id, values);
+        if (success) {
             setOpenEdit(false);
             setSelectedItem(null);
-        } catch (error) {
-            toast.error("Lỗi khi cập nhật");
         }
     };
 
     const handleDelete = async () => {
         if (!selectedItem) return;
-        try {
-            await axiosInstance.delete(`microwave-types/${selectedItem.id}`);
-            toast.success("Xóa thành công");
-            fetchData();
+        const success = await deleteMicrowaveType(selectedItem.id);
+        if (success) {
             setOpenDelete(false);
             setSelectedItem(null);
-        } catch (error) {
-            toast.error("Lỗi khi xóa (có thể đang được sử dụng)");
         }
     };
 

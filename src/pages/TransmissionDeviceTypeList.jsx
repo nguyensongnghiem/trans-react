@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     PencilIcon,
     TrashIcon,
@@ -18,74 +18,47 @@ import {
     IconButton,
 } from "@material-tailwind/react";
 import { toast } from "react-toastify";
-import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import CustomButton from "../components/CustomButton";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import {
-    getTransmissionDeviceTypes,
-    createTransmissionDeviceType,
-    updateTransmissionDeviceType,
-    deleteTransmissionDeviceType
-} from "../services/TransmissionDeviceTypeService";
+import useTransmissionDeviceTypes from "../hooks/useTransmissionDeviceTypes";
 
 function TransmissionDeviceTypeList() {
-    const [items, setItems] = useState([]);
+    const {
+        transmissionDeviceTypes: items,
+        createTransmissionDeviceType,
+        updateTransmissionDeviceType,
+        deleteTransmissionDeviceType
+    } = useTransmissionDeviceTypes();
+
     const [openCreate, setOpenCreate] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const axiosInstance = useAxiosPrivate();
-
-    const fetchData = async () => {
-        try {
-            const data = await getTransmissionDeviceTypes(axiosInstance);
-            setItems(data);
-        } catch (error) {
-            console.error("Failed to fetch data", error);
-            toast.error("Lỗi khi tải dữ liệu");
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const handleCreate = async (values, { resetForm }) => {
-        try {
-            await createTransmissionDeviceType(axiosInstance, values);
-            toast.success("Thêm mới thành công");
-            fetchData();
+        const result = await createTransmissionDeviceType(values);
+        if (result) {
             setOpenCreate(false);
             resetForm();
-        } catch (error) {
-            toast.error("Lỗi khi thêm mới");
         }
     };
 
     const handleUpdate = async (values) => {
-        try {
-            await updateTransmissionDeviceType(axiosInstance, selectedItem.id, values);
-            toast.success("Cập nhật thành công");
-            fetchData();
+        const success = await updateTransmissionDeviceType(selectedItem.id, values);
+        if (success) {
             setOpenEdit(false);
             setSelectedItem(null);
-        } catch (error) {
-            toast.error("Lỗi khi cập nhật");
         }
     };
 
     const handleDelete = async () => {
         if (!selectedItem) return;
-        try {
-            await deleteTransmissionDeviceType(axiosInstance, selectedItem.id);
-            toast.success("Xóa thành công");
-            fetchData();
+        const success = await deleteTransmissionDeviceType(selectedItem.id);
+        if (success) {
             setOpenDelete(false);
             setSelectedItem(null);
-        } catch (error) {
-            toast.error("Lỗi khi xóa (có thể đang được sử dụng)");
         }
     };
 
