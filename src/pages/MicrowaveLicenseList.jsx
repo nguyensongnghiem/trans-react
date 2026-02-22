@@ -26,15 +26,29 @@ import * as Yup from "yup";
 import { useAuth } from "../contexts/authContext";
 import { jwtDecode } from "jwt-decode";
 import { format } from "date-fns";
+import useMicrowaveLicenses from "../hooks/useMicrowaveLicenses";
+
+const mapFormToRequest = (values) => {
+    return {
+        ...values,
+        mwLineId: values.mwLine?.id || values.mwLineId
+    };
+};
 
 function MicrowaveLicenseList() {
-    const [items, setItems] = useState([]);
+    const {
+        licenses: items,
+        isLoading,
+        createLicense,
+        updateLicense,
+        deleteLicense,
+    } = useMicrowaveLicenses();
+
     const [openCreate, setOpenCreate] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const axiosInstance = useAxiosPrivate();
     const { auth } = useAuth();
 
     let isAdmin = false;
@@ -46,52 +60,29 @@ function MicrowaveLicenseList() {
         } catch (error) { }
     }
 
-    const fetchData = async () => {
-        try {
-            const response = await axiosInstance.get("microwave-licenses");
-            setItems(response.data);
-        } catch (error) {
-            toast.error("Lỗi khi tải dữ liệu");
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const handleCreate = async (values, { resetForm }) => {
-        try {
-            await axiosInstance.post("microwave-licenses", values);
-            toast.success("Thêm mới thành công");
-            fetchData();
+        const request = mapFormToRequest(values);
+        const success = await createLicense(request);
+        if (success) {
             setOpenCreate(false);
             resetForm();
-        } catch (error) {
-            toast.error("Lỗi khi thêm mới");
         }
     };
 
     const handleUpdate = async (values) => {
-        try {
-            await axiosInstance.put(`microwave-licenses/${selectedItem.id}`, values);
-            toast.success("Cập nhật thành công");
-            fetchData();
+        const request = mapFormToRequest(values);
+        const success = await updateLicense(selectedItem.id, request);
+        if (success) {
             setOpenEdit(false);
             setSelectedItem(null);
-        } catch (error) {
-            toast.error("Lỗi khi cập nhật");
         }
     };
 
     const handleDelete = async () => {
-        try {
-            await axiosInstance.delete(`microwave-licenses/${selectedItem.id}`);
-            toast.success("Xóa thành công");
-            fetchData();
+        const success = await deleteLicense(selectedItem.id);
+        if (success) {
             setOpenDelete(false);
             setSelectedItem(null);
-        } catch (error) {
-            toast.error("Lỗi khi xóa (có thể đang được sử dụng)");
         }
     };
 
@@ -178,7 +169,22 @@ function MicrowaveLicenseList() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {filteredList.map((item, index) => (
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={isAdmin ? 8 : 7} className="p-4 text-center">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                                        <Typography variant="small" color="blue-gray">Đang tải dữ liệu...</Typography>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : filteredList.length === 0 ? (
+                            <tr>
+                                <td colSpan={isAdmin ? 8 : 7} className="p-4 text-center">
+                                    <Typography variant="small" color="blue-gray">Không tìm thấy dữ liệu</Typography>
+                                </td>
+                            </tr>
+                        ) : filteredList.map((item, index) => (
                             <tr key={item.id} className="hover:bg-gray-50">
                                 <td className="p-4">
                                     <Typography variant="small" color="blue-gray">{index + 1}</Typography>

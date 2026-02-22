@@ -1,19 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
-import { useAuth } from "../contexts/authContext"; // Import your custom hook for authentication
-const BASE_URL = import.meta.env.VITE_BE_API_URL;
+import { useAuth } from "../contexts/authContext";
+import * as contractService from "../services/FoContractService";
+
 function useContracts() {
   const [contracts, setContracts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { axiosPrivate } = useAuth();
-  // Hàm để lấy danh sách (Read)
-  const fetchContracts = async () => {
+
+  const fetchContracts = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosPrivate.get(`${BASE_URL}/contracts`);
-      console.log("Fetched contracts:", response.data);
-      setContracts(response.data);
+      const data = await contractService.getContracts(axiosPrivate);
+      setContracts(data);
       setError(null);
     } catch (err) {
       setError(err);
@@ -21,79 +21,58 @@ function useContracts() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [axiosPrivate]);
 
-  // Hàm để tạo mới (Create)
-  const createContract = async (newContract) => {
+  const createContract = async (formData) => {
     setIsLoading(true);
-    console.log("Creating new contract:", newContract);
     try {
-      const response = await axiosPrivate.post(
-        `${BASE_URL}/contracts`,
-        newContract
-      );
-      // Cập nhật lại state sau khi thêm thành công
-      // setContracts((prevContracts) => [...prevContracts, response.data]);
-      toast.success("Tạo hợp đồng thành công!", {
-        zIndex: 9999,
-      });
+      const data = await contractService.createFullContract(axiosPrivate, formData);
+      await fetchContracts();
+      toast.success("Tạo hợp đồng thành công!");
+      return data;
     } catch (err) {
       setError(err);
-      toast.error(err.response.data.message, {
-        zIndex: 9999,
-      });
+      const message = err.response?.data?.message || "Lỗi khi tạo hợp đồng!";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm để chỉnh sửa (Update)
   const updateContract = async (id, updatedContract) => {
     setIsLoading(true);
     try {
-      const response = await axiosPrivate.put(
-        `${BASE_URL}/contracts/${id}`,
-        updatedContract
-      );
-      setContracts((prevContracts) =>
-        prevContracts.map((contract) =>
-          contract.id === id ? response.data : contract
-        )
-      );
+      const data = await contractService.updateContract(axiosPrivate, id, updatedContract);
+      await fetchContracts();
       toast.success("Cập nhật hợp đồng thành công!");
+      return data;
     } catch (err) {
       setError(err);
-      toast.error(err.response.data.message, {
-        zIndex: 9999,
-      });
+      const message = err.response?.data?.message || "Lỗi khi cập nhật hợp đồng!";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Hàm để xóa (Delete)
   const deleteContract = async (id) => {
     setIsLoading(true);
     try {
-      await axiosPrivate.delete(`${BASE_URL}/contracts/${id}`);
-      setContracts((prevContracts) =>
-        prevContracts.filter((contract) => contract.id !== id)
-      );
+      await contractService.deleteContract(axiosPrivate, id);
+      setContracts((prev) => prev.filter((c) => c.id !== id));
       toast.success("Xóa hợp đồng thành công!");
+      return true;
     } catch (err) {
       setError(err);
-      toast.error(err.response.data.message, {
-        zIndex: 9999,
-      });
+      toast.error("Lỗi khi xóa hợp đồng!");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Gọi hàm fetchContracts khi component mount lần đầu
   useEffect(() => {
     fetchContracts();
-  }, []);
+  }, [fetchContracts]);
 
   return {
     contracts,
@@ -105,4 +84,5 @@ function useContracts() {
     fetchContracts,
   };
 }
+
 export default useContracts;

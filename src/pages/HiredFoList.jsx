@@ -38,22 +38,52 @@ import {
 } from "@material-tailwind/react";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
-import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import useHiredFos from "../hooks/useHiredFos";
+
+import useSimpleSites from "../hooks/useSimpleSites";
+import useContracts from "../hooks/useContracts";
+import useMetadata from "../hooks/useMetadata";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import OwnerChip from "../components/OwnerChip";
+import StatusBadge from "../components/StatusBadge";
+import { FoLineStatus, FoLineStatusLabels, FoLineStatusColors, getFoLineStatusOptions } from "../constants/statusConstants";
+import FormSelect from "../components/FormSelect";
 function HiredFoList() {
-  const [simpleSiteList, setSimpleSiteList] = useState([]);
-  const [hiredFoList, setHiredFoList] = useState([]);
-  const [contracts, setContracts] = useState([]);
+  const {
+    hiredFos: hiredFoList,
+    isLoading: isHiredFosLoading,
+    createHiredFo,
+    updateHiredFo,
+    deleteHiredFo,
+    downloadImportTemplate,
+    checkImportMulti,
+    
+    saveImportMulti,
+    getHiredFoById,
+  } = useHiredFos();
+
+  const {
+    simpleSites: simpleSiteList,
+    isLoading: isSitesLoading,
+  } = useSimpleSites();
+
+  const {
+    contracts,
+    isLoading: isContractsLoading,
+  } = useContracts();
+
+  const {
+    provinces,
+    transOwners,
+  } = useMetadata();
+
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [editFoLine, setEditFoLine] = useState({});
   const [editId, setEditId] = useState(null);
-  const axiosInstance = useAxiosPrivate();
 
   // ===== Import Multi Contract Excel =====
   const [importOpen, setImportOpen] = useState(false);
@@ -78,57 +108,71 @@ function HiredFoList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
 
+  // Helper functions for data extraction
+  const getProvinceName = (item) => {
+    if (item.nearSite?.province?.name) return item.nearSite.province.name;
+    if (item.nearSiteId && simpleSiteList.length > 0) {
+      const site = simpleSiteList.find((s) => s.id === item.nearSiteId);
+      return site?.province?.name;
+    }
+    return null;
+  };
+
+  const getNearSiteCode = (item) => item.nearSite?.siteId || item.nearSiteSiteId || "";
+  const getFarSiteCode = (item) => item.farSite?.siteId || item.farSiteSiteId || "";
+  const getSupplierName = (item) => item.foContract?.transmissionOwner?.name || item.foContract?.transmissionOwnerName || "";
+  const getContractNumber = (item) => item.foContract?.contractNumber || "";
+  const getIsActive = (item) => item.status === 'OPERATING' || item.active === true;
+
   // Filter Logic
   const filterOptions = useMemo(() => {
-    const contracts = new Set();
-    const provinces = new Set();
-    const suppliers = new Set();
-    hiredFoList.forEach((item) => {
-      if (item.foContract?.contractNumber) {
-        contracts.add(item.foContract.contractNumber);
-      }
-      if (item.nearSite?.province?.name) {
-        provinces.add(item.nearSite.province.name);
-      }
-      if (item.foContract?.transmissionOwner?.name) {
-        suppliers.add(item.foContract.transmissionOwner.name);
-      }
-    });
     return {
-      contracts: Array.from(contracts)
-        .sort()
-        .map((c) => ({ value: c, label: c })),
-      provinces: Array.from(provinces)
-        .sort()
-        .map((p) => ({ value: p, label: p })),
-      suppliers: Array.from(suppliers)
-        .sort()
-        .map((s) => ({ value: s, label: s })),
+      contracts: contracts.map((c) => ({
+        value: c.contractNumber,
+        label: c.contractNumber,
+      })),
+      provinces: provinces.map((p) => ({
+        value: p.name,
+        label: p.name,
+      })),
+      suppliers: transOwners.map((s) => ({
+        value: s.name,
+        label: s.name,
+      })),
     };
-  }, [hiredFoList]);
+  }, [contracts, provinces, transOwners]);
 
   const filteredHiredFos = useMemo(() => {
     return hiredFoList.filter((item) => {
       const matchContract =
         !filters.contract ||
-        item.foContract?.contractNumber === filters.contract.value;
+        getContractNumber(item) === filters.contract.value;
+      
       const matchStatus =
-        !filters.status || item.active === filters.status.value;
+        !filters.status || item.status === filters.status.value;
+      
+      const provinceName = getProvinceName(item);
       const matchProvince =
         !filters.province ||
-        item.nearSite?.province?.name === filters.province.value;
+        provinceName === filters.province.value;
+
+      const supplierName = getSupplierName(item);
       const matchSupplier =
         !filters.supplier ||
-        item.foContract?.transmissionOwner?.name === filters.supplier.value;
+        supplierName === filters.supplier.value;
+      
+      const nearSiteCode = getNearSiteCode(item);
+      const farSiteCode = getFarSiteCode(item);
+      const contractNum = getContractNumber(item);
+      const note = item.note || "";
+
       const matchSearch =
         !filters.search ||
-        (item.nearSite?.siteId + " - " + item.farSite?.siteId)
+        (nearSiteCode + " - " + farSiteCode)
           .toLowerCase()
           .includes(filters.search.toLowerCase()) ||
-        item.note?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.foContract?.contractNumber
-          ?.toLowerCase()
-          .includes(filters.search.toLowerCase());
+        note.toLowerCase().includes(filters.search.toLowerCase()) ||
+        contractNum.toLowerCase().includes(filters.search.toLowerCase());
 
       return (
         matchContract &&
@@ -138,7 +182,7 @@ function HiredFoList() {
         matchSupplier
       );
     });
-  }, [hiredFoList, filters]);
+  }, [hiredFoList, filters, simpleSiteList]);
 
   const totalPages = Math.ceil(filteredHiredFos.length / rowsPerPage);
   const paginatedHiredFos = useMemo(() => {
@@ -160,44 +204,32 @@ function HiredFoList() {
     });
   };
 
-  useEffect(() => {
-    const getAllHiredFo = async () => {
-      try {
-        setIsLoading(true);
-        const hiredFoList = await axiosInstance.get("hired-fos");
-        console.log(hiredFoList.data);
-        setHiredFoList(hiredFoList.data);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
+  // Helper: Map Formik values (Nested) to Backend DTO (Flat)
+  const mapFormToRequest = (values, isCreate = false) => {
+    const payload = {
+      nearSiteId: values.nearSite?.id || null,
+      farSiteId: values.farSite?.id || null,
+      foContractId: values.foContract?.id || null,
+      coreQuantity: values.coreQuantity || 0,
+      designedDistance: values.designedDistance || 0,
+      finalDistance: values.finalDistance || 0,
+      cost: values.cost || 0,
+      note: values.note || "",
+      status: values.status || FoLineStatus.OPERATING,
     };
-    getAllHiredFo();
-  }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [sites, contractsRes] = await Promise.all([
-          axiosInstance.get("sites/simple-list"),
-          axiosInstance.get("contract/all")
-        ]);
-        setSimpleSiteList(sites.data);
-        setContracts(contractsRes.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
+    if (!isCreate) {
+      payload.id = values.id;
+    }
+
+    return payload;
+  };
+
 
   const getFoById = async (editId) => {
-    try {
-      const foLine = await axiosInstance.get(`hired-fos/${editId}`);
-      setEditFoLine({ ...foLine.data });
-    } catch (error) {
-      console.log(error);
+    const data = await getHiredFoById(editId);
+    if (data) {
+        setEditFoLine(data);
     }
   };
 
@@ -206,16 +238,10 @@ function HiredFoList() {
     setOpenCreate(!openCreate);
   };
   const handleCreate = async (values) => {
-    try {
-      await axiosInstance.post("hired-fos", values);
-      toast.success("Đã thêm mới tuyến cáp thành công.");
-      reloadHiredFoList();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra", {
-        zIndex: 9999,
-      });
-    } finally {
-      setOpenCreate(!openCreate);
+    const payload = mapFormToRequest(values, true);
+    const success = await createHiredFo(payload);
+    if (success) {
+      setOpenCreate(false);
     }
   };
   // Xử lý Edit
@@ -229,39 +255,11 @@ function HiredFoList() {
     setOpenEdit(!openEdit);
   };
 
-  const reloadHiredFoList = async () => {
-    const hiredFoListRes = await axiosInstance.get("hired-fos");
-    setHiredFoList(hiredFoListRes.data);
-  };
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        setIsLoading(true);
-        await reloadHiredFoList();
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    init();
-  }, []);
-
-  const handleEditSubmit = async (foLine) => {
-    try {
-      // 1) Update lên backend
-      await axiosInstance.put(`hired-fos/${foLine.id}`, foLine);
-
-      toast.success("Đã cập nhật thành công tuyến FO");
-
-      // 2) Refresh lại list từ backend
-      await reloadHiredFoList();
-    } catch (error) {
-      console.log(error);
-      toast.error(error?.response?.data?.message || "Có lỗi bất thường xảy ra");
-    } finally {
-      // 3) Đóng modal edit đúng cách (không toggle)
+  const handleEditSubmit = async (values) => {
+    const payload = mapFormToRequest(values);
+    const success = await updateHiredFo(payload.id, payload);
+    if (success) {
       setOpenEdit(false);
     }
   };
@@ -276,18 +274,10 @@ function HiredFoList() {
     setOpenDelete(!openDelete);
   };
   const handleDeleteSubmit = async () => {
-    try {
-      await axiosInstance.delete("routers/" + deleteId);
+    const success = await deleteHiredFo(deleteId);
+    if (success) {
       setDeleteId(null);
-      toast.success("Đã xóa thành công thiết bị");
-      setHiredFoList((prevState) =>
-        prevState.filter((router) => router.id !== deleteId),
-      );
-    } catch (e) {
-      console.log(e);
-      toast.error("Có lỗi xảy ra khi xóa trạm");
-    } finally {
-      handleOpenDelete();
+      setOpenDelete(false);
     }
   };
 
@@ -355,27 +345,20 @@ function HiredFoList() {
       const form = new FormData();
       form.append("file", excelFile);
 
-      const res = await axiosInstance.post(
-        "hired-fos/import-excel/check-multi",
-        form,
-      );
+      const res = await checkImportMulti(form);
 
-      setExcelRows(res.data?.rows || []);
+      setExcelRows(res?.rows || []);
       setExcelErrors({});
       setExcelChecked(true);
       setExcelSuccess(true);
-
-      toast.success("✔ File Excel hợp lệ");
     } catch (err) {
       if (err?.response?.status === 400) {
         setExcelErrors(err.response.data || {});
         setExcelRows([]);
         setExcelChecked(true);
         setExcelSuccess(false);
-        toast.error("❌ Dữ liệu Excel không hợp lệ");
         return;
       }
-      toast.error("Lỗi hệ thống khi kiểm tra Excel");
     }
   };
   // Hàm Lưu file excel
@@ -387,21 +370,10 @@ function HiredFoList() {
 
     try {
       setSaving(true);
-
       const form = new FormData();
       form.append("file", excelFile);
 
-      const res = await axiosInstance.post(
-        "hired-fos/import-excel/save-multi",
-        form,
-      );
-
-      toast.success(
-        `${res.data?.message || "Import thành công"} (HĐ: ${res.data?.totalContract || 0}, Tuyến: ${res.data?.totalLine || 0})`,
-      );
-
-      const hiredFoListRes = await axiosInstance.get("hired-fos");
-      setHiredFoList(hiredFoListRes.data);
+      await saveImportMulti(form);
 
       setImportOpen(false);
       setExcelFile(null);
@@ -410,48 +382,18 @@ function HiredFoList() {
       setExcelErrors({});
       setExcelRows([]);
     } catch (err) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-
-      if (status === 409) {
-        toast.error(data?.message || "Các số hợp đồng đã tồn tại");
-        return;
-      }
-
-      if (status === 400) {
-        setExcelErrors(data || {});
+      if (err?.response?.status === 400) {
+        setExcelErrors(err.response.data || {});
         setExcelChecked(true);
         setExcelSuccess(false);
-        toast.error("Dữ liệu không hợp lệ");
-        return;
       }
-
-      toast.error(data?.message || "❌ Lỗi khi lưu dữ liệu");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDownloadTemplate = async () => {
-    try {
-      const response = await axiosInstance.get(
-        "hired-fos/import-excel/template",
-        {
-          responseType: "blob",
-        },
-      );
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "hired-fo-import-template.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      toast.error("Không thể tải file mẫu. Vui lòng thử lại sau.");
-      console.error(error);
-    }
+    await downloadImportTemplate();
   };
 
   const VND = new Intl.NumberFormat("vi-VN", {
@@ -461,25 +403,34 @@ function HiredFoList() {
 
   let deleteRouterName;
   if (deleteId != null) {
-    deleteRouterName = hiredFoList.find(
-      (router) => router.id === deleteId,
-    ).name;
-    console.log(deleteRouterName);
+    const item = hiredFoList.find((r) => r.id === deleteId);
+    if (item) {
+        const near = item.nearSiteSiteId || item.nearSite?.siteId || "Unknown";
+        const far = item.farSiteSiteId || item.farSite?.siteId || "Unknown";
+        deleteRouterName = `${near} - ${far}`;
+    }
   }
 
-  // if (isLoading) return <Spinner />;
   const onBtnExport = () => {
-    const dataToExport = filteredHiredFos.map((item) => ({
-      Tỉnh: item.nearSite?.province?.name,
-      "Tên tuyến": `${item.nearSite?.siteId} - ${item.farSite?.siteId}`,
-      "Khoảng cách (km)": item.finalDistance,
-      "Số core": item.coreQuantity,
-      "Đơn giá (VNĐ)": item.cost,
-      "Số hợp đồng": item.foContract?.contractNumber,
-      "Nhà cung cấp": item.foContract?.transmissionOwner?.name,
-      "Trạng thái": item.active ? "Hoạt động" : "Không hoạt động",
-      "Ghi chú": item.note,
-    }));
+    const dataToExport = filteredHiredFos.map((item) => {
+      const provinceName = getProvinceName(item);
+      const near = getNearSiteCode(item);
+      const far = getFarSiteCode(item);
+      const supplier = getSupplierName(item);
+      const statusLabel = FoLineStatusLabels[item.status] || item.status;
+
+      return {
+        Tỉnh: provinceName,
+        "Tên tuyến": `${near} - ${far}`,
+        "Khoảng cách (km)": item.finalDistance,
+        "Số core": item.coreQuantity,
+        "Đơn giá (VNĐ)": item.cost,
+        "Số hợp đồng": getContractNumber(item),
+        "Nhà cung cấp": supplier,
+        "Trạng thái": statusLabel,
+        "Ghi chú": item.note,
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -635,10 +586,7 @@ function HiredFoList() {
               isClearable
               placeholder="Tất cả trạng thái"
               className="text-sm"
-              options={[
-                { label: "Hoạt động", value: true },
-                { label: "Không hoạt động", value: false },
-              ]}
+              options={getFoLineStatusOptions().map(opt => ({ label: opt.label, value: opt.value }))}
               value={filters.status}
               onChange={(val) =>
                 setFilters((prev) => ({ ...prev, status: val }))
@@ -731,7 +679,7 @@ function HiredFoList() {
                       color="blue-gray"
                       className="font-normal"
                     >
-                      {item.nearSite?.province?.name}
+                      {getProvinceName(item) || "-"}
                     </Typography>
                   </td>
                   <td className="p-4">
@@ -740,7 +688,7 @@ function HiredFoList() {
                       color="blue-gray"
                       className="font-bold"
                     >
-                      {item.nearSite?.siteId} - {item.farSite?.siteId}
+                      {getNearSiteCode(item)} - {getFarSiteCode(item)}
                     </Typography>
                   </td>
                   <td className="p-4">
@@ -776,19 +724,25 @@ function HiredFoList() {
                       color="blue-gray"
                       className="font-normal"
                     >
-                      {item.foContract?.contractNumber}
+                      {getContractNumber(item)}
                     </Typography>
                   </td>
                   <td className="p-4">
-                    {item.foContract?.transmissionOwner?.name && (
+                    {getSupplierName(item) && (
                       <OwnerChip
-                        name={item.foContract.transmissionOwner.name}
+                        name={getSupplierName(item)}
                         className="inline-block"
                       />
                     )}
                   </td>
                   <td className="p-4">
-                    <StatusChip active={item.active} />
+                    <div className="flex justify-center">
+                      <StatusBadge 
+                        status={item.status} 
+                        labels={FoLineStatusLabels} 
+                        colors={FoLineStatusColors} 
+                      />
+                    </div>
                   </td>
                   <td className="p-4 max-w-xs truncate">
                     <Typography
@@ -802,24 +756,24 @@ function HiredFoList() {
                   <td className="p-4">
                     <div className="flex items-center justify-center gap-1">
                       <Tooltip content="Sửa">
-                        <IconButton
-                          variant="text"
-                          size="sm"
-                          color="blue-gray"
-                          onClick={() => handleEdit(item.id)}
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </IconButton>
+                        <MTIconButton
+                        variant="text"
+                        size="sm"
+                        color="blue-gray"
+                        onClick={() => handleEdit(item.id)}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </MTIconButton>
                       </Tooltip>
                       <Tooltip content="Xóa">
-                        <IconButton
+                        <MTIconButton
                           variant="text"
                           size="sm"
                           color="red"
                           onClick={() => handleDeleteRouter(item.id)}
                         >
                           <TrashIcon className="h-4 w-4" />
-                        </IconButton>
+                        </MTIconButton>
                       </Tooltip>
                     </div>
                   </td>
@@ -908,7 +862,7 @@ function HiredFoList() {
               finalDistance: 0,
               cost: 0,
               note: "",
-              active: true
+              status: FoLineStatus.OPERATING
             }}
             validationSchema={Yup.object({
               foContract: Yup.object({ id: Yup.number().required("Bắt buộc chọn hợp đồng") }),
@@ -979,6 +933,17 @@ function HiredFoList() {
                     <div>
                       <label className="text-sm font-bold opacity-70">Đơn giá (VNĐ)</label>
                       <Field name="cost" type="number" className="w-full border rounded p-2" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-bold opacity-70">Trạng thái</label>
+                      <Field name="status" as="select" className="w-full border rounded p-2">
+                        {getFoLineStatusOptions().map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </Field>
                     </div>
                   </div>
 
@@ -1219,6 +1184,9 @@ function HiredFoList() {
             onSubmit={handleEditSubmit}
             initialValues={{
               ...editFoLine,
+              nearSite: { id: editFoLine.nearSiteId || editFoLine.nearSite?.id },
+              farSite: { id: editFoLine.farSiteId || editFoLine.farSite?.id },
+              status: editFoLine.status || FoLineStatus.OPERATING,
             }}
             validationSchema={Yup.object({
               coreQuantity: Yup.number().required("Yêu cầu nhập số core"),
@@ -1239,26 +1207,19 @@ function HiredFoList() {
                 <DialogBody className="space-y-4 pb-6">
                   <Card className="shadow-none">
                     <div className="grid grid-cols-12 gap-3 p-2">
-                      <div className="col-span-full flex justify-end gap-2">
-                        {/*<label className="text-slate-400 font-semibold">*/}
-                        {/*  Trạng thái*/}
-                        {/*</label>*/}
+                      <div className="col-span-full flex flex-col items-stretch gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Trạng thái
+                        </label>
                         <Field
-                          as={Switch}
-                          name="active"
-                          color="green"
-                          label={
-                            <Typography variant="h6">
-                              {values.active
-                                ? "Đang hoạt động"
-                                : "Không hoạt động"}
-                            </Typography>
-                          }
-                          checked={values.active}
-                          onChange={({ target }) =>
-                            setFieldValue("active", target.checked)
-                          } // Thiết lập giá trị true/false
-                        />
+                          name="status"
+                          as="select"
+                          className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        >
+                          {getFoLineStatusOptions().map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </Field>
                       </div>
                       <div className="col-span-full flex flex-col gap-2">
                         <label className="text-slate-400 font-semibold">

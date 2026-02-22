@@ -26,63 +26,46 @@ import CustomButton from "../components/CustomButton";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 
+import useFiberTypes from "../hooks/useFiberTypes";
+
 function FiberTypeList() {
-  const [fiberTypes, setFiberTypes] = useState([]);
+  const {
+    fiberTypes,
+    isLoading: isFetching,
+    createFiberType,
+    updateFiberType,
+    deleteFiberType,
+    fetchFiberTypes,
+  } = useFiberTypes();
+
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const axiosInstance = useAxiosPrivate();
-
-  const fetchFiberTypes = async () => {
-    try {
-      const res = await axiosInstance.get("fiber-types");
-      setFiberTypes(res.data);
-    } catch (error) {
-      console.error("Failed to fetch fiber types", error);
-      toast.error("Lỗi khi tải danh sách loại cáp");
-    }
-  };
-
-  useEffect(() => {
-    fetchFiberTypes();
-  }, []);
 
   const handleCreate = async (values, { resetForm }) => {
-    try {
-      await axiosInstance.post("fiber-types", values);
-      toast.success("Thêm mới thành công");
-      fetchFiberTypes();
+    const success = await createFiberType(values);
+    if (success) {
       setOpenCreate(false);
       resetForm();
-    } catch (error) {
-      toast.error("Lỗi khi thêm mới");
     }
   };
 
   const handleUpdate = async (values) => {
-    try {
-      await axiosInstance.put(`fiber-types/${selectedItem.id}`, values);
-      toast.success("Cập nhật thành công");
-      fetchFiberTypes();
+    const success = await updateFiberType(selectedItem.id, values);
+    if (success) {
       setOpenEdit(false);
       setSelectedItem(null);
-    } catch (error) {
-      toast.error("Lỗi khi cập nhật");
     }
   };
 
   const handleDelete = async () => {
     if (!selectedItem) return;
-    try {
-      await axiosInstance.delete(`fiber-types/${selectedItem.id}`);
-      toast.success("Xóa thành công");
-      fetchFiberTypes();
+    const success = await deleteFiberType(selectedItem.id);
+    if (success) {
       setOpenDelete(false);
       setSelectedItem(null);
-    } catch (error) {
-      toast.error("Lỗi khi xóa (có thể đang được sử dụng)");
     }
   };
 

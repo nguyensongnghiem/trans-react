@@ -20,8 +20,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
-  ExclamationTriangleIcon,
-
+  ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
 import Select from "react-select";
 import * as Yup from "yup";
@@ -45,14 +44,39 @@ import {
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import useOwnFos from "../hooks/useOwnFos";
+import useSimpleSites from "../hooks/useSimpleSites";
+import useFiberTypes from "../hooks/useFiberTypes";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import KmlMap from "../components/KmlMap";
 
+const mapFormToRequest = (values) => {
+  return {
+    ...values,
+    nearSiteId: values.nearSite?.id || values.nearSiteId,
+    farSiteId: values.farSite?.id || values.farSiteId,
+    fiberTypeId: values.fiberType?.id || values.fiberTypeId,
+  };
+};
+
 function OwnFoList() {
-  const [simpleSiteList, setSimpleSiteList] = useState([]);
-  const [ownFoList, setOwnFoList] = useState([]);
-  const [fiberTypeList, setFiberTypeList] = useState([]);
+  const {
+    ownFos: ownFoList,
+    isLoading: isOwnFosLoading,
+    createOwnFo,
+    updateOwnFo,
+    deleteOwnFo,
+    uploadKml,
+    downloadKml,
+    downloadTemplate,
+    checkImport,
+    saveImport,
+  } = useOwnFos();
+
+  const { simpleSites: simpleSiteList } = useSimpleSites();
+  const { fiberTypes: fiberTypeList } = useFiberTypes();
+
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -60,10 +84,8 @@ function OwnFoList() {
   const [openImport, setOpenImport] = useState(false);
   const [openMap, setOpenMap] = useState(false);
   const [selectedFoMap, setSelectedFoMap] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [editFoLine, setEditFoLine] = useState({});
   const [kmlFile, setKmlFile] = useState(null);
-  const axiosInstance = useAxiosPrivate();
 
   // Import states
   const [importFile, setImportFile] = useState(null);
@@ -144,75 +166,30 @@ function OwnFoList() {
     });
   };
 
-  const reloadOwnFoList = async () => {
-    try {
-      setIsLoading(true);
-      const res = await axiosInstance.get("own-fos");
-      setOwnFoList(res.data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    reloadOwnFoList();
-    const loadStaticData = async () => {
-      try {
-        const [sites, fiberTypes] = await Promise.all([
-          axiosInstance.get("sites/simple-list"),
-          axiosInstance.get("fiber-types"),
-        ]);
-        setSimpleSiteList(sites.data);
-        setFiberTypeList(fiberTypes.data);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    loadStaticData();
-  }, []);
 
   const handleOpenCreate = () => setOpenCreate(!openCreate);
   const handleCreate = async (values) => {
-    try {
-      await axiosInstance.post("own-fos", values);
-      toast.success("Đã thêm mới tuyến cáp thành công.");
-      reloadOwnFoList();
+    const request = mapFormToRequest(values);
+    const success = await createOwnFo(request);
+    if (success) {
       setOpenCreate(false);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Có lỗi xảy ra");
     }
   };
 
-  const handleEdit = async (id) => {
-    try {
-      const res = await axiosInstance.get(`own-fos/${id}`);
-      setEditFoLine(res.data);
-      setKmlFile(null); // Reset file selection
-      setOpenEdit(true);
-    } catch (e) {
-      toast.error("Không thể lấy thông tin tuyến cáp");
-    }
+  const handleEdit = (item) => {
+    setEditFoLine(item);
+    setKmlFile(null);
+    setOpenEdit(true);
   };
 
   const handleEditSubmit = async (values) => {
-    try {
-      // 1. Update text data
-      await axiosInstance.put(`own-fos/${values.id}`, values);
-
-      // 2. Upload KML if selected
+    const request = mapFormToRequest(values);
+    const success = await updateOwnFo(values.id, request);
+    if (success) {
       if (kmlFile) {
-        const formData = new FormData();
-        formData.append("file", kmlFile);
-        await axiosInstance.post(`own-fos/${values.id}/kml`, formData);
+        await uploadKml(values.id, kmlFile);
       }
-
-      toast.success("Đã cập nhật thành công");
-      reloadOwnFoList();
       setOpenEdit(false);
-    } catch (e) {
-      toast.error("Lỗi cập nhật dữ liệu");
     }
   };
 
@@ -222,13 +199,8 @@ function OwnFoList() {
   };
 
   const handleDeleteSubmit = async () => {
-    try {
-      await axiosInstance.delete(`own-fos/${deleteId}`);
-      toast.success("Đã xóa thành công");
-      reloadOwnFoList();
-    } catch (e) {
-      toast.error("Lỗi khi xóa dữ liệu");
-    } finally {
+    const success = await deleteOwnFo(deleteId);
+    if (success) {
       setOpenDelete(false);
     }
   };
@@ -238,27 +210,8 @@ function OwnFoList() {
     setOpenMap(true);
   };
 
-  const handleKmlDownload = async (fo) => {
-    try {
-      const response = await axiosInstance.get(`own-fos/${fo.id}/kml`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = "map.kml";
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch && filenameMatch.length > 1) filename = filenameMatch[1];
-      }
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (e) {
-      toast.error("Tuyến này chưa có file KML hoặc lỗi tải về");
-    }
+  const handleKmlDownload = (fo) => {
+    downloadKml(fo.id, fo.kmlFileName);
   };
 
   const onBtnExport = () => {
@@ -298,16 +251,14 @@ function OwnFoList() {
     formData.append("file", importFile);
 
     try {
-      const res = await axiosInstance.post("own-fos/import-excel/check", formData);
-      setImportPreview(res.data.rows || []);
+      const res = await checkImport(formData);
+      setImportPreview(res.rows || []);
       setImportErrors(null);
       setImportSuccess(true);
-      toast.success("✔ File Excel hợp lệ");
     } catch (error) {
       setImportErrors(error.response?.data || {});
       setImportPreview([]);
       setImportSuccess(false);
-      toast.error("❌ Dữ liệu Excel không hợp lệ");
     }
   };
 
@@ -317,37 +268,21 @@ function OwnFoList() {
     const formData = new FormData();
     formData.append("file", importFile);
     try {
-      await axiosInstance.post("own-fos/import-excel/save", formData);
-      toast.success("Import thành công");
+      await saveImport(formData);
       setOpenImport(false);
       setImportFile(null);
       setImportSuccess(false);
       setImportPreview([]);
       setImportErrors(null);
-      reloadOwnFoList();
     } catch (error) {
-      toast.error("Lỗi khi lưu dữ liệu import");
+      // toast.error handled by hook
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const response = await axiosInstance.get("own-fos/import-excel/template", {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "own-fo-import-template.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      toast.error("Không thể tải file mẫu.");
-    }
+  const handleDownloadTemplate = () => {
+    downloadTemplate();
   };
 
   const whiteSelectStyles = {
@@ -519,7 +454,7 @@ function OwnFoList() {
                   </td>
                   <td className="p-4">
                     <div className="flex gap-1">
-                      <IconButton variant="text" size="sm" onClick={() => handleEdit(item.id)}>
+                      <IconButton variant="text" size="sm" onClick={() => handleEdit(item)}>
                         <PencilIcon className="h-4 w-4" />
                       </IconButton>
                       <IconButton variant="text" size="sm" color="red" onClick={() => handleDelete(item.id)}>

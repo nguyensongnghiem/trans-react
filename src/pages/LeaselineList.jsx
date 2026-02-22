@@ -14,7 +14,7 @@ import Select from "react-select";
 import * as Yup from "yup";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 import {
   Button,
@@ -32,26 +32,54 @@ import {
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import useLeaselines from "../hooks/useLeaselines";
+import useSimpleSites from "../hooks/useSimpleSites";
+import useMetadata from "../hooks/useMetadata";
+import useLeaselineConnectTypes from "../hooks/useLeaselineConnectTypes";
 import OwnerChip from "../components/OwnerChip";
 import StatusChip from "../components/StatusChip";
 import CustomButton from "../components/CustomButton";
 import StatusBadge from "../components/StatusBadge";
-import { LeaseLineStatus, LeaseLineStatusLabels, LeaseLineStatusColors, getLeaseLineStatusOptions } from "../constants/statusConstants";
+import {
+  LeaseLineStatus,
+  LeaseLineStatusLabels,
+  LeaseLineStatusColors,
+  getLeaseLineStatusOptions,
+} from "../constants/statusConstants";
+
+const mapFormToRequest = (values) => {
+  return {
+    ...values,
+    siteId: values.site?.id || values.siteId,
+    transmissionOwnerId: values.transmissionOwner?.id || values.transmissionOwnerId,
+    leaseLineConnectTypeId: values.leaseLineConnectType?.id || values.leaseLineConnectTypeId,
+  };
+};
 
 function LeaselineList() {
-  // const navigate = useNavigate();
-  const [simpleSiteList, setSimpleSiteList] = useState([]);
-  const [leaselineList, setLeaselineList] = useState([]);
-  const [transmissionOwnerList, setTransmissionOwnerList] = useState([]);
-  const [leaseLineConnectTypeList, setLeaseLineConnectTypeList] = useState([]);
+  const {
+    leaselines: leaselineList,
+    isLoading: isLeaselinesLoading,
+    stats: apiStats,
+    createLeaseline,
+    updateLeaseline,
+    deleteLeaseline,
+    fetchLeaselines,
+    downloadTemplate,
+    checkImport,
+    saveImport,
+  } = useLeaselines();
+
+  const { simpleSites: simpleSiteList } = useSimpleSites();
+  const { transOwners: transmissionOwnerList } = useMetadata();
+  const { leaselineConnectTypes: leaseLineConnectTypeList } = useLeaselineConnectTypes();
+
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [editLeaseline, setEditLeaseline] = useState({});
   const [editId, setEditId] = useState(null);
-  const axiosInstance = useAxiosPrivate();
 
   // Import states
   const [importOpen, setImportOpen] = useState(false);
@@ -108,68 +136,6 @@ function LeaselineList() {
     });
   };
 
-  useEffect(() => {
-    const getAllLeaseline = async () => {
-      try {
-        setIsLoading(true);
-        const leaselines = await axiosInstance.get("leaselines");
-        setLeaselineList(leaselines.data);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getAllLeaseline();
-  }, []);
-
-  useEffect(() => {
-    const getAllSites = async () => {
-      try {
-        const siteList = await axiosInstance.get("sites/simple-list");
-        setSimpleSiteList(siteList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    getAllSites();
-  }, []);
-
-  useEffect(() => {
-    const getAllTransmissionOwner = async () => {
-      try {
-        const transmissionOwners =
-          await axiosInstance.get("transmissionOwners");
-        setTransmissionOwnerList(transmissionOwners.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    getAllTransmissionOwner();
-  }, []);
-
-  useEffect(() => {
-    const getAllLeaselineConnectType = async () => {
-      try {
-        const leaselineConnectTypeList = await axiosInstance.get(
-          "leaseline-connect-type"
-        );
-        setLeaseLineConnectTypeList(leaselineConnectTypeList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    getAllLeaselineConnectType();
-  }, []);
-
-  const getLeaselineById = async (editId) => {
-    try {
-      const leaseline = await axiosInstance.get(`leaselines/${editId}`);
-      setEditLeaseline({ ...leaseline.data });
-    } catch (error) {
-      console.log(error);
-    }
-  };
   const VND = new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -236,49 +202,26 @@ function LeaselineList() {
   const handleOpenCreate = () => {
     setOpenCreate(!openCreate);
   };
-  const handleCreate = async (leaseline) => {
-    console.log(leaseline);
-    try {
-      await axiosInstance.post("leaselines", leaseline);
-      toast.success("Đã thêm mới kênh thuê thành công.");
-    } catch (error) {
-      toast.error(error.response.data.message, {
-        zIndex: 9999,
-      });
-    } finally {
-      setOpenCreate(!openCreate);
+  const handleCreate = async (values) => {
+    const request = mapFormToRequest(values);
+    const success = await createLeaseline(request);
+    if (success) {
+      setOpenCreate(false);
     }
   };
   // Xử lý Edit
 
-  const handleEdit = async (editId) => {
-    await getLeaselineById(editId);
-    handleOpenEdit();
+  const handleEdit = (item) => {
+    setEditLeaseline(item);
+    setOpenEdit(true);
   };
 
-  const handleOpenEdit = () => {
-    setOpenEdit(!openEdit);
-  };
-
-  const handleEditSubmit = async (leaseline) => {
-    console.log(leaseline);
-    try {
-      await axiosInstance.put(`leaselines/${leaseline.id}`, leaseline);
-      setLeaselineList((prevList) =>
-        prevList.map((item) => (item.id === leaseline.id ? leaseline : item))
-      );
-      toast.success("Đã cập nhật thành công kênh thuê");
-    } catch (error) {
-      console.log(error);
-      if (error.response && error.response.status === 400) {
-        toast.error(error.data.message);
-      } else {
-        toast.error("Có lỗi bất thường xảy ra");
-      }
-    } finally {
-      setOpenEdit(!openEdit);
+  const handleEditSubmit = async (values) => {
+    const request = mapFormToRequest(values);
+    const success = await updateLeaseline(values.id, request);
+    if (success) {
+      setOpenEdit(false);
     }
-    setOpenEdit(!openEdit);
   };
 
   // Xử lý Xóa
@@ -291,18 +234,10 @@ function LeaselineList() {
     setOpenDelete(!openDelete);
   };
   const handleDeleteSubmit = async () => {
-    try {
-      await axiosInstance.delete("leaselines/" + deleteId);
+    const success = await deleteLeaseline(deleteId);
+    if (success) {
+      setOpenDelete(false);
       setDeleteId(null);
-      toast.success("Đã xóa thành công kênh thuê");
-      setLeaselineList((prevState) =>
-        prevState.filter((leaseline) => leaseline.id !== deleteId)
-      );
-    } catch (e) {
-      console.log(e);
-      toast.error("Có lỗi xảy ra khi xóa kênh thuê");
-    } finally {
-      handleOpenDelete();
     }
   };
 
@@ -355,22 +290,19 @@ function LeaselineList() {
     try {
       const form = new FormData();
       form.append("file", excelFile);
-      const res = await axiosInstance.post("leaselines/import-excel/check", form);
-      setExcelRows(res.data?.rows || []);
+      const data = await checkImport(form);
+      setExcelRows(data?.rows || []);
       setExcelErrors({});
       setExcelChecked(true);
       setExcelSuccess(true);
-      toast.success("✔ File Excel hợp lệ");
     } catch (err) {
       if (err?.response?.status === 400) {
         setExcelErrors(err.response.data || {});
         setExcelRows([]);
         setExcelChecked(true);
         setExcelSuccess(false);
-        toast.error("❌ Dữ liệu Excel không hợp lệ");
         return;
       }
-      toast.error("Lỗi hệ thống khi kiểm tra Excel");
     }
   };
 
@@ -380,13 +312,7 @@ function LeaselineList() {
       setSaving(true);
       const form = new FormData();
       form.append("file", excelFile);
-      const res = await axiosInstance.post("leaselines/import-excel/save", form);
-      toast.success(res.data?.message || "Import thành công");
-      
-      // Reload list
-      const leaselines = await axiosInstance.get("leaselines");
-      setLeaselineList(leaselines.data);
-
+      await saveImport(form);
       setImportOpen(false);
       setExcelFile(null);
       setExcelChecked(false);
@@ -394,26 +320,14 @@ function LeaselineList() {
       setExcelErrors({});
       setExcelRows([]);
     } catch (err) {
-        const data = err?.response?.data;
-        toast.error(data?.message || "❌ Lỗi khi lưu dữ liệu");
+      // toast.error handled by hook
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const response = await axiosInstance.get("leaselines/import-excel/template", { responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "leaseline-import-template.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      toast.error("Không thể tải file mẫu.");
-    }
+  const handleDownloadTemplate = () => {
+    downloadTemplate();
   };
 
   return (

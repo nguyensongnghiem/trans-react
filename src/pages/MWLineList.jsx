@@ -37,6 +37,7 @@ import {
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import useSimpleSites from "../hooks/useSimpleSites";
 import useMWLines from "../hooks/useMWLines";
+import useMicrowaveTypes from "../hooks/useMicrowaveTypes";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
@@ -55,6 +56,21 @@ const MWLineSchema = Yup.object().shape({
   }),
 });
 
+const flattenMWLine = (values) => {
+  const { nearSite, farSite, microwaveType, license, ...rest } = values;
+  return {
+    ...rest,
+    nearSiteId: nearSite?.id,
+    farSiteId: farSite?.id,
+    microwaveTypeId: microwaveType?.id,
+    licenseNumber: license?.licenseNumber,
+    issueDate: license?.issueDate,
+    expiryDate: license?.expiryDate,
+    frequencyBand: license?.frequencyBand,
+    frequencyQuantity: license?.frequencyQuantity,
+  };
+};
+
 function MWLineList() {
   const axiosInstance = useAxiosPrivate();
   const { simpleSites: siteList } = useSimpleSites();
@@ -65,7 +81,7 @@ function MWLineList() {
     deleteMWLine,
   } = useMWLines();
 
-  const [microwaveTypeList, setMicrowaveTypeList] = useState([]);
+  const { microwaveTypes: microwaveTypeList } = useMicrowaveTypes();
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
@@ -90,17 +106,6 @@ function MWLineList() {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 15;
 
-  useEffect(() => {
-    const fetchMetadata = async () => {
-      try {
-        const res = await axiosInstance.get("microwave-types");
-        setMicrowaveTypeList(res.data);
-      } catch (error) {
-        console.error("Error fetching microwave types", error);
-      }
-    };
-    fetchMetadata();
-  }, [axiosInstance]);
 
   const filterOptions = useMemo(() => {
     const getUnique = (arr, extractor) => {
@@ -667,13 +672,7 @@ function MWLineList() {
             }}
             validationSchema={MWLineSchema}
             onSubmit={async (values) => {
-              const payload = { ...values };
-              if (
-                payload.license &&
-                !Object.values(payload.license).some((v) => v)
-              ) {
-                payload.license = null;
-              }
+              const payload = flattenMWLine(values);
               await createMWLine(payload);
               setOpenCreate(false);
             }}
@@ -898,13 +897,7 @@ function MWLineList() {
             initialValues={editMWLine}
             validationSchema={MWLineSchema}
             onSubmit={async (values) => {
-              const payload = { ...values };
-              if (
-                payload.license &&
-                !Object.values(payload.license).some((v) => v)
-              ) {
-                payload.license = null;
-              }
+              const payload = flattenMWLine(values);
               await updateMWLine(values.id, payload);
               setOpenEdit(false);
             }}

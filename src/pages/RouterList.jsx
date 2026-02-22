@@ -41,6 +41,8 @@ import { toast } from "react-toastify";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import useSimpleSites from "../hooks/useSimpleSites";
 import useRouters from "../hooks/useRouters"; // Import your custom hook for routers
+import useMetadata from "../hooks/useMetadata";
+import useTransmissionDeviceTypes from "../hooks/useTransmissionDeviceTypes";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
@@ -51,9 +53,6 @@ function RouterList() {
   // const navigate = useNavigate();
   const gridRef = useRef();
   const [routerTypeList, setRouterTypeList] = useState([]);
-  const [transmissionDeviceTypeList, setTransmissionDeviceTypeList] = useState(
-    []
-  );
   const [deleteId, setDeleteId] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -86,6 +85,10 @@ function RouterList() {
     setSimpleSites: setSimpleSiteList,
     isLoading: isSimpleSitesLoading,
   } = useSimpleSites();
+
+  const { provinces } = useMetadata();
+  const { transmissionDeviceTypes: transmissionDeviceTypeList } = useTransmissionDeviceTypes();
+
   const {
     routers: routerList,
     setRouters: setRouterList,
@@ -111,94 +114,26 @@ function RouterList() {
     loadData();
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const transDeviceTypeList = await axiosInstance.get(
-          "transmission-device-types"
-        );
-        setTransmissionDeviceTypeList(transDeviceTypeList.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    loadData();
-  }, []);
-
-  // Linked Filter Logic: Derive options from current filtered result (ignoring own filter)
+  // Filter Logic: Use data from hooks directly
   const filterOptions = useMemo(() => {
-    const getUnique = (arr, keyPath) => {
-      const seen = new Set();
-      return arr
-        .reduce((acc, item) => {
-          const val = keyPath.split(".").reduce((o, i) => o?.[i], item);
-          if (val && !seen.has(val.id)) {
-            seen.add(val.id);
-            acc.push(val);
-          }
-          return acc;
-        }, [])
-        .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    };
-
-    // Helper to filter routers by all filters EXCEPT specialized ones
-    const getFilteredFor = (excludeKey) => {
-      return routerList.filter((r) => {
-        if (
-          excludeKey !== "province" &&
-          filters.province &&
-          r.site?.province?.id !== filters.province.id
-        )
-          return false;
-        if (
-          excludeKey !== "vendor" &&
-          filters.vendor &&
-          r.routerType?.vendor?.id !== filters.vendor.id
-        )
-          return false;
-        if (
-          excludeKey !== "routerType" &&
-          filters.routerType &&
-          r.routerType?.id !== filters.routerType.id
-        )
-          return false;
-        if (
-          excludeKey !== "transDeviceType" &&
-          filters.transDeviceType &&
-          r.transmissionDeviceType?.id !== filters.transDeviceType.id
-        )
-          return false;
-        if (
-          excludeKey !== "status" &&
-          filters.status &&
-          r.status !== filters.status.value
-        )
-          return false;
-        if (excludeKey !== "search" && filters.search) {
-          const search = filters.search.toLowerCase();
-          return (
-            r.name?.toLowerCase().includes(search) ||
-            r.ip?.toLowerCase().includes(search) ||
-            r.site?.siteId?.toLowerCase().includes(search) ||
-            r.note?.toLowerCase().includes(search) ||
-            r.assetCode?.toLowerCase().includes(search) ||
-            r.serial?.toLowerCase().includes(search)
-          );
-        }
-        return true;
-      });
-    };
+    // Extract unique vendors from routerTypeList
+    const vendorsMap = new Map();
+    routerTypeList.forEach((rt) => {
+      if (rt.vendor) {
+        vendorsMap.set(rt.vendor.id, rt.vendor);
+      }
+    });
+    const vendors = Array.from(vendorsMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
 
     return {
-      provinces: getUnique(getFilteredFor("province"), "site.province"),
-      vendors: getUnique(getFilteredFor("vendor"), "routerType.vendor"),
-      routerTypes: getUnique(getFilteredFor("routerType"), "routerType"),
-      transDeviceTypes: getUnique(
-        getFilteredFor("transDeviceType"),
-        "transmissionDeviceType"
-      ),
+      provinces: provinces || [],
+      vendors: vendors,
+      routerTypes: routerTypeList || [],
+      transDeviceTypes: transmissionDeviceTypeList || [],
     };
-  }, [routerList, filters]);
+  }, [provinces, routerTypeList, transmissionDeviceTypeList]);
 
   const filteredRouters = useMemo(() => {
     return routerList.filter((router) => {
