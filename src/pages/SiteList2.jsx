@@ -342,11 +342,23 @@ function SiteList2() {
 
     try {
       const res = await checkImportData(formData);
-      setImportPreview(res.data.rows || []);
+      // Kiểm tra cả 2 trường hợp: res là data trực tiếp hoặc res là axios response
+      setImportPreview(res.rows || res.data?.rows || []);
       setImportErrors(null);
       setImportSuccess(true);
     } catch (error) {
       setImportErrors(error.response?.data || {});
+      console.error("Check import error:", error);
+      const errorData = error.response?.data;
+      // Nếu server trả về lỗi có cấu trúc (validation errors)
+      if (errorData && Object.keys(errorData).length > 0) {
+        setImportErrors(errorData);
+      } else {
+        // Fallback: Tạo lỗi chung để hiển thị lên UI nếu không có chi tiết
+        setImportErrors({
+          "Lỗi hệ thống": { errors: [{ columnName: "N/A", message: error.message || "Có lỗi xảy ra khi kiểm tra dữ liệu" }] }
+        });
+      }
       setImportPreview([]);
       setImportSuccess(false);
     } finally {
