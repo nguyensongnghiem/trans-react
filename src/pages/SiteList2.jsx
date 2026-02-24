@@ -35,6 +35,7 @@ import {
   Input,
   IconButton as MTIconButton,
   Switch,
+  Spinner,
   
 } from "@material-tailwind/react";
 import { toast } from "react-toastify";
@@ -740,7 +741,18 @@ function SiteList2() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {paginatedSites.map((site, index) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={13} className="p-10">
+                    <div className="flex justify-center items-center gap-3">
+                      <Spinner className="h-8 w-8" color="blue" />
+                      <Typography color="blue-gray" className="font-medium">
+                        Đang tải dữ liệu...
+                      </Typography>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedSites.map((site, index) => (
                 <tr
                   key={site.id}
                   className="hover:bg-gray-50/80 transition-colors"
@@ -881,7 +893,7 @@ function SiteList2() {
               ))}
             </tbody>
           </table>
-          {filteredSites.length === 0 && (
+          {!isLoading && siteListFull.length > 0 && filteredSites.length === 0 && (
             <div className="py-20 text-center">
               <Typography variant="h6" color="blue-gray" className="opacity-40">
                 Không tìm thấy trạm nào khớp với bộ lọc

@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogFooter,
   Switch,
+  Spinner,
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { CustomMenuList } from "./CustomList";
@@ -109,10 +110,14 @@ function RouterList() {
         setRouterTypeList(routerTypes.data);
       } catch (error) {
         console.log(error);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadData();
   }, []);
+
+  const isPageLoading = isLoading || isRoutersLoading || isSimpleSitesLoading;
 
   // Filter Logic: Use data from hooks directly
   const filterOptions = useMemo(() => {
@@ -708,7 +713,18 @@ function RouterList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginatedRouters.map((router, index) => (
+              {isPageLoading ? (
+                <tr>
+                  <td colSpan={13} className="p-10">
+                    <div className="flex justify-center items-center gap-3">
+                      <Spinner className="h-8 w-8" color="blue" />
+                      <Typography color="blue-gray" className="font-medium">
+                        Đang tải dữ liệu...
+                      </Typography>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedRouters.map((router, index) => (
                 <tr
                   key={router.id}
                   className="hover:bg-gray-50/80 transition-colors"
@@ -845,7 +861,7 @@ function RouterList() {
               ))}
             </tbody>
           </table>
-          {filteredRouters.length === 0 && (
+          {!isPageLoading && routerList.length > 0 && filteredRouters.length === 0 && (
             <div className="py-20 text-center">
               <Typography variant="h6" color="blue-gray" className="opacity-40">
                 Không tìm thấy thiết bị nào khớp với bộ lọc
