@@ -57,6 +57,7 @@ const DatabaseManagement = () => {
     const [configs, setConfigs] = useState([]);
     const [logs, setLogs] = useState([]);
     const [openDialog, setOpenDialog] = useState(false);
+    const [now, setNow] = useState(new Date());
     const [isEdit, setIsEdit] = useState(false);
     const [formData, setFormData] = useState({
         id: null,
@@ -79,6 +80,8 @@ const DatabaseManagement = () => {
     useEffect(() => {
         fetchData();
         // Set up intervals for refreshing if needed, but for now just one-time fetch or on tab change
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(timer);
     }, []);
 
     const fetchData = async () => {
@@ -262,6 +265,70 @@ const DatabaseManagement = () => {
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const getScheduleTimeLabel = (cron) => {
+        try {
+            const parts = cron.split(" ");
+            if (parts.length < 6) return cron;
+            const min = parts[1].padStart(2, '0');
+            const hour = parts[2].padStart(2, '0');
+            const dom = parts[3];
+            const dow = parts[5];
+            
+            if (dom === '*' && (dow === '*' || dow === '?')) return `${hour}:${min} Hàng ngày`;
+            if (dow !== '*' && dow !== '?') {
+                const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                return `${hour}:${min} ${days[parseInt(dow) - 1] || ""} hàng tuần`;
+            }
+            if (dom !== '*') return `${hour}:${min} Ngày ${dom} hàng tháng`;
+            return cron;
+        } catch (e) {
+            return cron;
+        }
+    };
+
+    const getNextRun = (cronExpression) => {
+        if (!cronExpression) return null;
+        try {
+            const parts = cronExpression.split(" ");
+            if (parts.length < 6) return null;
+
+            const min = parseInt(parts[1]);
+            const hour = parseInt(parts[2]);
+            const dom = parts[3];
+            const dow = parts[5];
+
+            const nextRun = new Date();
+            nextRun.setSeconds(0);
+            nextRun.setMilliseconds(0);
+            nextRun.setHours(hour, min);
+
+            if (dom === '*' && (dow === '*' || dow === '?')) {
+                if (nextRun <= new Date()) nextRun.setDate(nextRun.getDate() + 1);
+            } else if (dow !== '*' && dow !== '?') {
+                const targetDay = parseInt(dow) - 1;
+                const currentDay = new Date().getDay();
+                let daysToAdd = targetDay - currentDay;
+                if (daysToAdd < 0 || (daysToAdd === 0 && nextRun <= new Date())) daysToAdd += 7;
+                nextRun.setDate(nextRun.getDate() + daysToAdd);
+            } else if (dom !== '*') {
+                nextRun.setDate(parseInt(dom));
+                if (nextRun <= new Date()) nextRun.setMonth(nextRun.getMonth() + 1);
+            }
+            return nextRun;
+        } catch (e) { return null; }
+    };
+
+    const getTimeRemaining = (cron) => {
+        const next = getNextRun(cron);
+        if (!next) return "-";
+        const diff = next - new Date();
+        if (diff < 0) return "Đang chạy...";
+        const d = Math.floor(diff / (86400000));
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        return `${d > 0 ? d + 'd ' : ''}${h > 0 ? h + 'h ' : ''}${m}m`;
     };
 
     // Derived stats for cards
@@ -460,7 +527,8 @@ const DatabaseManagement = () => {
                                     <thead>
                                         <tr className="bg-gray-50/30">
                                             <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Chi tiết lịch</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cron Patter</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Thời gian chạy</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sắp chạy</th>
                                             <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Trạng thái</th>
                                             <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Thao tác</th>
                                         </tr>
@@ -480,7 +548,11 @@ const DatabaseManagement = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <code className="text-xs bg-gray-900 text-white px-2.5 py-1.5 rounded-lg font-mono shadow-inner border border-gray-700">{config.cronExpression}</code>
+                                                    <span className="text-sm font-medium text-gray-700">{getScheduleTimeLabel(config.cronExpression)}</span>
+                                                    <div className="text-[10px] text-gray-400 font-mono mt-0.5">{config.cronExpression}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{getTimeRemaining(config.cronExpression)}</span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <StatusChip active={config.active} labelOn="Đang chạy" labelOff="Tạm dừng" />
