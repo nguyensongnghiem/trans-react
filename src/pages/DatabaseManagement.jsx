@@ -42,7 +42,9 @@ import {
     ArrowDownTrayIcon,
     CalendarDaysIcon,
     QueueListIcon,
-    ArrowUpTrayIcon
+    ArrowUpTrayIcon,
+    XMarkIcon,
+    ArrowPathIcon
 } from "@heroicons/react/24/solid";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { toast } from "react-toastify";
@@ -335,8 +337,8 @@ const DatabaseManagement = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <CustomButton onClick={fetchData} className="flex items-center gap-2" size="sm" color="blue-gray" variant="outlined">
-                            <PlayIcon className="h-4 w-4 rotate-180" /> Làm mới
+                        <CustomButton onClick={fetchData} className="flex items-center gap-2" size="sm" color="blue-gray">
+                            <ArrowPathIcon className="h-4 w-4" /> Làm mới
                         </CustomButton>
                     </div>
                 </header>
@@ -348,9 +350,9 @@ const DatabaseManagement = () => {
                         { label: "Lần cuối chạy", value: lastBackup ? new Date(lastBackup).toLocaleString('vi-VN', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'}) : "Chưa có", icon: ClockIcon, color: "teal" },
                         { label: "Lịch đang chạy", value: activeSchedules, icon: CalendarDaysIcon, color: "orange" },
                     ].map((stat, i) => (
-                        <Card key={i} className="rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                            <CardBody className="flex items-center p-6">
-                                <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 mr-4`}>
+                        <Card key={i} className="rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <CardBody className="flex items-center p-4">
+                                <div className={`p-3 rounded-lg bg-${stat.color}-50 text-${stat.color}-600 mr-4`}>
                                     <stat.icon className="h-6 w-6" />
                                 </div>
                                 <div className="flex-1">
@@ -365,7 +367,7 @@ const DatabaseManagement = () => {
                 {/* Section Content with Animation */}
                 <div className="transition-all duration-300 transform">
                     {activeSection === "manual" && (
-                        <Card className="shadow-sm border border-gray-100 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                        <Card className="shadow-sm border border-gray-100 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
                             <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                                 <Typography variant="h6" className="text-gray-800 font-bold flex items-center gap-2">
                                     <PlayIcon className="h-5 w-5 text-blue-600" /> Tùy chọn Sao lưu Thủ công
@@ -373,21 +375,20 @@ const DatabaseManagement = () => {
                             </div>
                             <div className="p-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="group p-6 rounded-2xl border border-blue-100 bg-white hover:border-blue-300 hover:shadow-lg transition-all">
-                                        <div className="p-3 rounded-xl bg-blue-50 text-blue-600 w-fit mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <div className="group p-6 rounded-xl border border-blue-100 bg-white hover:border-blue-300 hover:shadow-lg transition-all">
+                                        <div className="p-3 rounded-lg bg-blue-50 text-blue-600 w-fit mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                             <CloudArrowDownIcon className="h-6 w-6" />
                                         </div>
                                         <Typography variant="h6" className="mb-2 font-bold text-gray-900">Tải về máy khách</Typography>
                                         <Typography className="text-gray-500 text-xs mb-6 leading-relaxed">
                                             Tạo file nén SQL chứa toàn bộ dữ liệu hiện tại và tải trực tiếp về thiết bị của bạn. Không chiếm dung lượng trên máy chủ.
                                         </Typography>
-                                        <CustomButton onClick={() => handleManualBackup("download")} disabled={loading} className="w-full rounded-xl py-3 font-bold">
+                                        <CustomButton onClick={() => handleManualBackup("download")} disabled={loading} className="w-full rounded-xl py-3 font-bold bg-[#0d47a1] hover:bg-[#0a3a82]">
                                             {loading ? <Spinner className="h-4 w-4" /> : "Download Backup"}
                                         </CustomButton>
                                     </div>
-
-                                    <div className="group p-6 rounded-2xl border border-teal-100 bg-white hover:border-teal-300 hover:shadow-lg transition-all">
-                                        <div className="p-3 rounded-xl bg-teal-50 text-teal-600 w-fit mb-4 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                                    <div className="group p-6 rounded-xl border border-teal-100 bg-white hover:border-teal-300 hover:shadow-lg transition-all">
+                                        <div className="p-3 rounded-lg bg-teal-50 text-teal-600 w-fit mb-4 group-hover:bg-teal-600 group-hover:text-white transition-colors">
                                             <ServerIcon className="h-6 w-6" />
                                         </div>
                                         <Typography variant="h6" className="mb-2 font-bold text-gray-900">Lưu vào bộ nhớ Server</Typography>
@@ -400,7 +401,7 @@ const DatabaseManagement = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-8 p-4 bg-amber-50 rounded-xl border-l-4 border-amber-400 flex gap-4 items-start">
+                                <div className="mt-8 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-400 flex gap-4 items-start">
                                     <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                     <div>
                                         <Typography variant="small" color="amber" className="font-extrabold mb-1 uppercase text-[10px] tracking-widest">
@@ -417,7 +418,7 @@ const DatabaseManagement = () => {
                     )}
 
                     {activeSection === "restore" && (
-                        <Card className="shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
+                        <Card className="shadow-sm border border-gray-100 rounded-xl overflow-hidden">
                             <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                                 <Typography variant="h6" className="text-gray-800 font-bold flex items-center gap-2">
                                     <ArrowUpTrayIcon className="h-5 w-5 text-red-600" /> Khôi phục Dữ liệu
@@ -434,8 +435,8 @@ const DatabaseManagement = () => {
                                     Hãy chắc chắn bạn đã tạo một bản sao lưu hiện tại trước khi tiếp tục.
                                 </Typography>
                                 
-                                <div className="w-full p-8 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 flex flex-col items-center">
-                                    <CustomButton variant="gradient" color="red" onClick={() => setOpenRestoreDialog(true)} disabled={loading} className="px-12 py-3 rounded-xl shadow-lg shadow-red-100 flex items-center gap-2">
+                                <div className="w-full p-8 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 flex flex-col items-center">
+                                    <CustomButton variant="filled" color="red" onClick={() => setOpenRestoreDialog(true)} disabled={loading} className="px-12 py-3 rounded-xl shadow-lg shadow-red-100 flex items-center gap-2">
                                         <ArrowUpTrayIcon className="h-5 w-5" /> Bắt đầu quy trình Khôi phục
                                     </CustomButton>
                                     <p className="mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">Hỗ trợ file format: .sql, .gz</p>
@@ -445,12 +446,12 @@ const DatabaseManagement = () => {
                     )}
 
                     {activeSection === "schedule" && (
-                        <Card className="shadow-sm border border-gray-100 rounded-2xl overflow-hidden animate-in fade-in zoom-in-95">
+                        <Card className="shadow-sm border border-gray-100 rounded-xl overflow-hidden animate-in fade-in zoom-in-95">
                             <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
                                 <Typography variant="h6" className="text-gray-800 font-bold flex items-center gap-2">
                                     <ClockIcon className="h-5 w-5 text-indigo-600" /> Tự động hóa Dịch vụ
                                 </Typography>
-                                <CustomButton size="sm" className="flex items-center gap-2 rounded-lg bg-indigo-600" onClick={() => handleOpenDialog()}>
+                                <CustomButton size="sm" className="flex items-center gap-2 rounded-lg bg-[#0d47a1] hover:bg-[#0a3a82]" onClick={() => handleOpenDialog()}>
                                     <PlusIcon className="h-4 w-4" /> Thêm lịch mới
                                 </CustomButton>
                             </div>
@@ -506,7 +507,7 @@ const DatabaseManagement = () => {
                     )}
 
                     {activeSection === "history" && (
-                        <Card className="shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
+                        <Card className="shadow-sm border border-gray-100 rounded-xl overflow-hidden">
                             <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
                                 <Typography variant="h6" className="text-gray-800 font-bold flex items-center gap-2">
                                     <ClipboardDocumentListIcon className="h-5 w-5 text-gray-600" /> Nhật ký Giao dịch Dữ liệu
@@ -573,11 +574,24 @@ const DatabaseManagement = () => {
             </main>
 
             {/* Config Dialog */}
-            <Dialog open={openDialog} handler={() => setOpenDialog(false)} size="sm" className="rounded-xl shadow-2xl">
-                <DialogHeader className="border-b border-gray-100 pb-4">
-                    <Typography variant="h5" color="blue-gray">
-                        {isEdit ? "Điều chỉnh lịch sao lưu" : "Thiết lập lịch sao lưu mới"}
-                    </Typography>
+            <Dialog open={openDialog} handler={() => setOpenDialog(false)} size="sm" className="rounded-lg shadow-xl">
+                <DialogHeader className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div>
+                        <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+                            {isEdit ? "Điều chỉnh lịch sao lưu" : "Thiết lập lịch sao lưu mới"}
+                        </Typography>
+                        <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+                            {isEdit ? "Thay đổi các thông số cho lịch tự động" : "Tạo một kịch bản sao lưu database tự động"}
+                        </Typography>
+                    </div>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenDialog(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
                 </DialogHeader>
                 <DialogBody className="flex flex-col gap-5 py-6">
                     <div className="space-y-1">
@@ -595,7 +609,7 @@ const DatabaseManagement = () => {
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Tần suất</label>
                             <select
-                                className="w-full p-2 border border-blue-gray-200 rounded-md text-sm outline-none focus:border-blue-500 bg-white"
+                                className="w-full p-2.5 border border-blue-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white"
                                 value={formData.frequency}
                                 onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
                             >
@@ -620,7 +634,7 @@ const DatabaseManagement = () => {
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Ngày chạy</label>
                             <select
-                                className="w-full p-2 border border-blue-gray-200 rounded-md text-sm outline-none focus:border-blue-500 bg-white"
+                                className="w-full p-2.5 border border-blue-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white"
                                 value={formData.weekDay}
                                 onChange={(e) => setFormData({ ...formData, weekDay: e.target.value })}
                             >
@@ -682,18 +696,42 @@ const DatabaseManagement = () => {
                         />
                     </div>
                 </DialogBody>
-                <DialogFooter className="bg-gray-50 rounded-b-xl gap-2">
-                    <Button variant="text" color="red" size="sm" onClick={() => setOpenDialog(false)}>Đóng</Button>
-                    <Button color="blue" size="sm" onClick={handleSaveConfig} className="shadow-blue-200">Xác nhận Lưu</Button>
+                <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+                    <CustomButton
+                        variant="text"
+                        color="blue-gray"
+                        onClick={() => setOpenDialog(false)}
+                        size="sm"
+                    >
+                        Hủy bỏ
+                    </CustomButton>
+                    <CustomButton
+                        onClick={handleSaveConfig}
+                        size="sm"
+                        className="bg-[#0d47a1] hover:bg-[#0a3a82]"
+                    >
+                        {isEdit ? "Lưu thay đổi" : "Tạo mới"}
+                    </CustomButton>
                 </DialogFooter>
             </Dialog>
 
             {/* Restore Dialog */}
-            <Dialog open={openRestoreDialog} handler={() => setOpenRestoreDialog(false)} size="xs" className="rounded-xl">
-                <DialogHeader className="border-b border-gray-100 pb-4">
-                    <Typography variant="h5" color="red" className="flex items-center gap-2">
-                        <ExclamationTriangleIcon className="h-6 w-6" /> Xác nhận khôi phục
+            <Dialog open={openRestoreDialog} handler={() => setOpenRestoreDialog(false)} size="sm" className="rounded-lg">
+                <DialogHeader className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+                    <div className="bg-red-100 p-2 rounded-full">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                    </div>
+                    <Typography variant="h5" color="red" className="font-semibold">
+                        Xác nhận khôi phục
                     </Typography>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenRestoreDialog(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
                 </DialogHeader>
                 <DialogBody className="py-6">
                     <Typography className="text-gray-700 mb-4">
@@ -704,17 +742,18 @@ const DatabaseManagement = () => {
                         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Chọn file SQL backup</label>
                         <input
                             type="file"
-                            accept=".sql"
+                            accept=".sql,.gz"
                             onChange={(e) => setRestoreFile(e.target.files[0])}
-                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-200 rounded-md p-1"
+                            className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-200 rounded-lg"
                         />
                     </div>
                 </DialogBody>
-                <DialogFooter className="bg-gray-50 rounded-b-xl gap-2">
-                    <Button variant="text" color="blue-gray" size="sm" onClick={() => setOpenRestoreDialog(false)}>Hủy</Button>
-                    <Button color="red" size="sm" onClick={handleRestore} disabled={loading || !restoreFile}>
-                        {loading ? <Spinner className="h-4 w-4" /> : "Bắt đầu khôi phục"}
-                    </Button>
+                <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
+                    <CustomButton variant="text" color="blue-gray" size="sm" onClick={() => setOpenRestoreDialog(false)}>Hủy bỏ</CustomButton>
+                    <CustomButton color="red" size="sm" onClick={handleRestore} disabled={loading || !restoreFile} className="flex items-center gap-2">
+                        {loading ? <Spinner className="h-4 w-4" /> : <ArrowUpTrayIcon className="h-4 w-4" />}
+                        <span>{loading ? "Đang xử lý..." : "Bắt đầu khôi phục"}</span>
+                    </CustomButton>
                 </DialogFooter>
             </Dialog>
         </div>
