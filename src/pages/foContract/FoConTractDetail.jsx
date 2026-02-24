@@ -209,6 +209,8 @@ function FoConTractDetail() {
         const payload = {
           id: values.id,
           coreQuantity: Number(values.coreQuantity),
+          hiredCoreQuantity: Number(values.hiredCoreQuantity),
+          usedCoreQuantity: Number(values.usedCoreQuantity),
           cost: Number(values.cost),
           designedDistance: Number(values.designedDistance || 0),
           finalDistance: Number(values.finalDistance || 0),
@@ -245,7 +247,9 @@ function FoConTractDetail() {
     "Tên tuyến",
     "Tỉnh",
     "Khoảng cách (km)",
-    "Số core",
+    "Số core cáp",
+    "Số core Thuê",
+    "Số core sử dụng",
     "Đơn giá/km",
     "Thành tiền/Tháng",
     "Trạng thái",
@@ -433,6 +437,16 @@ function FoConTractDetail() {
                         </td>
                         <td className="p-4">
                           <Typography variant="small">
+                            {line.hiredCoreQuantity}
+                          </Typography>
+                        </td>
+                        <td className="p-4">
+                          <Typography variant="small">
+                            {line.usedCoreQuantity}
+                          </Typography>
+                        </td>
+                        <td className="p-4">
+                          <Typography variant="small">
                             {VND.format(line.cost || 0)}
                           </Typography>
                         </td>
@@ -559,6 +573,8 @@ function FoConTractDetail() {
                 farSite: { id: editLine.farSite?.id || "" },
 
                 coreQuantity: editLine.coreQuantity ?? 1,
+                hiredCoreQuantity: editLine.hiredCoreQuantity ?? 1,
+                usedCoreQuantity: editLine.usedCoreQuantity ?? 0,
                 cost: editLine.cost ?? 0,
                 designedDistance: editLine.designedDistance ?? 0,
                 finalDistance: editLine.finalDistance ?? 0,
@@ -566,8 +582,14 @@ function FoConTractDetail() {
               }}
               validationSchema={Yup.object({
                 coreQuantity: Yup.number()
-                  .moreThan(0, "Yêu cầu lớn hơn 0")
-                  .required("Nhập số core"),
+                  .min(0, ">= 0")
+                  .required("Nhập số core cáp"),
+                hiredCoreQuantity: Yup.number()
+                  .min(0, ">= 0")
+                  .required("Nhập số core thuê"),
+                usedCoreQuantity: Yup.number()
+                  .min(0, ">= 0")
+                  .required("Nhập số core sử dụng"),
                 nearSite: Yup.object({
                   id: Yup.string().required("Chọn Site A"),
                 }),
@@ -584,6 +606,8 @@ function FoConTractDetail() {
                   const payload = {
                     id: values.id,
                     coreQuantity: Number(values.coreQuantity),
+                    hiredCoreQuantity: Number(values.hiredCoreQuantity),
+                    usedCoreQuantity: Number(values.usedCoreQuantity),
                     cost: Number(values.cost),
                     designedDistance: Number(values.designedDistance || 0),
                     finalDistance: Number(values.finalDistance || 0),
@@ -690,21 +714,53 @@ function FoConTractDetail() {
                       />
                     </div>
 
-                    {/* CORE */}
-                    <div className="flex flex-col gap-2">
-                      <label className="text-slate-400 font-semibold">
-                        Số core
-                      </label>
-                      <Field
-                        name="coreQuantity"
-                        type="number"
-                        className="rounded border border-gray-300 bg-white text-black px-2 py-1"
-                      />
-                      <ErrorMessage
-                        name="coreQuantity"
-                        component="span"
-                        className="text-sm italic text-red-500"
-                      />
+                    {/* CORES */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Số core cáp
+                        </label>
+                        <Field
+                          name="coreQuantity"
+                          type="number"
+                          className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                        />
+                        <ErrorMessage
+                          name="coreQuantity"
+                          component="span"
+                          className="text-sm italic text-red-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Số core Thuê
+                        </label>
+                        <Field
+                          name="hiredCoreQuantity"
+                          type="number"
+                          className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                        />
+                        <ErrorMessage
+                          name="hiredCoreQuantity"
+                          component="span"
+                          className="text-sm italic text-red-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-slate-400 font-semibold">
+                          Số core sử dụng
+                        </label>
+                        <Field
+                          name="usedCoreQuantity"
+                          type="number"
+                          className="rounded border border-gray-300 bg-white text-black px-2 py-1"
+                        />
+                        <ErrorMessage
+                          name="usedCoreQuantity"
+                          component="span"
+                          className="text-sm italic text-red-500"
+                        />
+                      </div>
                     </div>
 
                     {/* FINAL DIST */}

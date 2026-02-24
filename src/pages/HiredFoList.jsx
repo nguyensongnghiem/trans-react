@@ -58,7 +58,7 @@ function HiredFoList() {
     deleteHiredFo,
     downloadImportTemplate,
     checkImportMulti,
-    
+
     saveImportMulti,
     getHiredFoById,
   } = useHiredFos();
@@ -147,10 +147,10 @@ function HiredFoList() {
       const matchContract =
         !filters.contract ||
         getContractNumber(item) === filters.contract.value;
-      
+
       const matchStatus =
         !filters.status || item.status === filters.status.value;
-      
+
       const provinceName = getProvinceName(item);
       const matchProvince =
         !filters.province ||
@@ -160,7 +160,7 @@ function HiredFoList() {
       const matchSupplier =
         !filters.supplier ||
         supplierName === filters.supplier.value;
-      
+
       const nearSiteCode = getNearSiteCode(item);
       const farSiteCode = getFarSiteCode(item);
       const contractNum = getContractNumber(item);
@@ -211,6 +211,8 @@ function HiredFoList() {
       farSiteId: values.farSite?.id || null,
       foContractId: values.foContract?.id || null,
       coreQuantity: values.coreQuantity || 0,
+      hiredCoreQuantity: values.hiredCoreQuantity || 0,
+      usedCoreQuantity: values.usedCoreQuantity || 0,
       designedDistance: values.designedDistance || 0,
       finalDistance: values.finalDistance || 0,
       cost: values.cost || 0,
@@ -229,7 +231,7 @@ function HiredFoList() {
   const getFoById = async (editId) => {
     const data = await getHiredFoById(editId);
     if (data) {
-        setEditFoLine(data);
+      setEditFoLine(data);
     }
   };
 
@@ -405,9 +407,9 @@ function HiredFoList() {
   if (deleteId != null) {
     const item = hiredFoList.find((r) => r.id === deleteId);
     if (item) {
-        const near = item.nearSiteSiteId || item.nearSite?.siteId || "Unknown";
-        const far = item.farSiteSiteId || item.farSite?.siteId || "Unknown";
-        deleteRouterName = `${near} - ${far}`;
+      const near = item.nearSiteSiteId || item.nearSite?.siteId || "Unknown";
+      const far = item.farSiteSiteId || item.farSite?.siteId || "Unknown";
+      deleteRouterName = `${near} - ${far}`;
     }
   }
 
@@ -423,7 +425,9 @@ function HiredFoList() {
         Tỉnh: provinceName,
         "Tên tuyến": `${near} - ${far}`,
         "Khoảng cách (km)": item.finalDistance,
-        "Số core": item.coreQuantity,
+        "Dung lượng cáp": item.coreQuantity,
+        "Số core thuê": item.hiredCoreQuantity,
+        "Số core sử dụng": item.usedCoreQuantity,
         "Đơn giá (VNĐ)": item.cost,
         "Số hợp đồng": getContractNumber(item),
         "Nhà cung cấp": supplier,
@@ -489,14 +493,14 @@ function HiredFoList() {
             filters.status ||
             filters.province ||
             filters.supplier) && (
-            <button
-              onClick={handleResetFilters}
-              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
-            >
-              <ArrowPathIcon className="h-3 w-3" />
-              Xóa bộ lọc
-            </button>
-          )}
+              <button
+                onClick={handleResetFilters}
+                className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+              >
+                <ArrowPathIcon className="h-3 w-3" />
+                Xóa bộ lọc
+              </button>
+            )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -638,7 +642,9 @@ function HiredFoList() {
                   "Tỉnh",
                   "Tên tuyến",
                   "Khoảng cách",
-                  "Số core",
+                  "Dung lượng cáp",
+                  "Số core thuê",
+                  "Số core sử dụng",
                   "Đơn giá",
                   "Số hợp đồng",
                   "Nhà cung cấp",
@@ -715,6 +721,24 @@ function HiredFoList() {
                       color="blue-gray"
                       className="font-normal"
                     >
+                      {item.hiredCoreQuantity}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
+                      {item.usedCoreQuantity}
+                    </Typography>
+                  </td>
+                  <td className="p-4">
+                    <Typography
+                      variant="small"
+                      color="blue-gray"
+                      className="font-normal"
+                    >
                       {VND.format(item.cost)}
                     </Typography>
                   </td>
@@ -737,10 +761,10 @@ function HiredFoList() {
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center">
-                      <StatusBadge 
-                        status={item.status} 
-                        labels={FoLineStatusLabels} 
-                        colors={FoLineStatusColors} 
+                      <StatusBadge
+                        status={item.status}
+                        labels={FoLineStatusLabels}
+                        colors={FoLineStatusColors}
                       />
                     </div>
                   </td>
@@ -757,13 +781,13 @@ function HiredFoList() {
                     <div className="flex items-center justify-center gap-1">
                       <Tooltip content="Sửa">
                         <MTIconButton
-                        variant="text"
-                        size="sm"
-                        color="blue-gray"
-                        onClick={() => handleEdit(item.id)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </MTIconButton>
+                          variant="text"
+                          size="sm"
+                          color="blue-gray"
+                          onClick={() => handleEdit(item.id)}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </MTIconButton>
                       </Tooltip>
                       <Tooltip content="Xóa">
                         <MTIconButton
@@ -853,112 +877,124 @@ function HiredFoList() {
         size="sm"
       >
         <Formik
-            onSubmit={handleCreate}
-            initialValues={{
-              foContract: { id: null },
-              nearSite: { id: null },
-              farSite: { id: null },
-              coreQuantity: 2,
-              finalDistance: 0,
-              cost: 0,
-              note: "",
-              status: FoLineStatus.OPERATING
-            }}
-            validationSchema={Yup.object({
-              foContract: Yup.object({ id: Yup.number().required("Bắt buộc chọn hợp đồng") }),
-              nearSite: Yup.object({ id: Yup.number().required("Bắt buộc chọn trạm đầu") }),
-              farSite: Yup.object({ id: Yup.number().required("Bắt buộc chọn trạm cuối") }),
-              coreQuantity: Yup.number().required("Bắt buộc"),
-              finalDistance: Yup.number().required("Bắt buộc"),
-              cost: Yup.number().required("Bắt buộc"),
-            })}
-          >
-            {({ setFieldValue }) => (
-              <Form>
-                <DialogHeader>Thêm mới tuyến cáp thuê</DialogHeader>
-                <DialogBody className="space-y-4">
+          onSubmit={handleCreate}
+          initialValues={{
+            foContract: { id: null },
+            nearSite: { id: null },
+            farSite: { id: null },
+            coreQuantity: 2,
+            hiredCoreQuantity: 2,
+            usedCoreQuantity: 0,
+            finalDistance: 0,
+            cost: 0,
+            note: "",
+            status: FoLineStatus.OPERATING
+          }}
+          validationSchema={Yup.object({
+            foContract: Yup.object({ id: Yup.number().required("Bắt buộc chọn hợp đồng") }),
+            nearSite: Yup.object({ id: Yup.number().required("Bắt buộc chọn trạm đầu") }),
+            farSite: Yup.object({ id: Yup.number().required("Bắt buộc chọn trạm cuối") }),
+            coreQuantity: Yup.number().required("Bắt buộc").min(0),
+            hiredCoreQuantity: Yup.number().required("Bắt buộc").min(0),
+            usedCoreQuantity: Yup.number().required("Bắt buộc").min(0),
+            finalDistance: Yup.number().required("Bắt buộc"),
+            cost: Yup.number().required("Bắt buộc"),
+          })}
+        >
+          {({ setFieldValue }) => (
+            <Form>
+              <DialogHeader>Thêm mới tuyến cáp thuê</DialogHeader>
+              <DialogBody className="space-y-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-bold opacity-70">Hợp đồng</label>
+                  <Select
+                    placeholder="Chọn hợp đồng..."
+                    options={contracts}
+                    getOptionLabel={(o) => o.contractNumber + " - " + o.contractName}
+                    getOptionValue={(o) => o.id}
+                    onChange={(val) => setFieldValue("foContract.id", val.id)}
+                    styles={whiteSelectStyles}
+                    components={{ MenuList: CustomMenuList }}
+                  />
+                  <ErrorMessage className="text-xs text-red-500" name="foContract.id" component="span" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-bold opacity-70">Hợp đồng</label>
+                    <label className="text-sm font-bold opacity-70">Site A</label>
                     <Select
-                      placeholder="Chọn hợp đồng..."
-                      options={contracts}
-                      getOptionLabel={(o) => o.contractNumber + " - " + o.contractName}
+                      placeholder="Site A"
+                      options={simpleSiteList}
+                      getOptionLabel={(o) => o.siteId}
                       getOptionValue={(o) => o.id}
-                      onChange={(val) => setFieldValue("foContract.id", val.id)}
-                      styles={whiteSelectStyles}
+                      onChange={(val) => setFieldValue("nearSite.id", val.id)}
                       components={{ MenuList: CustomMenuList }}
+                      styles={whiteSelectStyles}
                     />
-                    <ErrorMessage className="text-xs text-red-500" name="foContract.id" component="span" />
+                    <ErrorMessage className="text-xs text-red-500" name="nearSite.id" component="span" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-bold opacity-70">Site A</label>
-                      <Select
-                        placeholder="Site A"
-                        options={simpleSiteList}
-                        getOptionLabel={(o) => o.siteId}
-                        getOptionValue={(o) => o.id}
-                        onChange={(val) => setFieldValue("nearSite.id", val.id)}
-                        components={{ MenuList: CustomMenuList }}
-                        styles={whiteSelectStyles}
-                      />
-                      <ErrorMessage className="text-xs text-red-500" name="nearSite.id" component="span" />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-bold opacity-70">Site B</label>
-                      <Select
-                        placeholder="Site B"
-                        options={simpleSiteList}
-                        getOptionLabel={(o) => o.siteId}
-                        getOptionValue={(o) => o.id}
-                        onChange={(val) => setFieldValue("farSite.id", val.id)}
-                        components={{ MenuList: CustomMenuList }}
-                        styles={whiteSelectStyles}
-                      />
-                      <ErrorMessage className="text-xs text-red-500" name="farSite.id" component="span" />
-                    </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-bold opacity-70">Site B</label>
+                    <Select
+                      placeholder="Site B"
+                      options={simpleSiteList}
+                      getOptionLabel={(o) => o.siteId}
+                      getOptionValue={(o) => o.id}
+                      onChange={(val) => setFieldValue("farSite.id", val.id)}
+                      components={{ MenuList: CustomMenuList }}
+                      styles={whiteSelectStyles}
+                    />
+                    <ErrorMessage className="text-xs text-red-500" name="farSite.id" component="span" />
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm font-bold opacity-70">Số core</label>
-                      <Field name="coreQuantity" type="number" className="w-full border rounded p-2" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold opacity-70">Khoảng cách (km)</label>
-                      <Field name="finalDistance" type="number" step="0.01" className="w-full border rounded p-2" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold opacity-70">Đơn giá (VNĐ)</label>
-                      <Field name="cost" type="number" className="w-full border rounded p-2" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm font-bold opacity-70">Trạng thái</label>
-                      <Field name="status" as="select" className="w-full border rounded p-2">
-                        {getFoLineStatusOptions().map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </Field>
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-bold opacity-70">Ghi chú</label>
-                    <Field as="textarea" name="note" className="w-full border rounded p-2 h-20" />
+                    <label className="text-sm font-bold opacity-70">Dung lượng cáp</label>
+                    <Field name="coreQuantity" type="number" className="w-full border rounded p-2" />
                   </div>
-                </DialogBody>
-                <DialogFooter>
-                  <Button variant="text" onClick={handleOpenCreate}>Hủy</Button>
-                  <CustomButton type="submit">Lưu</CustomButton>
-                </DialogFooter>
-              </Form>
-            )}
-          </Formik>
+                  <div>
+                    <label className="text-sm font-bold opacity-70">Số core thuê</label>
+                    <Field name="hiredCoreQuantity" type="number" className="w-full border rounded p-2" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold opacity-70">Số core sử dụng</label>
+                    <Field name="usedCoreQuantity" type="number" className="w-full border rounded p-2" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold opacity-70">Khoảng cách (km)</label>
+                    <Field name="finalDistance" type="number" step="0.01" className="w-full border rounded p-2" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold opacity-70">Đơn giá (VNĐ)</label>
+                    <Field name="cost" type="number" className="w-full border rounded p-2" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-bold opacity-70">Trạng thái</label>
+                    <Field name="status" as="select" className="w-full border rounded p-2">
+                      {getFoLineStatusOptions().map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </Field>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold opacity-70">Ghi chú</label>
+                  <Field as="textarea" name="note" className="w-full border rounded p-2 h-20" />
+                </div>
+              </DialogBody>
+              <DialogFooter>
+                <Button variant="text" onClick={handleOpenCreate}>Hủy</Button>
+                <CustomButton type="submit">Lưu</CustomButton>
+              </DialogFooter>
+            </Form>
+          )}
+        </Formik>
       </Dialog>
       <Dialog open={importOpen} handler={handleOpenImport} size="lg" className="flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
@@ -987,7 +1023,7 @@ function HiredFoList() {
                 <br />
                 <span className="text-xs text-gray-400">Hỗ trợ định dạng .xlsx, .xls</span>
               </div>
-              
+
               <input
                 type="file"
                 accept=".xlsx, .xls"
@@ -1001,7 +1037,7 @@ function HiredFoList() {
                     setExcelErrors({});
                     setExcelRows([]);
                   }
-                  e.target.value = null; 
+                  e.target.value = null;
                 }}
               />
             </div>
@@ -1034,9 +1070,9 @@ function HiredFoList() {
           )}
 
           <div className="flex justify-between items-center mb-4">
-             <Typography variant="small" className="text-gray-500">
-                Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
-             </Typography>
+            <Typography variant="small" className="text-gray-500">
+              Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
+            </Typography>
           </div>
 
           {/* Status Messages */}
@@ -1095,7 +1131,9 @@ function HiredFoList() {
                       <th className="px-4 py-3 border-b font-medium">Hợp đồng</th>
                       <th className="px-4 py-3 border-b font-medium">Trạm đầu</th>
                       <th className="px-4 py-3 border-b font-medium">Trạm cuối</th>
-                      <th className="px-4 py-3 border-b font-medium">Core</th>
+                      <th className="px-4 py-3 border-b font-medium">Dung lượng cáp</th>
+                      <th className="px-4 py-3 border-b font-medium">Số core thuê</th>
+                      <th className="px-4 py-3 border-b font-medium">Số core sử dụng</th>
                       <th className="px-4 py-3 border-b font-medium">Đơn giá</th>
                     </tr>
                   </thead>
@@ -1106,6 +1144,8 @@ function HiredFoList() {
                         <td className="px-4 py-2">{row.nearSite}</td>
                         <td className="px-4 py-2">{row.farSite}</td>
                         <td className="px-4 py-2">{row.coreQuantity}</td>
+                        <td className="px-4 py-2">{row.hiredCoreQuantity}</td>
+                        <td className="px-4 py-2">{row.usedCoreQuantity}</td>
                         <td className="px-4 py-2">{VND.format(row.cost)}</td>
                       </tr>
                     ))}
@@ -1128,8 +1168,8 @@ function HiredFoList() {
             Hủy bỏ
           </Button>
           {!excelSuccess ? (
-            <CustomButton 
-              color="blue" 
+            <CustomButton
+              color="blue"
               onClick={handleCheckExcelMulti}
               disabled={!excelFile}
               className="flex items-center gap-2"
@@ -1137,8 +1177,8 @@ function HiredFoList() {
               <MagnifyingGlassIcon className="h-4 w-4" /> Kiểm tra dữ liệu
             </CustomButton>
           ) : (
-            <CustomButton 
-              color="green" 
+            <CustomButton
+              color="green"
               onClick={handleSaveExcelMulti}
               disabled={saving}
               className="flex items-center gap-2"
@@ -1189,7 +1229,9 @@ function HiredFoList() {
               status: editFoLine.status || FoLineStatus.OPERATING,
             }}
             validationSchema={Yup.object({
-              coreQuantity: Yup.number().required("Yêu cầu nhập số core"),
+              coreQuantity: Yup.number().required("Yêu cầu nhập dung lượng cáp").min(0),
+              hiredCoreQuantity: Yup.number().required("Yêu cầu nhập số core thuê").min(0),
+              usedCoreQuantity: Yup.number().required("Yêu cầu nhập số core sử dụng").min(0),
               finalDistance: Yup.number().required(
                 "Yêu cầu nhập chiều dài tuyến thực tế",
               ),
@@ -1297,6 +1339,54 @@ function HiredFoList() {
                           name="farSite.siteId"
                           component="span"
                         ></ErrorMessage>
+                      </div>
+
+                      <div className="col-span-full grid grid-cols-3 gap-3">
+                        <div className="flex flex-col items-stretch gap-2">
+                          <label className="text-slate-400 font-semibold">
+                            Dung lượng cáp
+                          </label>
+                          <Field
+                            name="coreQuantity"
+                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            type="number"
+                          ></Field>
+                          <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="coreQuantity"
+                            component="span"
+                          ></ErrorMessage>
+                        </div>
+                        <div className="flex flex-col items-stretch gap-2">
+                          <label className="text-slate-400 font-semibold">
+                            Số core thuê
+                          </label>
+                          <Field
+                            name="hiredCoreQuantity"
+                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            type="number"
+                          ></Field>
+                          <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="hiredCoreQuantity"
+                            component="span"
+                          ></ErrorMessage>
+                        </div>
+                        <div className="flex flex-col items-stretch gap-2">
+                          <label className="text-slate-400 font-semibold">
+                            Số core sử dụng
+                          </label>
+                          <Field
+                            name="usedCoreQuantity"
+                            className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            type="number"
+                          ></Field>
+                          <ErrorMessage
+                            className="justify-items-end text-sm font-light italic text-red-500"
+                            name="usedCoreQuantity"
+                            component="span"
+                          ></ErrorMessage>
+                        </div>
                       </div>
 
                       <div className="col-span-full flex flex-col items-stretch gap-2">
