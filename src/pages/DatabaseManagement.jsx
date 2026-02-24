@@ -42,6 +42,7 @@ import {
     ArrowDownTrayIcon,
     CalendarDaysIcon,
     QueueListIcon,
+    ArrowUpTrayIcon
 } from "@heroicons/react/24/solid";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { toast } from "react-toastify";
@@ -67,6 +68,9 @@ const DatabaseManagement = () => {
         weekDay: "mon",
         monthDay: 1
     });
+
+    const [restoreFile, setRestoreFile] = useState(null);
+    const [openRestoreDialog, setOpenRestoreDialog] = useState(false);
 
     const axiosInstance = useAxiosPrivate();
 
@@ -120,6 +124,33 @@ const DatabaseManagement = () => {
             }
         } catch (error) {
             toast.error("Lỗi khi thực hiện sao lưu.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRestore = async () => {
+        if (!restoreFile) {
+            toast.error("Vui lòng chọn file backup");
+            return;
+        }
+
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("file", restoreFile);
+
+        try {
+            await axiosInstance.post("admin/database/restore", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            toast.success("Khôi phục database thành công!");
+            setOpenRestoreDialog(false);
+            setRestoreFile(null);
+            fetchData();
+        } catch (error) {
+            toast.error("Lỗi khi khôi phục database: " + (error.response?.data || error.message));
         } finally {
             setLoading(false);
         }
@@ -350,6 +381,19 @@ const DatabaseManagement = () => {
                                             </div>
                                             <CustomButton variant="outlined" color="teal" onClick={() => handleManualBackup("local")} disabled={loading} className="w-full">
                                                 {loading ? <Spinner className="h-4 w-4" /> : "Lưu vào Server"}
+                                            </CustomButton>
+                                        </div>
+                                        <div className="p-4 rounded-xl border border-red-100 bg-red-50/30 flex flex-col justify-between">
+                                            <div>
+                                                <Typography variant="h6" color="red" className="mb-2 flex items-center gap-2">
+                                                    <ArrowUpTrayIcon className="h-5 w-5" /> Khôi phục Database (Restore)
+                                                </Typography>
+                                                <Typography className="text-gray-600 text-xs mb-4">
+                                                    Tải lên file backup (.sql) để khôi phục lại toàn bộ dữ liệu. <span className="font-bold text-red-600">Lưu ý: Hành động này sẽ ghi đè dữ liệu hiện tại!</span>
+                                                </Typography>
+                                            </div>
+                                            <CustomButton variant="outlined" color="red" onClick={() => setOpenRestoreDialog(true)} disabled={loading} className="w-full">
+                                                {loading ? <Spinner className="h-4 w-4" /> : "Chọn file & Khôi phục"}
                                             </CustomButton>
                                         </div>
                                     </div>
@@ -681,6 +725,36 @@ const DatabaseManagement = () => {
                 <DialogFooter className="bg-gray-50 rounded-b-xl gap-2">
                     <Button variant="text" color="red" size="sm" onClick={() => setOpenDialog(false)}>Đóng</Button>
                     <Button color="blue" size="sm" onClick={handleSaveConfig} className="shadow-blue-200">Xác nhận Lưu</Button>
+                </DialogFooter>
+            </Dialog>
+
+            {/* Restore Dialog */}
+            <Dialog open={openRestoreDialog} handler={() => setOpenRestoreDialog(false)} size="xs" className="rounded-xl">
+                <DialogHeader className="border-b border-gray-100 pb-4">
+                    <Typography variant="h5" color="red" className="flex items-center gap-2">
+                        <ExclamationTriangleIcon className="h-6 w-6" /> Xác nhận khôi phục
+                    </Typography>
+                </DialogHeader>
+                <DialogBody className="py-6">
+                    <Typography className="text-gray-700 mb-4">
+                        Bạn đang chuẩn bị khôi phục lại database từ một file backup. 
+                        Hành động này sẽ <strong>ghi đè toàn bộ dữ liệu hiện tại</strong> và không thể hoàn tác.
+                    </Typography>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Chọn file SQL backup</label>
+                        <input
+                            type="file"
+                            accept=".sql"
+                            onChange={(e) => setRestoreFile(e.target.files[0])}
+                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-200 rounded-md p-1"
+                        />
+                    </div>
+                </DialogBody>
+                <DialogFooter className="bg-gray-50 rounded-b-xl gap-2">
+                    <Button variant="text" color="blue-gray" size="sm" onClick={() => setOpenRestoreDialog(false)}>Hủy</Button>
+                    <Button color="red" size="sm" onClick={handleRestore} disabled={loading || !restoreFile}>
+                        {loading ? <Spinner className="h-4 w-4" /> : "Bắt đầu khôi phục"}
+                    </Button>
                 </DialogFooter>
             </Dialog>
         </div>
