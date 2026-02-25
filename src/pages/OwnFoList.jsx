@@ -47,6 +47,8 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import useOwnFos from "../hooks/useOwnFos";
 import useSimpleSites from "../hooks/useSimpleSites";
 import useFiberTypes from "../hooks/useFiberTypes";
+import useFiberOperators from "../hooks/useFiberOperators";
+import useMetadata from "../hooks/useMetadata";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import KmlMap from "../components/KmlMap";
@@ -60,6 +62,9 @@ const mapFormToRequest = (values) => {
     nearSiteId: values.nearSite?.id || null,
     farSiteId: values.farSite?.id || null,
     fiberTypeId: values.fiberType?.id || null,
+    fiberOperatorId: values.fiberOperator?.id || null,
+    foConnectionTypeId: values.foConnectionType?.id || null,
+    assetCode: values.assetCode || "",
     coreQuantity: values.coreQuantity || 0,
     usedCoreQuantity: values.usedCoreQuantity || 0,
     designedDistance: values.designedDistance || 0,
@@ -82,6 +87,9 @@ function OwnFoList() {
     checkImport,
     saveImport,
   } = useOwnFos();
+
+  const { fiberOperators } = useFiberOperators();
+  const { foConnectionTypes } = useMetadata();
 
   const { simpleSites: simpleSiteList } = useSimpleSites();
   const { fiberTypes: fiberTypeList } = useFiberTypes();
@@ -231,9 +239,12 @@ function OwnFoList() {
         Tỉnh: item.nearSite?.province?.name,
         "Tên tuyến": `${item.nearSite?.siteId} - ${item.farSite?.siteId}`,
         "Khoảng cách (km)": item.finalDistance,
-        "Tổng core": item.coreQuantity,
-        "Core sử dụng": item.usedCoreQuantity,
+        "Dung lượng cáp": item.coreQuantity,
+        "Số core sử dụng": item.usedCoreQuantity,
         "Loại cáp": item.fiberType?.name,
+        "Đơn vị vận hành": item.fiberOperator?.name,
+        "Loại kết nối": item.foConnectionType?.name,
+        "Mã tài sản": item.assetCode,
         "Trạng thái": statusLabel,
         "Ghi chú": item.note,
       };
@@ -413,7 +424,7 @@ function OwnFoList() {
           <table className="w-full min-w-max table-auto text-left">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-50/90 backdrop-blur-sm border-b border-gray-200">
-                {["STT", "Tỉnh", "Tên tuyến", "Khoảng cách", "Tổng core", "Core sử dụng", "Loại cáp", "Trạng thái", "Ghi chú", "Bản đồ tuyến cáp", "Tác động"].map((head) => (
+                {["STT", "Tỉnh", "Tên tuyến", "Khoảng cách", "Dung lượng cáp", "Số core sử dụng", "Loại cáp", "Đơn vị vận hành", "Loại kết nối", "Mã tài sản", "Trạng thái", "Ghi chú", "Bản đồ tuyến cáp", "Tác động"].map((head) => (
                   <th key={head} className="p-4">
                     <Typography variant="small" color="blue-gray" className="font-bold">{head}</Typography>
                   </th>
@@ -427,16 +438,19 @@ function OwnFoList() {
                   <td className="p-4">{item.nearSite?.province?.name}</td>
                   <td className="p-4 font-bold">{item.nearSite?.siteId} - {item.farSite?.siteId}</td>
                   <td className="p-4">{item.finalDistance} km</td>
-                   <td className="p-4">{item.coreQuantity}</td>
-                   <td className="p-4 font-semibold text-blue-600">{item.usedCoreQuantity || 0}</td>
-                   <td className="p-4">{item.fiberType?.name}</td>
-                   <td className="p-4">
-                     <StatusBadge 
-                       status={item.status} 
-                       labels={FoLineStatusLabels} 
-                       colors={FoLineStatusColors} 
-                     />
-                   </td>
+                  <td className="p-4">{item.coreQuantity}</td>
+                  <td className="p-4 font-semibold text-blue-600">{item.usedCoreQuantity || 0}</td>
+                  <td className="p-4">{item.fiberType?.name}</td>
+                  <td className="p-4">{item.fiberOperator?.name}</td>
+                  <td className="p-4">{item.foConnectionType?.name}</td>
+                  <td className="p-4 font-mono text-xs">{item.assetCode}</td>
+                  <td className="p-4">
+                    <StatusBadge
+                      status={item.status}
+                      labels={FoLineStatusLabels}
+                      colors={FoLineStatusColors}
+                    />
+                  </td>
                   <td className="p-4 max-w-xs truncate italic opacity-70">{item.note}</td>
                   <td className="p-4">
                     <div className="flex gap-1">
@@ -524,11 +538,12 @@ function OwnFoList() {
 
         <div className="max-h-[80vh] overflow-y-auto">
           <Formik
-            initialValues={{ coreQuantity: 24, usedCoreQuantity: 0, nearSite: { id: null }, farSite: { id: null }, designedDistance: 0, finalDistance: 0, fiberType: { id: 1 }, status: FoLineStatus.OPERATING, note: "" }}
+            initialValues={{ coreQuantity: 24, usedCoreQuantity: 0, nearSite: { id: null }, farSite: { id: null }, designedDistance: 0, finalDistance: 0, fiberType: { id: 1 }, fiberOperator: { id: null }, foConnectionType: { id: null }, assetCode: "", status: FoLineStatus.OPERATING, note: "" }}
             validationSchema={Yup.object({
               coreQuantity: Yup.number().required("Bắt buộc").min(1, "Phải > 0"),
               nearSite: Yup.object({ id: Yup.number().required("Bắt buộc") }),
               farSite: Yup.object({ id: Yup.number().required("Bắt buộc") }),
+              assetCode: Yup.string().required("Bắt buộc"),
             })}
             onSubmit={handleCreate}
           >
@@ -566,7 +581,7 @@ function OwnFoList() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Tổng số core</Typography>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Dung lượng cáp</Typography>
                       <Field
                         name="coreQuantity"
                         type="number"
@@ -594,7 +609,7 @@ function OwnFoList() {
                         {getFoLineStatusOptions().map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </Field>
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại cáp</Typography>
                       <Field
                         as="select"
@@ -606,14 +621,53 @@ function OwnFoList() {
                     </div>
                   </div>
 
-                  <div>
-                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
-                    <Field
-                      name="finalDistance"
-                      type="number"
-                      step="0.01"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Đơn vị vận hành</Typography>
+                      <Select
+                        isClearable
+                        options={fiberOperators}
+                        getOptionLabel={(o) => o.name}
+                        getOptionValue={(o) => o.id}
+                        value={fiberOperators.find(o => o.id === values.fiberOperator?.id)}
+                        onChange={(val) => setFieldValue("fiberOperator.id", val?.id)}
+                        styles={whiteSelectStyles}
+                        placeholder="Chọn đơn vị..."
+                      />
+                    </div>
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
+                      <Field
+                        name="finalDistance"
+                        type="number"
+                        step="0.01"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại kết nối</Typography>
+                      <Select
+                        isClearable
+                        options={foConnectionTypes}
+                        getOptionLabel={(o) => o.name}
+                        getOptionValue={(o) => o.id}
+                        onChange={(val) => setFieldValue("foConnectionType.id", val?.id)}
+                        styles={whiteSelectStyles}
+                        placeholder="Chọn loại kết nối..."
+                      />
+                    </div>
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Mã tài sản</Typography>
+                      <Field
+                        name="assetCode"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        placeholder="Nhập mã tài sản..."
+                      />
+                      <ErrorMessage name="assetCode" component="div" className="text-red-500 text-[10px] mt-0.5" />
+                    </div>
                   </div>
 
                   <div>
@@ -675,16 +729,27 @@ function OwnFoList() {
             {({ setFieldValue, values }) => (
               <Form className="flex flex-col">
                 <DialogBody className="p-6 space-y-5">
-                  {/* Status Dropdown */}
-                  <div className="flex flex-col gap-1">
-                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Trạng thái</Typography>
-                    <Field
-                      as="select"
-                      name="status"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white h-[38px]"
-                    >
-                      {getFoLineStatusOptions().map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Trạng thái</Typography>
+                      <Field
+                        as="select"
+                        name="status"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white h-[38px]"
+                      >
+                        {getFoLineStatusOptions().map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </Field>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại cáp</Typography>
+                      <Field
+                        as="select"
+                        name="fiberType.id"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white h-[38px]"
+                      >
+                        {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </Field>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -716,7 +781,7 @@ function OwnFoList() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Tổng số core</Typography>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Dung lượng cáp</Typography>
                       <Field
                         name="coreQuantity"
                         type="number"
@@ -733,25 +798,53 @@ function OwnFoList() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại cáp</Typography>
-                    <Field
-                      as="select"
-                      name="fiberType.id"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white h-[38px]"
-                    >
-                      {fiberTypeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Đơn vị vận hành</Typography>
+                      <Select
+                        isClearable
+                        options={fiberOperators}
+                        getOptionLabel={(o) => o.name}
+                        getOptionValue={(o) => o.id}
+                        value={fiberOperators.find(o => o.id === values.fiberOperator?.id)}
+                        onChange={(val) => setFieldValue("fiberOperator.id", val?.id)}
+                        styles={whiteSelectStyles}
+                        placeholder="Chọn đơn vị..."
+                      />
+                    </div>
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
+                      <Field
+                        name="finalDistance"
+                        type="number"
+                        step="0.01"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Chiều dài thực tế (km)</Typography>
-                    <Field
-                      name="finalDistance"
-                      type="number"
-                      step="0.01"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Loại kết nối</Typography>
+                      <Select
+                        isClearable
+                        options={foConnectionTypes}
+                        getOptionLabel={(o) => o.name}
+                        getOptionValue={(o) => o.id}
+                        value={foConnectionTypes.find(o => o.id === values.foConnectionType?.id)}
+                        onChange={(val) => setFieldValue("foConnectionType.id", val?.id)}
+                        styles={whiteSelectStyles}
+                        placeholder="Chọn loại kết nối..."
+                      />
+                    </div>
+                    <div>
+                      <Typography variant="small" color="blue-gray" className="mb-1 font-bold">Mã tài sản</Typography>
+                      <Field
+                        name="assetCode"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        placeholder="Nhập mã tài sản..."
+                      />
+                    </div>
                   </div>
 
                   {/* KML Upload Section */}
@@ -824,6 +917,7 @@ function OwnFoList() {
           </Formik>
         </div>
       </Dialog>
+
 
       <Dialog
         open={openImport}
@@ -1123,7 +1217,7 @@ function OwnFoList() {
           </CustomButton>
         </DialogFooter>
       </Dialog>
-    </div>
+    </div >
   );
 }
 
