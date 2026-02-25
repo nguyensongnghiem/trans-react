@@ -258,10 +258,10 @@ function MicrowaveLicenseList() {
                                 <Typography variant="small" color="blue-gray" className="font-bold">Site B</Typography>
                             </th>
                             <th className="p-4">
-                                <Typography variant="small" color="blue-gray" className="font-bold">Số tần số (A/B)</Typography>
+                                <Typography variant="small" color="blue-gray" className="font-bold">Số cặp tần số </Typography>
                             </th>
                             <th className="p-4">
-                                <Typography variant="small" color="blue-gray" className="font-bold">Đồng bộ</Typography>
+                                <Typography variant="small" color="blue-gray" className="font-bold">Đã gán tuyến</Typography>
                             </th>
                             {isAdmin && (
                                 <th className="p-4 w-32 text-center">
@@ -297,8 +297,8 @@ function MicrowaveLicenseList() {
                                             {item.licenseNumber}
                                         </Typography>
                                         <div className="flex gap-2 text-[10px] text-gray-500">
-                                            <span>Cấp: {formatDateLabel(item.issueDate)}</span>
-                                            <span>- Hết: {formatDateLabel(item.expiryDate)}</span>
+                                            <span>Ngày cấp: {formatDateLabel(item.issueDate)}</span>
+                                            <span>Ngày hết hạn: {formatDateLabel(item.expiryDate)}</span>
                                         </div>
                                     </div>
                                 </td>
@@ -329,10 +329,13 @@ function MicrowaveLicenseList() {
                                 <td className="p-4">
                                     <div className="flex flex-col">
                                         <Typography variant="small" color="blue-gray" className="font-medium tabular-nums">
-                                            {item.nearSiteFrequencies?.length || 0} / {item.farSiteFrequencies?.length || 0}
+                                            {item.nearSiteFrequencies?.length || 0}
                                         </Typography>
                                         <span className="text-[10px] text-gray-500">
-                                            Tần số (A/B)
+                                            A: {item.nearSiteFrequencies?.join(", ") || "-"}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500">
+                                            B: {item.farSiteFrequencies?.join(", ") || "-"}
                                         </span>
                                     </div>
                                 </td>
@@ -397,7 +400,7 @@ function MicrowaveLicenseList() {
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
                     <div>
                         <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
-                            Thêm mới Giấy phép Viba
+                            Thêm mới Giấy phép tần số Viba
                         </Typography>
                         <Typography className="text-xs font-normal text-gray-500 mt-0.5">
                             Nhập thông tin giấy phép tần số mới vào hệ thống
@@ -478,7 +481,7 @@ function MicrowaveLicenseList() {
 
                                 <div className="grid grid-cols-2 gap-8">
                                     {/* Near Site Side */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 shadow-sm p-4 bg-gray-50/50 rounded-xl border border-gray-100">
                                         <div className="flex items-center gap-2 border-b border-blue-50 pb-2">
                                             <Typography variant="small" color="blue" className="font-bold uppercase tracking-wider">
                                                 Trạm A (Near Site)
@@ -689,7 +692,7 @@ function MicrowaveLicenseList() {
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
                     <div>
                         <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
-                            Cập nhật Giấy phép Viba
+                            Cập nhật Giấy phép tần số iba
                         </Typography>
                         <Typography className="text-xs font-normal text-gray-500 mt-0.5">
                             Chỉnh sửa thông tin giấy phép #{selectedItem?.id}
@@ -770,7 +773,7 @@ function MicrowaveLicenseList() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-8">
-                                        <div className="space-y-4">
+                                        <div className="space-y-4 shadow-sm p-4 bg-gray-50/50 rounded-xl border border-gray-100">
                                             <div className="flex items-center gap-2 border-b border-blue-50 pb-2">
                                                 <Typography variant="small" color="blue" className="font-bold uppercase tracking-wider">Trạm A (Near Site)</Typography>
                                             </div>
