@@ -76,6 +76,8 @@ function HiredFoList() {
   const {
     provinces,
     transOwners,
+    fiberTypes,
+    foConnectionTypes,
   } = useMetadata();
 
   const [deleteId, setDeleteId] = useState(null);
@@ -216,6 +218,8 @@ function HiredFoList() {
       designedDistance: values.designedDistance || 0,
       finalDistance: values.finalDistance || 0,
       cost: values.cost || 0,
+      fiberTypeId: values.fiberType?.id || null,
+      foConnectionTypeId: values.foConnectionType?.id || null,
       note: values.note || "",
       status: values.status || FoLineStatus.OPERATING,
     };
@@ -428,6 +432,8 @@ function HiredFoList() {
         "Dung lượng cáp": item.coreQuantity,
         "Số core thuê": item.hiredCoreQuantity,
         "Số core sử dụng": item.usedCoreQuantity,
+        "Loại cáp": item.fiberType?.name || item.fiberTypeName || "",
+        "Loại kết nối": item.foConnectionType?.name || item.foConnectionTypeName || "",
         "Đơn giá (VNĐ)": item.cost,
         "Số hợp đồng": getContractNumber(item),
         "Nhà cung cấp": supplier,
@@ -645,8 +651,8 @@ function HiredFoList() {
                   "Dung lượng cáp",
                   "Số core thuê",
                   "Số core sử dụng",
-                  "Đơn giá",
-                  "Số hợp đồng",
+                  "Loại cáp",
+                  "Loại kết nối",
                   "Nhà cung cấp",
                   "Trạng thái",
                   "Ghi chú",
@@ -739,7 +745,7 @@ function HiredFoList() {
                       color="blue-gray"
                       className="font-normal"
                     >
-                      {VND.format(item.cost)}
+                      {item.fiberType?.name || item.fiberTypeName || "-"}
                     </Typography>
                   </td>
                   <td className="p-4">
@@ -748,7 +754,7 @@ function HiredFoList() {
                       color="blue-gray"
                       className="font-normal"
                     >
-                      {getContractNumber(item)}
+                      {item.foConnectionType?.name || item.foConnectionTypeName || "-"}
                     </Typography>
                   </td>
                   <td className="p-4">
@@ -887,6 +893,8 @@ function HiredFoList() {
             usedCoreQuantity: 0,
             finalDistance: 0,
             cost: 0,
+            fiberType: { id: null },
+            foConnectionType: { id: null },
             note: "",
             status: FoLineStatus.OPERATING
           }}
@@ -969,6 +977,35 @@ function HiredFoList() {
                   <div>
                     <label className="text-sm font-bold opacity-70">Đơn giá (VNĐ)</label>
                     <Field name="cost" type="number" className="w-full border rounded p-2" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-bold opacity-70">Loại cáp</label>
+                    <Select
+                      placeholder="Chọn loại cáp..."
+                      options={fiberTypes}
+                      getOptionLabel={(o) => o.name}
+                      getOptionValue={(o) => o.id}
+                      onChange={(val) => setFieldValue("fiberType.id", val?.id)}
+                      styles={whiteSelectStyles}
+                      components={{ MenuList: CustomMenuList }}
+                      isClearable
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-bold opacity-70">Loại kết nối</label>
+                    <Select
+                      placeholder="Chọn loại kết nối..."
+                      options={foConnectionTypes}
+                      getOptionLabel={(o) => o.name}
+                      getOptionValue={(o) => o.id}
+                      onChange={(val) => setFieldValue("foConnectionType.id", val?.id)}
+                      styles={whiteSelectStyles}
+                      components={{ MenuList: CustomMenuList }}
+                      isClearable
+                    />
                   </div>
                 </div>
 
@@ -1226,6 +1263,8 @@ function HiredFoList() {
               ...editFoLine,
               nearSite: { id: editFoLine.nearSiteId || editFoLine.nearSite?.id },
               farSite: { id: editFoLine.farSiteId || editFoLine.farSite?.id },
+              fiberType: { id: editFoLine.fiberTypeId || editFoLine.fiberType?.id },
+              foConnectionType: { id: editFoLine.foConnectionTypeId || editFoLine.foConnectionType?.id },
               status: editFoLine.status || FoLineStatus.OPERATING,
             }}
             validationSchema={Yup.object({
@@ -1420,6 +1459,51 @@ function HiredFoList() {
                           name="cost"
                           component="span"
                         ></ErrorMessage>
+                      </div>
+
+                      <div className="col-span-full grid grid-cols-2 gap-3">
+                        <div className="flex flex-col items-stretch gap-2">
+                          <label className="text-slate-400 font-semibold">
+                            Loại cáp
+                          </label>
+                          <Select
+                            placeholder="Chọn loại cáp..."
+                            styles={whiteSelectStyles}
+                            value={
+                              fiberTypes?.find((o) => o.id === values.fiberType?.id) || null
+                            }
+                            onChange={(opt) =>
+                              setFieldValue("fiberType.id", opt?.id || null)
+                            }
+                            components={{ MenuList: CustomMenuList }}
+                            isSearchable={true}
+                            options={fiberTypes}
+                            getOptionLabel={(option) => option.name}
+                            getOptionValue={(option) => option.id}
+                            isClearable
+                          />
+                        </div>
+                        <div className="flex flex-col items-stretch gap-2">
+                          <label className="text-slate-400 font-semibold">
+                            Loại kết nối
+                          </label>
+                          <Select
+                            placeholder="Chọn loại kết nối..."
+                            styles={whiteSelectStyles}
+                            value={
+                              foConnectionTypes?.find((o) => o.id === values.foConnectionType?.id) || null
+                            }
+                            onChange={(opt) =>
+                              setFieldValue("foConnectionType.id", opt?.id || null)
+                            }
+                            components={{ MenuList: CustomMenuList }}
+                            isSearchable={true}
+                            options={foConnectionTypes}
+                            getOptionLabel={(option) => option.name}
+                            getOptionValue={(option) => option.id}
+                            isClearable
+                          />
+                        </div>
                       </div>
 
                       {/* <p className="col-span-full text-2xl text-blue-600">Vị trí</p> */}

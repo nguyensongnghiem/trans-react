@@ -41,6 +41,8 @@ import DatabaseManagement from "./pages/DatabaseManagement.jsx";
 import SiteTypeList from "./pages/SiteTypeList.jsx";
 import SiteTransmissionTypeList from "./pages/SiteTransmissionTypeList.jsx";
 import TransmissionDeviceTypeList from "./pages/TransmissionDeviceTypeList.jsx";
+import FoConnectionTypeList from "./pages/FoConnectionTypeList.jsx";
+import FiberOperatorList from "./pages/FiberOperatorList.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -179,6 +181,14 @@ const router = createBrowserRouter([
           {
             path: "/admin/microwave-licenses",
             element: <MicrowaveLicenseList />,
+          },
+          {
+            path: "/admin/fo-connection-types",
+            element: <FoConnectionTypeList />,
+          },
+          {
+            path: "/admin/fiber-operators",
+            element: <FiberOperatorList />,
           },
           {
             path: "/admin/database",
