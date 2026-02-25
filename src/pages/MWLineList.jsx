@@ -38,10 +38,13 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import useSimpleSites from "../hooks/useSimpleSites";
 import useMWLines from "../hooks/useMWLines";
 import useMicrowaveTypes from "../hooks/useMicrowaveTypes";
+import useMicrowaveLicenses from "../hooks/useMicrowaveLicenses";
 import CustomButton from "../components/CustomButton";
 import StatusChip from "../components/StatusChip";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import FormSelect from "../components/FormSelect";
+import StatusBadge from "../components/StatusBadge";
+import { DeviceStatus, DeviceStatusLabels, DeviceStatusColors, getDeviceStatusOptions } from "../constants/statusConstants";
 
 const MWLineSchema = Yup.object().shape({
   nearSite: Yup.object({
@@ -50,24 +53,23 @@ const MWLineSchema = Yup.object().shape({
   farSite: Yup.object({
     id: Yup.number().required("Far Site là bắt buộc"),
   }),
-  serial: Yup.string(),
+  assetCode: Yup.string(),
+  nearSiteSerial: Yup.string(),
+  farSiteSerial: Yup.string(),
+  nearSiteTx: Yup.number().nullable(),
+  farSiteTx: Yup.number().nullable(),
   microwaveType: Yup.object({
     id: Yup.number().required("Loại thiết bị viba là bắt buộc"),
   }),
 });
 
 const flattenMWLine = (values) => {
-  const { nearSite, farSite, microwaveType, license, ...rest } = values;
+  const { nearSite, farSite, microwaveType, ...rest } = values;
   return {
     ...rest,
     nearSiteId: nearSite?.id,
     farSiteId: farSite?.id,
     microwaveTypeId: microwaveType?.id,
-    licenseNumber: license?.licenseNumber,
-    issueDate: license?.issueDate,
-    expiryDate: license?.expiryDate,
-    frequencyBand: license?.frequencyBand,
-    frequencyQuantity: license?.frequencyQuantity,
   };
 };
 
@@ -82,6 +84,7 @@ function MWLineList() {
   } = useMWLines();
 
   const { microwaveTypes: microwaveTypeList } = useMicrowaveTypes();
+  const { licenses: licenseList } = useMicrowaveLicenses();
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
@@ -151,7 +154,9 @@ function MWLineList() {
         if (excludeKey !== "search" && filters.search) {
           const search = filters.search.toLowerCase();
           return (
-            mw.serial?.toLowerCase().includes(search) ||
+            mw.nearSiteSerial?.toLowerCase().includes(search) ||
+            mw.farSiteSerial?.toLowerCase().includes(search) ||
+            mw.assetCode?.toLowerCase().includes(search) ||
             mw.nearSite?.siteId?.toLowerCase().includes(search) ||
             mw.farSite?.siteId?.toLowerCase().includes(search)
           );
@@ -199,7 +204,9 @@ function MWLineList() {
       const matchStatus = !filters.status || mw.status === filters.status.value;
       const matchSearch =
         !filters.search ||
-        mw.serial?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        mw.nearSiteSerial?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        mw.farSiteSerial?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        mw.assetCode?.toLowerCase().includes(filters.search.toLowerCase()) ||
         mw.nearSite?.siteId
           ?.toLowerCase()
           .includes(filters.search.toLowerCase()) ||
@@ -232,13 +239,7 @@ function MWLineList() {
   const handleEdit = (mw) => {
     const initialDataForEdit = {
       ...mw,
-      license: mw.license || {
-        licenseNumber: "",
-        issueDate: null,
-        expiryDate: null,
-        frequencyBand: "",
-        frequencyQuantity: null,
-      },
+      licenseNumber: mw.license?.licenseNumber || "",
     };
     setEditMWLine(initialDataForEdit);
     setOpenEdit(true);
@@ -248,7 +249,11 @@ function MWLineList() {
     const data = filteredMWLines.map((mw) => ({
       "Near Site": mw.nearSite?.siteId,
       "Far Site": mw.farSite?.siteId,
-      Serial: mw.serial,
+      "Mã tài sản": mw.assetCode,
+      "Serial Site A": mw.nearSiteSerial,
+      "Serial Site B": mw.farSiteSerial,
+      "Tx Site A": mw.nearSiteTx,
+      "Tx Site B": mw.farSiteTx,
       "Loại thiết bị": mw.microwaveType?.name,
       Hãng: mw.microwaveType?.vendor?.name,
       "Giấy phép": mw.license?.licenseNumber || "N/A",
@@ -395,13 +400,13 @@ function MWLineList() {
             filters.microwaveType ||
             filters.status ||
             filters.search) && (
-            <button
-              onClick={handleResetFilters}
-              className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
-            >
-              <ArrowPathIcon className="h-3 w-3" /> Xóa bộ lọc
-            </button>
-          )}
+              <button
+                onClick={handleResetFilters}
+                className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+              >
+                <ArrowPathIcon className="h-3 w-3" /> Xóa bộ lọc
+              </button>
+            )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -494,10 +499,9 @@ function MWLineList() {
               isClearable
               placeholder="Tất cả trạng thái"
               className="text-sm"
-              options={[
-                { label: "Hoạt động", value: "ACTIVE" },
-                { label: "Không hoạt động", value: "INACTIVE" },
-              ]}
+              options={getDeviceStatusOptions()}
+              getOptionLabel={(o) => o.label}
+              getOptionValue={(o) => o.value}
               value={filters.status}
               onChange={(val) =>
                 setFilters((prev) => ({ ...prev, status: val }))
@@ -541,9 +545,13 @@ function MWLineList() {
             <tr>
               <th className="p-4 font-bold text-sm">STT</th>
               <th className="p-4 font-bold text-sm">Tỉnh</th>
-              <th className="p-4 font-bold text-sm">Near Site</th>
-              <th className="p-4 font-bold text-sm">Far Site</th>
-              <th className="p-4 font-bold text-sm">Serial</th>
+              <th className="p-4 font-bold text-sm">Site A</th>
+              <th className="p-4 font-bold text-sm">Site B</th>
+              <th className="p-4 font-bold text-sm">Mã tài sản</th>
+              <th className="p-4 font-bold text-sm">Serial Site A</th>
+              <th className="p-4 font-bold text-sm">Tx Site A</th>
+              <th className="p-4 font-bold text-sm">Serial Site B</th>
+              <th className="p-4 font-bold text-sm">Tx Site B</th>
               <th className="p-4 font-bold text-sm">Loại TB</th>
               <th className="p-4 font-bold text-sm">Giấy phép</th>
               <th className="p-4 font-bold text-sm text-center">Trạng thái</th>
@@ -559,7 +567,7 @@ function MWLineList() {
                 <td className="p-4 text-sm font-medium">
                   {mw.nearSite?.province?.name}
                   {mw.farSite?.province &&
-                  mw.nearSite?.province?.id !== mw.farSite?.province?.id
+                    mw.nearSite?.province?.id !== mw.farSite?.province?.id
                     ? ` - ${mw.farSite.province.name}`
                     : ""}
                 </td>
@@ -569,7 +577,11 @@ function MWLineList() {
                 <td className="p-4 text-sm font-medium">
                   {mw.farSite?.siteId}
                 </td>
-                <td className="p-4 text-sm">{mw.serial}</td>
+                <td className="p-4 text-sm">{mw.assetCode}</td>
+                <td className="p-4 text-sm">{mw.nearSiteSerial}</td>
+                <td className="p-4 text-sm">{mw.nearSiteTx}</td>
+                <td className="p-4 text-sm">{mw.farSiteSerial}</td>
+                <td className="p-4 text-sm">{mw.farSiteTx}</td>
                 <td className="p-4 text-sm">{mw.microwaveType?.name}</td>
                 <td className="p-4 text-sm">
                   {mw.license ? (
@@ -589,11 +601,13 @@ function MWLineList() {
                   )}
                 </td>
                 <td className="p-4 text-center">
-                  <StatusChip
-                    active={mw.status === "ACTIVE"}
-                    labelOn="Hoạt động"
-                    labelOff="Không hoạt động"
-                  />
+                  <div className="flex justify-center">
+                    <StatusBadge
+                      status={mw.status}
+                      labels={DeviceStatusLabels}
+                      colors={DeviceStatusColors}
+                    />
+                  </div>
                 </td>
                 <td className="p-4 text-center">
                   <div className="flex justify-center gap-1">
@@ -659,16 +673,14 @@ function MWLineList() {
             initialValues={{
               nearSite: { id: null },
               farSite: { id: null },
-              serial: "",
+              assetCode: "",
+              nearSiteSerial: "",
+              farSiteSerial: "",
+              nearSiteTx: "",
+              farSiteTx: "",
               microwaveType: { id: null },
-              status: "ACTIVE",
-              license: {
-                licenseNumber: "",
-                issueDate: null,
-                expiryDate: null,
-                frequencyBand: "",
-                frequencyQuantity: null,
-              },
+              status: DeviceStatus.OPERATING,
+              licenseNumber: "",
             }}
             validationSchema={MWLineSchema}
             onSubmit={async (values) => {
@@ -720,13 +732,75 @@ function MWLineList() {
                             color="blue-gray"
                             className="mb-1 font-bold"
                           >
-                            Số Serial
+                            Mã tài sản
                           </Typography>
                           <Field
-                            name="serial"
-                            placeholder="Nhập Serial..."
+                            name="assetCode"
+                            placeholder="Nhập mã tài sản..."
                             className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="mb-1 font-bold"
+                            >
+                              Serial Site A (Near)
+                            </Typography>
+                            <Field
+                              name="nearSiteSerial"
+                              placeholder="Nhập Serial Site A..."
+                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                            />
+                          </div>
+                          <div>
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="mb-1 font-bold"
+                            >
+                              Tx Site A (Frequency)
+                            </Typography>
+                            <Field
+                              type="number"
+                              name="nearSiteTx"
+                              placeholder="F1..."
+                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="mb-1 font-bold"
+                            >
+                              Serial Site B (Far)
+                            </Typography>
+                            <Field
+                              name="farSiteSerial"
+                              placeholder="Nhập Serial Site B..."
+                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                            />
+                          </div>
+                          <div>
+                            <Typography
+                              variant="small"
+                              color="blue-gray"
+                              className="mb-1 font-bold"
+                            >
+                              Tx Site B (Frequency)
+                            </Typography>
+                            <Field
+                              type="number"
+                              name="farSiteTx"
+                              placeholder="F2..."
+                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -750,86 +824,49 @@ function MWLineList() {
                           color="blue-gray"
                           className="font-bold"
                         >
-                          Giấy phép tần số (Tùy chọn)
+                          Giấy phép tần số
                         </Typography>
                       </div>
 
                       <div>
+                        <FormSelect
+                          label="Số giấy phép"
+                          name="licenseNumber"
+                          options={licenseList}
+                          getOptionLabel={(o) => o.licenseNumber}
+                          getOptionValue={(o) => o.licenseNumber}
+                          placeholder="Chọn giấy phép tần số..."
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 italic">
+                          * Chọn từ danh sách giấy phép đã tồn tại trong hệ thống.
+                        </p>
+                      </div>
+
+                      <div className="pt-2">
+                        <FormSelect
+                          label="Trạng thái"
+                          name="status"
+                          options={getDeviceStatusOptions()}
+                          getOptionLabel={(o) => o.label}
+                          getOptionValue={(o) => o.value}
+                          required
+                        />
+                      </div>
+
+                      <div className="pt-2">
                         <Typography
                           variant="small"
                           color="blue-gray"
                           className="mb-1 font-bold"
                         >
-                          Số giấy phép
+                          Ghi chú
                         </Typography>
                         <Field
-                          name="license.licenseNumber"
-                          placeholder="VD: 123/GP- tần số"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                          as="textarea"
+                          name="note"
+                          rows={3}
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all resize-none"
                         />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Ngày cấp
-                          </Typography>
-                          <Field
-                            type="date"
-                            name="license.issueDate"
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Ngày hết hạn
-                          </Typography>
-                          <Field
-                            type="date"
-                            name="license.expiryDate"
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Băng tần
-                          </Typography>
-                          <Field
-                            name="license.frequencyBand"
-                            placeholder="VD: 7G/13G"
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Số lượng tần số
-                          </Typography>
-                          <Field
-                            type="number"
-                            name="license.frequencyQuantity"
-                            placeholder="Nhập số..."
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -856,12 +893,13 @@ function MWLineList() {
             )}
           </Formik>
         </div>
-      </Dialog>
+      </Dialog >
 
       {/* Modal Cập nhật */}
-      <Dialog
+      < Dialog
         open={openEdit}
-        handler={() => setOpenEdit(false)}
+        handler={() => setOpenEdit(false)
+        }
         className="overflow-hidden rounded-lg bg-white shadow-xl"
         size="md"
       >
@@ -877,7 +915,7 @@ function MWLineList() {
             <Typography className="text-xs font-normal text-gray-500 mt-0.5">
               Thay đổi các thông tin cho tuyến viba:{" "}
               <span className="font-bold text-blue-700">
-                {editMWLine.serial || "N/A"}
+                {editMWLine.nearSite?.siteId} - {editMWLine.farSite?.siteId}
               </span>
             </Typography>
           </div>
@@ -907,26 +945,14 @@ function MWLineList() {
                 <DialogBody className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-5">
-                      <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/50 p-3 mb-2">
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="font-bold"
-                          >
-                            Trạng thái hoạt động
-                          </Typography>
-                        </div>
-                        <Switch
-                          color="green"
-                          checked={values.status === "ACTIVE"}
-                          onChange={(e) =>
-                            setFieldValue(
-                              "status",
-                              e.target.checked ? "ACTIVE" : "INACTIVE",
-                            )
-                          }
-                          className="scale-90"
+                      <div className="flex flex-col gap-4 mb-4">
+                        <FormSelect
+                          label="Trạng thái hoạt động"
+                          name="status"
+                          options={getDeviceStatusOptions()}
+                          getOptionLabel={(o) => o.label}
+                          getOptionValue={(o) => o.value}
+                          required
                         />
                       </div>
 
@@ -944,7 +970,7 @@ function MWLineList() {
                       </div>
 
                       <FormSelect
-                        label="Trạm đầu (Near Site)"
+                        label="Trạm Site A (Near)"
                         name="nearSite.id"
                         options={siteList}
                         getOptionLabel={(o) => o.siteId}
@@ -953,7 +979,7 @@ function MWLineList() {
                       />
 
                       <FormSelect
-                        label="Trạm cuối (Far Site)"
+                        label="Trạm Site B (Far)"
                         name="farSite.id"
                         options={siteList}
                         getOptionLabel={(o) => o.siteId}
@@ -967,13 +993,76 @@ function MWLineList() {
                           color="blue-gray"
                           className="mb-1 font-bold"
                         >
-                          Số Serial
+                          Mã tài sản
                         </Typography>
                         <Field
-                          name="serial"
-                          placeholder="Nhập Serial..."
+                          name="assetCode"
+                          placeholder="Nhập mã tài sản..."
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
                         />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Typography
+                            variant="small"
+                            color="blue-gray"
+                            className="mb-1 font-bold"
+                          >
+                            Serial Site A (Near)
+                          </Typography>
+                          <Field
+                            name="nearSiteSerial"
+                            placeholder="Nhập Serial Site A..."
+                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                          />
+                        </div>
+                        <div>
+                          <Typography
+                            variant="small"
+                            color="blue-gray"
+                            className="mb-1 font-bold"
+                          >
+                            Tx Site A (Frequency)
+                          </Typography>
+                          <Field
+                            type="number"
+                            name="nearSiteTx"
+                            placeholder="F1..."
+                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Typography
+                            variant="small"
+                            color="blue-gray"
+                            className="mb-1 font-bold"
+                          >
+                            Serial Site B (Far)
+                          </Typography>
+                          <Field
+                            name="farSiteSerial"
+                            placeholder="Nhập Serial Site B..."
+                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                          />
+                        </div>
+                        <div>
+                          <Typography
+                            variant="small"
+                            color="blue-gray"
+                            className="mb-1 font-bold"
+                          >
+                            Tx Site B (Frequency)
+                          </Typography>
+                          <Field
+                            type="number"
+                            name="farSiteTx"
+                            placeholder="F2..."
+                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400 outline-none transition-all"
+                          />
+                        </div>
                       </div>
 
                       <FormSelect
@@ -999,83 +1088,18 @@ function MWLineList() {
                           Giấy phép tần số
                         </Typography>
                       </div>
-
                       <div>
-                        <Typography
-                          variant="small"
-                          color="blue-gray"
-                          className="mb-1 font-bold"
-                        >
-                          Số giấy phép
-                        </Typography>
-                        <Field
-                          name="license.licenseNumber"
-                          placeholder="VD: 123/GP- tần số"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        <FormSelect
+                          label="Số giấy phép"
+                          name="licenseNumber"
+                          options={licenseList}
+                          getOptionLabel={(o) => o.licenseNumber}
+                          getOptionValue={(o) => o.licenseNumber}
+                          placeholder="Chọn giấy phép tần số..."
                         />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Ngày cấp
-                          </Typography>
-                          <Field
-                            type="date"
-                            name="license.issueDate"
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Ngày hết hạn
-                          </Typography>
-                          <Field
-                            type="date"
-                            name="license.expiryDate"
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Băng tần
-                          </Typography>
-                          <Field
-                            name="license.frequencyBand"
-                            placeholder="VD: 7G/13G"
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                        <div>
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="mb-1 font-bold"
-                          >
-                            Số lượng tần số
-                          </Typography>
-                          <Field
-                            type="number"
-                            name="license.frequencyQuantity"
-                            placeholder="Nhập số..."
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          />
-                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1 italic">
+                          * Chọn từ danh sách giấy phép đã tồn tại trong hệ thống.
+                        </p>
                       </div>
 
                       <div className="pt-2">
@@ -1177,7 +1201,7 @@ function MWLineList() {
                 className="text-[11px] leading-relaxed"
               >
                 Sử dụng tệp mẫu có sẵn.{" "}
-                
+
                 <span className="text-blue-700 italic">
                   Thông tin về Số giấy phép
                 </span>{" "}
@@ -1363,13 +1387,25 @@ function MWLineList() {
                     <thead className="text-[10px] text-gray-500 uppercase bg-gray-100 sticky top-0 z-10 border-b">
                       <tr>
                         <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Near Site
+                          Site A
                         </th>
                         <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Far Site
+                          Site B
                         </th>
                         <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Serial
+                          Mã tài sản
+                        </th>
+                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
+                          Serial A
+                        </th>
+                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
+                          Tx A
+                        </th>
+                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
+                          Serial B
+                        </th>
+                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
+                          Tx B
                         </th>
                         <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
                           Loại TB
@@ -1390,7 +1426,19 @@ function MWLineList() {
                             {row.farSite}
                           </td>
                           <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.serial}
+                            {row.assetCode}
+                          </td>
+                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
+                            {row.nearSiteSerial}
+                          </td>
+                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
+                            {row.nearSiteTx}
+                          </td>
+                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
+                            {row.farSiteSerial}
+                          </td>
+                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
+                            {row.farSiteTx}
                           </td>
                           <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
                             {row.microwaveTypeName}
@@ -1458,7 +1506,7 @@ function MWLineList() {
           )}
         </DialogFooter>
       </Dialog>
-    </div>
+    </div >
   );
 }
 
