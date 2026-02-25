@@ -35,11 +35,14 @@ import FormSelect from "../components/FormSelect";
 import StatusBadge from "../components/StatusBadge";
 
 const mapFormToRequest = (values) => {
+    // Destructure to remove nested objects that shouldn't be in the request
+    const { nearSite, farSite, mwLine, ...rest } = values;
+
     return {
-        ...values,
-        mwLineId: values.mwLine?.id || values.mwLineId,
-        nearSiteId: values.nearSite?.id,
-        farSiteId: values.farSite?.id,
+        ...rest,
+        mwLineId: mwLine?.id || values.mwLineId,
+        nearSiteId: nearSite?.id || values.nearSiteId,
+        farSiteId: farSite?.id || values.farSiteId,
         nearSiteFrequencies: values.nearSiteFrequencies?.filter(f => f !== null && f !== "").map(Number),
         farSiteFrequencies: values.farSiteFrequencies?.filter(f => f !== null && f !== "").map(Number),
     };
@@ -441,39 +444,34 @@ function MicrowaveLicenseList() {
                                         </Typography>
                                     </div>
                                     <div className="grid grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <Typography variant="small" color="blue-gray" className="font-bold">Số GP</Typography>
-                                            <Field name="licenseNumber">
-                                                {({ field }) => (
-                                                    <Input {...field} size="md" placeholder="123/GP-CVT"
-                                                        className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                        labelProps={{ className: "before:content-none after:content-none" }}
-                                                        error={touched.licenseNumber && Boolean(errors.licenseNumber)} />
-                                                )}
-                                            </Field>
-                                            <ErrorMessage name="licenseNumber" component="div" className="text-red-500 text-[10px] mt-1 ml-1" />
+                                        <div className="flex flex-col items-stretch gap-2">
+                                            <label className="text-slate-400 font-semibold text-sm">Số giấy phép</label>
+                                            <Field
+                                                name="licenseNumber"
+                                                placeholder="Nhập số giấy phép (vd: 123/GP-CVT)"
+                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            />
+                                            <ErrorMessage name="licenseNumber" component="span" className="text-sm font-light italic text-red-500" />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <Typography variant="small" color="blue-gray" className="font-bold">Ngày cấp</Typography>
-                                            <Field name="issueDate" type="date">
-                                                {({ field }) => (
-                                                    <Input {...field} size="md"
-                                                        className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                        labelProps={{ className: "before:content-none after:content-none" }} />
-                                                )}
-                                            </Field>
+                                        <div className="flex flex-col items-stretch gap-2">
+                                            <label className="text-slate-400 font-semibold text-sm">Ngày cấp</label>
+                                            <Field
+                                                name="issueDate"
+                                                type="date"
+                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            />
+                                            <ErrorMessage name="issueDate" component="span" className="text-sm font-light italic text-red-500" />
                                         </div>
-                                        <div className="space-y-1">
-                                            <Typography variant="small" color="blue-gray" className="font-bold">Ngày hết hạn</Typography>
-                                            <Field name="expiryDate" type="date">
-                                                {({ field }) => (
-                                                    <Input {...field} size="md"
-                                                        className="!border-t-blue-gray-200 focus:!border-blue-500"
-                                                        labelProps={{ className: "before:content-none after:content-none" }} />
-                                                )}
-                                            </Field>
+                                        <div className="flex flex-col items-stretch gap-2">
+                                            <label className="text-slate-400 font-semibold text-sm">Ngày hết hạn</label>
+                                            <Field
+                                                name="expiryDate"
+                                                type="date"
+                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            />
+                                            <ErrorMessage name="expiryDate" component="span" className="text-sm font-light italic text-red-500" />
                                         </div>
                                     </div>
                                 </div>
@@ -490,31 +488,43 @@ function MicrowaveLicenseList() {
                                             getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
 
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Độ cao Anten (m)</Typography>
-                                                <Field name="nearSiteAntennaHeight" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Độ cao Anten (m)</label>
+                                                <Field
+                                                    name="nearSiteAntennaHeight"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Kích thước (m)</Typography>
-                                                <Field name="nearSiteAntennaSize" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Kích thước (m)</label>
+                                                <Field
+                                                    name="nearSiteAntennaSize"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Công suất (dBm)</Typography>
-                                                <Field name="nearSiteTransmitPower" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Công suất (dBm)</label>
+                                                <Field
+                                                    name="nearSiteTransmitPower"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Tốc độ (Mbps)</Typography>
-                                                <Field name="nearSiteTransmissionSpeed" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Tốc độ (Mbps)</label>
+                                                <Field
+                                                    name="nearSiteTransmissionSpeed"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
                                         </div>
 
@@ -532,14 +542,17 @@ function MicrowaveLicenseList() {
                                             <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                                                 {values.nearSiteFrequencies.map((freq, idx) => (
                                                     <div key={idx} className="flex gap-2">
-                                                        <Input size="sm" value={freq} type="number"
+                                                        <input
+                                                            value={freq}
+                                                            type="number"
+                                                            placeholder="Tần số..."
                                                             onChange={(e) => {
                                                                 const newFreqs = [...values.nearSiteFrequencies];
                                                                 newFreqs[idx] = e.target.value;
                                                                 setFieldValue("nearSiteFrequencies", newFreqs);
                                                             }}
-                                                            className="!border-t-blue-gray-200"
-                                                            labelProps={{ className: "before:content-none after:content-none" }} />
+                                                            className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                        />
                                                         <IconButton size="sm" variant="text" color="red"
                                                             disabled={values.nearSiteFrequencies.length === 1}
                                                             onClick={() => {
@@ -567,31 +580,43 @@ function MicrowaveLicenseList() {
                                             getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
 
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Độ cao Anten (m)</Typography>
-                                                <Field name="farSiteAntennaHeight" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Độ cao Anten (m)</label>
+                                                <Field
+                                                    name="farSiteAntennaHeight"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Kích thước (m)</Typography>
-                                                <Field name="farSiteAntennaSize" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Kích thước (m)</label>
+                                                <Field
+                                                    name="farSiteAntennaSize"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Công suất (dBm)</Typography>
-                                                <Field name="farSiteTransmitPower" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Công suất (dBm)</label>
+                                                <Field
+                                                    name="farSiteTransmitPower"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Tốc độ (Mbps)</Typography>
-                                                <Field name="farSiteTransmissionSpeed" type="number">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Tốc độ (Mbps)</label>
+                                                <Field
+                                                    name="farSiteTransmissionSpeed"
+                                                    type="number"
+                                                    placeholder="0.0"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
                                             </div>
                                         </div>
 
@@ -609,14 +634,17 @@ function MicrowaveLicenseList() {
                                             <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                                                 {values.farSiteFrequencies.map((freq, idx) => (
                                                     <div key={idx} className="flex gap-2">
-                                                        <Input size="sm" value={freq} type="number"
+                                                        <input
+                                                            value={freq}
+                                                            type="number"
+                                                            placeholder="Tần số..."
                                                             onChange={(e) => {
                                                                 const newFreqs = [...values.farSiteFrequencies];
                                                                 newFreqs[idx] = e.target.value;
                                                                 setFieldValue("farSiteFrequencies", newFreqs);
                                                             }}
-                                                            className="!border-t-blue-gray-200"
-                                                            labelProps={{ className: "before:content-none after:content-none" }} />
+                                                            className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                        />
                                                         <IconButton size="sm" variant="text" color="red"
                                                             disabled={values.farSiteFrequencies.length === 1}
                                                             onClick={() => {
@@ -708,31 +736,37 @@ function MicrowaveLicenseList() {
                                                 Thông tin chung
                                             </Typography>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Số GP</Typography>
-                                                <Field name="licenseNumber">
-                                                    {({ field }) => (
-                                                        <Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} error={touched.licenseNumber && Boolean(errors.licenseNumber)} />
-                                                    )}
-                                                </Field>
-                                                <ErrorMessage name="licenseNumber" component="div" className="text-red-500 text-[10px] mt-1 ml-1" />
-                                            </div>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="flex flex-col items-stretch gap-2">
+                                            <label className="text-slate-400 font-semibold text-sm">Số giấy phép</label>
+                                            <Field
+                                                name="licenseNumber"
+                                                placeholder="Nhập số giấy phép (vd: 123/GP-CVT)"
+                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            />
+                                            <ErrorMessage name="licenseNumber" component="span" className="text-sm font-light italic text-red-500" />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Ngày cấp</Typography>
-                                                <Field name="issueDate" type="date">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <Typography variant="small" color="blue-gray" className="font-bold">Ngày hết hạn</Typography>
-                                                <Field name="expiryDate" type="date">
-                                                    {({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}
-                                                </Field>
-                                            </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col items-stretch gap-2">
+                                            <label className="text-slate-400 font-semibold text-sm">Ngày cấp</label>
+                                            <Field
+                                                name="issueDate"
+                                                type="date"
+                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            />
+                                            <ErrorMessage name="issueDate" component="span" className="text-sm font-light italic text-red-500" />
                                         </div>
+                                        <div className="flex flex-col items-stretch gap-2">
+                                            <label className="text-slate-400 font-semibold text-sm">Ngày hết hạn</label>
+                                            <Field
+                                                name="expiryDate"
+                                                type="date"
+                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            />
+                                            <ErrorMessage name="expiryDate" component="span" className="text-sm font-light italic text-red-500" />
+                                        </div>
+                                    </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-8">
@@ -742,23 +776,43 @@ function MicrowaveLicenseList() {
                                             </div>
                                             <FormSelect label="Chọn trạm A" name="nearSite.id" options={siteList} getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Độ cao Anten (m)</Typography>
-                                                    <Field name="nearSiteAntennaHeight" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Độ cao Anten (m)</label>
+                                                    <Field
+                                                        name="nearSiteAntennaHeight"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Kích thước (m)</Typography>
-                                                    <Field name="nearSiteAntennaSize" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Kích thước (m)</label>
+                                                    <Field
+                                                        name="nearSiteAntennaSize"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Công suất (dBm)</Typography>
-                                                    <Field name="nearSiteTransmitPower" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Công suất (dBm)</label>
+                                                    <Field
+                                                        name="nearSiteTransmitPower"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Tốc độ (Mbps)</Typography>
-                                                    <Field name="nearSiteTransmissionSpeed" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Tốc độ (Mbps)</label>
+                                                    <Field
+                                                        name="nearSiteTransmissionSpeed"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
@@ -772,7 +826,17 @@ function MicrowaveLicenseList() {
                                                 <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                                                     {values.nearSiteFrequencies.map((freq, idx) => (
                                                         <div key={idx} className="flex gap-2">
-                                                            <Input size="sm" value={freq} type="number" onChange={(e) => { const n = [...values.nearSiteFrequencies]; n[idx] = e.target.value; setFieldValue("nearSiteFrequencies", n); }} className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />
+                                                            <input
+                                                                value={freq}
+                                                                type="number"
+                                                                placeholder="Tần số..."
+                                                                onChange={(e) => {
+                                                                    const n = [...values.nearSiteFrequencies];
+                                                                    n[idx] = e.target.value;
+                                                                    setFieldValue("nearSiteFrequencies", n);
+                                                                }}
+                                                                className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                            />
                                                             <IconButton size="sm" variant="text" color="red" disabled={values.nearSiteFrequencies.length === 1} onClick={() => {
                                                                 setFieldValue("nearSiteFrequencies", values.nearSiteFrequencies.filter((_, i) => i !== idx));
                                                                 setFieldValue("farSiteFrequencies", values.farSiteFrequencies.filter((_, i) => i !== idx));
@@ -789,23 +853,43 @@ function MicrowaveLicenseList() {
                                             </div>
                                             <FormSelect label="Chọn trạm B" name="farSite.id" options={siteList} getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Độ cao Anten (m)</Typography>
-                                                    <Field name="farSiteAntennaHeight" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Độ cao Anten (m)</label>
+                                                    <Field
+                                                        name="farSiteAntennaHeight"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Kích thước (m)</Typography>
-                                                    <Field name="farSiteAntennaSize" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Kích thước (m)</label>
+                                                    <Field
+                                                        name="farSiteAntennaSize"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Công suất (dBm)</Typography>
-                                                    <Field name="farSiteTransmitPower" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Công suất (dBm)</label>
+                                                    <Field
+                                                        name="farSiteTransmitPower"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Typography variant="small" color="blue-gray" className="font-bold">Tốc độ (Mbps)</Typography>
-                                                    <Field name="farSiteTransmissionSpeed" type="number">{({ field }) => (<Input {...field} size="md" className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />)}</Field>
+                                                <div className="flex flex-col items-stretch gap-2">
+                                                    <label className="text-slate-400 font-semibold text-sm">Tốc độ (Mbps)</label>
+                                                    <Field
+                                                        name="farSiteTransmissionSpeed"
+                                                        type="number"
+                                                        placeholder="0.0"
+                                                        className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
@@ -819,7 +903,17 @@ function MicrowaveLicenseList() {
                                                 <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                                                     {values.farSiteFrequencies.map((freq, idx) => (
                                                         <div key={idx} className="flex gap-2">
-                                                            <Input size="sm" value={freq} type="number" onChange={(e) => { const n = [...values.farSiteFrequencies]; n[idx] = e.target.value; setFieldValue("farSiteFrequencies", n); }} className="!border-t-blue-gray-200" labelProps={{ className: "before:content-none after:content-none" }} />
+                                                            <input
+                                                                value={freq}
+                                                                type="number"
+                                                                placeholder="Tần số..."
+                                                                onChange={(e) => {
+                                                                    const n = [...values.farSiteFrequencies];
+                                                                    n[idx] = e.target.value;
+                                                                    setFieldValue("farSiteFrequencies", n);
+                                                                }}
+                                                                className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                            />
                                                             <IconButton size="sm" variant="text" color="red" disabled={values.farSiteFrequencies.length === 1} onClick={() => {
                                                                 setFieldValue("nearSiteFrequencies", values.nearSiteFrequencies.filter((_, i) => i !== idx));
                                                                 setFieldValue("farSiteFrequencies", values.farSiteFrequencies.filter((_, i) => i !== idx));
@@ -1008,6 +1102,53 @@ function MicrowaveLicenseList() {
                     <CustomButton variant="text" color="blue-gray" onClick={() => setOpenImport(false)} size="sm">
                         Đóng lại
                     </CustomButton>
+                </DialogFooter>
+            </Dialog>
+
+            {/* Delete Modal */}
+            <Dialog
+                open={openDelete}
+                handler={() => setOpenDelete(false)}
+                size="xs"
+                className="rounded-lg overflow-hidden shadow-xl"
+            >
+                <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+                    <div className="bg-red-100 p-2 rounded-full">
+                        <TrashIcon className="h-5 w-5 text-red-600" />
+                    </div>
+                    <Typography variant="h5" color="red" className="font-semibold">
+                        Xác nhận xóa
+                    </Typography>
+                    <IconButton
+                        size="sm"
+                        variant="text"
+                        className="!absolute right-3.5 top-3.5 text-gray-500 hover:bg-gray-200 rounded-full"
+                        onClick={() => setOpenDelete(false)}
+                    >
+                        <XMarkIcon className="h-5 w-5" />
+                    </IconButton>
+                </div>
+                <DialogBody className="p-6 text-blue-gray-700">
+                    <Typography variant="paragraph" color="blue-gray" className="font-medium">
+                        Bạn có chắc chắn muốn xóa giấy phép số <b>{selectedItem?.licenseNumber}</b>?
+                    </Typography>
+                    <Typography variant="small" color="gray" className="mt-3 italic">
+                        Dữ liệu sẽ bị xóa vĩnh viễn và không thể phục hồi.
+                    </Typography>
+                </DialogBody>
+                <DialogFooter className="bg-gray-50 px-4 py-3 gap-2 border-t border-gray-200">
+                    <CustomButton variant="text" color="blue-gray" onClick={() => setOpenDelete(false)} size="sm">
+                        Hủy bỏ
+                    </CustomButton>
+                    <Button
+                        color="red"
+                        onClick={handleDelete}
+                        size="sm"
+                        className="flex items-center gap-2 shadow-md shadow-red-500/20 bg-red-600 hover:bg-red-700"
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                        Xác nhận xóa
+                    </Button>
                 </DialogFooter>
             </Dialog>
         </div>
