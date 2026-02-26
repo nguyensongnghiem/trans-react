@@ -251,17 +251,20 @@ function MicrowaveLicenseList() {
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Giấy phép</Typography>
                             </th>
-                            <th className="p-4">
-                                <Typography variant="small" color="blue-gray" className="font-bold">Site A</Typography>
+                             <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Thời hạn</Typography>
                             </th>
                             <th className="p-4">
-                                <Typography variant="small" color="blue-gray" className="font-bold">Site B</Typography>
+                                <Typography variant="small" color="blue-gray" className="font-bold">Thông số anten</Typography>
+                            </th>
+                             <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Băng thông (Mbps)</Typography>
                             </th>
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Số cặp tần số </Typography>
                             </th>
                             <th className="p-4">
-                                <Typography variant="small" color="blue-gray" className="font-bold">Đã gán tuyến</Typography>
+                                <Typography variant="small" color="blue-gray" className="font-bold">Trạng thái</Typography>
                             </th>
                             {isAdmin && (
                                 <th className="p-4 w-32 text-center">
@@ -301,34 +304,41 @@ function MicrowaveLicenseList() {
                                             <Typography variant="small" color="blue-gray" className="font-bold">
                                                 {item.licenseNumber}
                                             </Typography>
-                                            <div className="flex gap-2 text-[10px] text-gray-500">
-                                                <span>Ngày cấp: {formatDateLabel(item.issueDate)}</span>
-                                                <span>Ngày hết hạn: {formatDateLabel(item.expiryDate)}</span>
+                                            <Typography variant="small" color="blue-gray" className="font-medium text-blue-600">
+                                                {item.nearSite?.siteId || "-"} - {item.farSite?.siteId || "-"}
+                                            </Typography>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col text-[11px] text-gray-600">
+                                            <div className="flex gap-1">
+                                                <span className="font-semibold">Cấp:</span>
+                                                <span>{formatDateLabel(item.issueDate)}</span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <span className="font-semibold">Hết hạn:</span>
+                                                <span>{formatDateLabel(item.expiryDate)}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
-                                            <Typography variant="small" color="blue-gray" className="font-medium">
-                                                {item.nearSite?.siteId || item.nearSiteId || "-"}
-                                            </Typography>
-                                            {item.nearSiteAntennaHeight && (
-                                                <span className="text-[10px] text-gray-500">
-                                                    H:{item.nearSiteAntennaHeight}m, D:{item.nearSiteAntennaSize}m
-                                                </span>
-                                            )}
+                                            <span className="text-[10px] text-gray-500">
+                                                <b>{item.nearSite?.siteId || "A"}:</b> H: {item.nearSiteAntennaHeight || "-"}m, D: {item.nearSiteAntennaSize || "-"}m
+                                            </span>
+                                            <span className="text-[10px] text-gray-500">
+                                                <b>{item.farSite?.siteId || "B"}:</b> H: {item.farSiteAntennaHeight || "-"}m, D: {item.farSiteAntennaSize || "-"}m
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
-                                            <Typography variant="small" color="blue-gray" className="font-medium">
-                                                {item.farSite?.siteId || item.farSiteId || "-"}
-                                            </Typography>
-                                            {item.farSiteAntennaHeight && (
-                                                <span className="text-[10px] text-gray-500">
-                                                    H:{item.farSiteAntennaHeight}m, D:{item.farSiteAntennaSize}m
-                                                </span>
-                                            )}
+                                            <span className="text-[10px] text-gray-500">
+                                                <b>{item.nearSite?.siteId || "A"}:</b> {item.nearSiteTransmissionSpeed || "-"} Mbps
+                                            </span>
+                                            <span className="text-[10px] text-gray-500">
+                                                <b>{item.farSite?.siteId || "B"}:</b> {item.farSiteTransmissionSpeed || "-"} Mbps
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="p-4">
@@ -337,15 +347,15 @@ function MicrowaveLicenseList() {
                                                 {item.nearSiteFrequencies?.length || 0}
                                             </Typography>
                                             <span className="text-[10px] text-gray-500">
-                                                A: {item.nearSiteFrequencies?.join(", ") || "-"}
+                                                <b>{item.nearSite?.siteId || "A"}:</b> {item.nearSiteFrequencies?.join(", ") || "-"}
                                             </span>
                                             <span className="text-[10px] text-gray-500">
-                                                B: {item.farSiteFrequencies?.join(", ") || "-"}
+                                                <b>{item.farSite?.siteId || "B"}:</b> {item.farSiteFrequencies?.join(", ") || "-"}
                                             </span>
                                         </div>
                                     </td>
                                     <td className="p-4">
-                                        {item.mwLine ? (
+                                         {item.mwLine ? (
                                             <Chip
                                                 value="Đã gán"
                                                 size="sm"
