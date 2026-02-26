@@ -286,106 +286,112 @@ function MicrowaveLicenseList() {
                                     <Typography variant="small" color="blue-gray">Không tìm thấy dữ liệu</Typography>
                                 </td>
                             </tr>
-                        ) : filteredList.map((item, index) => (
-                            <tr key={item.id} className="hover:bg-gray-50">
-                                <td className="p-4">
-                                    <Typography variant="small" color="blue-gray">{index + 1}</Typography>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex flex-col">
-                                        <Typography variant="small" color="blue-gray" className="font-bold">
-                                            {item.licenseNumber}
-                                        </Typography>
-                                        <div className="flex gap-2 text-[10px] text-gray-500">
-                                            <span>Ngày cấp: {formatDateLabel(item.issueDate)}</span>
-                                            <span>Ngày hết hạn: {formatDateLabel(item.expiryDate)}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex flex-col">
-                                        <Typography variant="small" color="blue-gray" className="font-medium">
-                                            {item.nearSite?.siteId || item.nearSiteId || "-"}
-                                        </Typography>
-                                        {item.nearSiteAntennaHeight && (
-                                            <span className="text-[10px] text-gray-500">
-                                                H:{item.nearSiteAntennaHeight}m, D:{item.nearSiteAntennaSize}m
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex flex-col">
-                                        <Typography variant="small" color="blue-gray" className="font-medium">
-                                            {item.farSite?.siteId || item.farSiteId || "-"}
-                                        </Typography>
-                                        {item.farSiteAntennaHeight && (
-                                            <span className="text-[10px] text-gray-500">
-                                                H:{item.farSiteAntennaHeight}m, D:{item.farSiteAntennaSize}m
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex flex-col">
-                                        <Typography variant="small" color="blue-gray" className="font-medium tabular-nums">
-                                            {item.nearSiteFrequencies?.length || 0}
-                                        </Typography>
-                                        <span className="text-[10px] text-gray-500">
-                                            A: {item.nearSiteFrequencies?.join(", ") || "-"}
-                                        </span>
-                                        <span className="text-[10px] text-gray-500">
-                                            B: {item.farSiteFrequencies?.join(", ") || "-"}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    {item.mwLine ? (
-                                        <Chip
-                                            value="Đã gán"
-                                            size="sm"
-                                            color="green"
-                                            variant="ghost"
-                                            className="rounded-full w-fit px-2 py-1 text-[10px]"
-                                        />
-                                    ) : (
-                                        <Chip
-                                            value="Chưa gán"
-                                            size="sm"
-                                            color="blue-gray"
-                                            variant="ghost"
-                                            className="rounded-full w-fit px-2 py-1 text-[10px]"
-                                        />
-                                    )}
-                                </td>
-                                {isAdmin && (
-                                    <td className="p-4 flex justify-center gap-2">
-                                        <IconButton
-                                            variant="text"
-                                            color="blue"
-                                            size="sm"
-                                            onClick={() => {
-                                                setSelectedItem(item);
-                                                setOpenEdit(true);
-                                            }}
-                                        >
-                                            <PencilIcon className="h-4 w-4" />
-                                        </IconButton>
-                                        <IconButton
-                                            variant="text"
-                                            color="red"
-                                            size="sm"
-                                            onClick={() => {
-                                                setSelectedItem(item);
-                                                setOpenDelete(true);
-                                            }}
-                                        >
-                                            <TrashIcon className="h-4 w-4" />
-                                        </IconButton>
+                        ) : filteredList.map((item, index) => {
+                            const mwLineMatchesSites = item.mwLine && item.nearSite && item.farSite && (
+                                (item.mwLine.nearSiteSiteId === item.nearSite.siteId && item.mwLine.farSiteSiteId === item.farSite.siteId) ||
+                                (item.mwLine.nearSiteSiteId === item.farSite.siteId && item.mwLine.farSiteSiteId === item.nearSite.siteId)
+                            );
+                            return (
+                                <tr key={item.id} className={mwLineMatchesSites ? "bg-green-50 hover:bg-green-100" : "hover:bg-gray-50"}>
+                                    <td className="p-4">
+                                        <Typography variant="small" color="blue-gray">{index + 1}</Typography>
                                     </td>
-                                )}
-                            </tr>
-                        ))}
+                                    <td className="p-4">
+                                        <div className="flex flex-col">
+                                            <Typography variant="small" color="blue-gray" className="font-bold">
+                                                {item.licenseNumber}
+                                            </Typography>
+                                            <div className="flex gap-2 text-[10px] text-gray-500">
+                                                <span>Ngày cấp: {formatDateLabel(item.issueDate)}</span>
+                                                <span>Ngày hết hạn: {formatDateLabel(item.expiryDate)}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col">
+                                            <Typography variant="small" color="blue-gray" className="font-medium">
+                                                {item.nearSite?.siteId || item.nearSiteId || "-"}
+                                            </Typography>
+                                            {item.nearSiteAntennaHeight && (
+                                                <span className="text-[10px] text-gray-500">
+                                                    H:{item.nearSiteAntennaHeight}m, D:{item.nearSiteAntennaSize}m
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col">
+                                            <Typography variant="small" color="blue-gray" className="font-medium">
+                                                {item.farSite?.siteId || item.farSiteId || "-"}
+                                            </Typography>
+                                            {item.farSiteAntennaHeight && (
+                                                <span className="text-[10px] text-gray-500">
+                                                    H:{item.farSiteAntennaHeight}m, D:{item.farSiteAntennaSize}m
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col">
+                                            <Typography variant="small" color="blue-gray" className="font-medium tabular-nums">
+                                                {item.nearSiteFrequencies?.length || 0}
+                                            </Typography>
+                                            <span className="text-[10px] text-gray-500">
+                                                A: {item.nearSiteFrequencies?.join(", ") || "-"}
+                                            </span>
+                                            <span className="text-[10px] text-gray-500">
+                                                B: {item.farSiteFrequencies?.join(", ") || "-"}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        {item.mwLine ? (
+                                            <Chip
+                                                value="Đã gán"
+                                                size="sm"
+                                                color="green"
+                                                variant="ghost"
+                                                className="rounded-full w-fit px-2 py-1 text-[10px]"
+                                            />
+                                        ) : (
+                                            <Chip
+                                                value="Chưa gán"
+                                                size="sm"
+                                                color="blue-gray"
+                                                variant="ghost"
+                                                className="rounded-full w-fit px-2 py-1 text-[10px]"
+                                            />
+                                        )}
+                                    </td>
+                                    {isAdmin && (
+                                        <td className="p-4 flex justify-center gap-2">
+                                            <IconButton
+                                                variant="text"
+                                                color="blue"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSelectedItem(item);
+                                                    setOpenEdit(true);
+                                                }}
+                                            >
+                                                <PencilIcon className="h-4 w-4" />
+                                            </IconButton>
+                                            <IconButton
+                                                variant="text"
+                                                color="red"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSelectedItem(item);
+                                                    setOpenDelete(true);
+                                                }}
+                                            >
+                                                <TrashIcon className="h-4 w-4" />
+                                            </IconButton>
+                                        </td>
+                                    )}
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </Card>
