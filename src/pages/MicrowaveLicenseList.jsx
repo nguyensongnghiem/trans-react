@@ -31,18 +31,21 @@ import { jwtDecode } from "jwt-decode";
 import { format } from "date-fns";
 import useMicrowaveLicenses from "../hooks/useMicrowaveLicenses";
 import useSimpleSites from "../hooks/useSimpleSites";
+import useMicrowaveTypes from "../hooks/useMicrowaveTypes";
 import FormSelect from "../components/FormSelect";
 import StatusBadge from "../components/StatusBadge";
 
 const mapFormToRequest = (values) => {
     // Destructure to remove nested objects that shouldn't be in the request
-    const { nearSite, farSite, mwLine, ...rest } = values;
+    const { nearSite, farSite, mwLine, nearSiteMwModel, farSiteMwModel, ...rest } = values;
 
     return {
         ...rest,
         mwLineId: mwLine?.id || values.mwLineId,
         nearSiteId: nearSite?.id || values.nearSiteId,
         farSiteId: farSite?.id || values.farSiteId,
+        nearSiteMwModelId: nearSiteMwModel?.id || values.nearSiteMwModelId,
+        farSiteMwModelId: farSiteMwModel?.id || values.farSiteMwModelId,
         nearSiteFrequencies: values.nearSiteFrequencies?.filter(f => f !== null && f !== "").map(Number),
         farSiteFrequencies: values.farSiteFrequencies?.filter(f => f !== null && f !== "").map(Number),
     };
@@ -51,6 +54,7 @@ const mapFormToRequest = (values) => {
 function MicrowaveLicenseList() {
     const axiosInstance = useAxiosPrivate();
     const { simpleSites: siteList } = useSimpleSites();
+    const { microwaveTypes } = useMicrowaveTypes();
     const {
         licenses: items,
         isLoading,
@@ -251,13 +255,16 @@ function MicrowaveLicenseList() {
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Giấy phép</Typography>
                             </th>
-                             <th className="p-4">
+                            <th className="p-4">
+                                <Typography variant="small" color="blue-gray" className="font-bold">Tuyến & Thiết bị</Typography>
+                            </th>
+                            <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Thời hạn</Typography>
                             </th>
                             <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Thông số anten</Typography>
                             </th>
-                             <th className="p-4">
+                            <th className="p-4">
                                 <Typography variant="small" color="blue-gray" className="font-bold">Băng thông (Mbps)</Typography>
                             </th>
                             <th className="p-4">
@@ -276,7 +283,7 @@ function MicrowaveLicenseList() {
                     <tbody className="divide-y divide-gray-100">
                         {isLoading ? (
                             <tr>
-                                <td colSpan={isAdmin ? 8 : 7} className="p-4 text-center">
+                                <td colSpan={isAdmin ? 9 : 8} className="p-4 text-center">
                                     <div className="flex items-center justify-center gap-2">
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
                                         <Typography variant="small" color="blue-gray">Đang tải dữ liệu...</Typography>
@@ -285,7 +292,7 @@ function MicrowaveLicenseList() {
                             </tr>
                         ) : filteredList.length === 0 ? (
                             <tr>
-                                <td colSpan={isAdmin ? 8 : 7} className="p-4 text-center">
+                                <td colSpan={isAdmin ? 9 : 8} className="p-4 text-center">
                                     <Typography variant="small" color="blue-gray">Không tìm thấy dữ liệu</Typography>
                                 </td>
                             </tr>
@@ -304,9 +311,16 @@ function MicrowaveLicenseList() {
                                             <Typography variant="small" color="blue-gray" className="font-bold">
                                                 {item.licenseNumber}
                                             </Typography>
-                                            <Typography variant="small" color="blue-gray" className="font-medium text-blue-600">
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col">
+                                            <Typography variant="small" color="blue-gray" className="font-bold text-blue-600">
                                                 {item.nearSite?.siteId || "-"} - {item.farSite?.siteId || "-"}
                                             </Typography>
+                                            <span className="text-[10px] text-gray-500">
+                                                {item.nearSiteMwModel?.name || "-"} / {item.farSiteMwModel?.name || "-"}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="p-4">
@@ -355,7 +369,7 @@ function MicrowaveLicenseList() {
                                         </div>
                                     </td>
                                     <td className="p-4">
-                                         {item.mwLine ? (
+                                        {item.mwLine ? (
                                             <Chip
                                                 value="Đã gán"
                                                 size="sm"
@@ -438,6 +452,8 @@ function MicrowaveLicenseList() {
                         expiryDate: "",
                         nearSite: { id: null },
                         farSite: { id: null },
+                        nearSiteMwModel: { id: null },
+                        farSiteMwModel: { id: null },
                         nearSiteAntennaHeight: "",
                         farSiteAntennaHeight: "",
                         nearSiteAntennaSize: "",
@@ -505,6 +521,8 @@ function MicrowaveLicenseList() {
                                         </div>
                                         <FormSelect label="Chọn trạm A" name="nearSite.id" options={siteList}
                                             getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
+                                        <FormSelect label="Loại thiết bị A" name="nearSiteMwModel.id" options={microwaveTypes}
+                                            getOptionLabel={(o) => o.name} getOptionValue={(o) => o.id} />
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="flex flex-col items-stretch gap-2">
@@ -597,6 +615,8 @@ function MicrowaveLicenseList() {
                                         </div>
                                         <FormSelect label="Chọn trạm B" name="farSite.id" options={siteList}
                                             getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
+                                        <FormSelect label="Loại thiết bị B" name="farSiteMwModel.id" options={microwaveTypes}
+                                            getOptionLabel={(o) => o.name} getOptionValue={(o) => o.id} />
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="flex flex-col items-stretch gap-2">
@@ -731,6 +751,8 @@ function MicrowaveLicenseList() {
                             expiryDate: selectedItem.expiryDate ? selectedItem.expiryDate.split('T')[0] : "",
                             nearSite: selectedItem.nearSite || { id: null },
                             farSite: selectedItem.farSite || { id: null },
+                            nearSiteMwModel: selectedItem.nearSiteMwModel || { id: null },
+                            farSiteMwModel: selectedItem.farSiteMwModel || { id: null },
                             nearSiteAntennaHeight: selectedItem.nearSiteAntennaHeight || "",
                             farSiteAntennaHeight: selectedItem.farSiteAntennaHeight || "",
                             nearSiteAntennaSize: selectedItem.nearSiteAntennaSize || "",
@@ -795,6 +817,7 @@ function MicrowaveLicenseList() {
                                                 <Typography variant="small" color="blue" className="font-bold uppercase tracking-wider">Trạm A (Near Site)</Typography>
                                             </div>
                                             <FormSelect label="Chọn trạm A" name="nearSite.id" options={siteList} getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
+                                            <FormSelect label="Loại thiết bị A" name="nearSiteMwModel.id" options={microwaveTypes} getOptionLabel={(o) => o.name} getOptionValue={(o) => o.id} />
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="flex flex-col items-stretch gap-2">
                                                     <label className="text-slate-400 font-semibold text-sm">Độ cao Anten (m)</label>
@@ -872,6 +895,7 @@ function MicrowaveLicenseList() {
                                                 <Typography variant="small" color="blue" className="font-bold uppercase tracking-wider">Trạm B (Far Site)</Typography>
                                             </div>
                                             <FormSelect label="Chọn trạm B" name="farSite.id" options={siteList} getOptionLabel={(o) => o.siteId} getOptionValue={(o) => o.id} />
+                                            <FormSelect label="Loại thiết bị B" name="farSiteMwModel.id" options={microwaveTypes} getOptionLabel={(o) => o.name} getOptionValue={(o) => o.id} />
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="flex flex-col items-stretch gap-2">
                                                     <label className="text-slate-400 font-semibold text-sm">Độ cao Anten (m)</label>
