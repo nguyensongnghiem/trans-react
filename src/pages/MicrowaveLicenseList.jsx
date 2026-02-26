@@ -725,6 +725,7 @@ function MicrowaveLicenseList() {
                             farSiteTransmissionSpeed: selectedItem.farSiteTransmissionSpeed || "",
                             nearSiteFrequencies: selectedItem.nearSiteFrequencies?.length > 0 ? selectedItem.nearSiteFrequencies : [""],
                             farSiteFrequencies: selectedItem.farSiteFrequencies?.length > 0 ? selectedItem.farSiteFrequencies : [""],
+                            mwLine: selectedItem.mwLine || null,
                         }}
                         validationSchema={validationSchema}
                         onSubmit={handleUpdate}
@@ -739,37 +740,37 @@ function MicrowaveLicenseList() {
                                                 Thông tin chung
                                             </Typography>
                                         </div>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="flex flex-col items-stretch gap-2">
-                                            <label className="text-slate-400 font-semibold text-sm">Số giấy phép</label>
-                                            <Field
-                                                name="licenseNumber"
-                                                placeholder="Nhập số giấy phép (vd: 123/GP-CVT)"
-                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                            />
-                                            <ErrorMessage name="licenseNumber" component="span" className="text-sm font-light italic text-red-500" />
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Số giấy phép</label>
+                                                <Field
+                                                    name="licenseNumber"
+                                                    placeholder="Nhập số giấy phép (vd: 123/GP-CVT)"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
+                                                <ErrorMessage name="licenseNumber" component="span" className="text-sm font-light italic text-red-500" />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col items-stretch gap-2">
-                                            <label className="text-slate-400 font-semibold text-sm">Ngày cấp</label>
-                                            <Field
-                                                name="issueDate"
-                                                type="date"
-                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                            />
-                                            <ErrorMessage name="issueDate" component="span" className="text-sm font-light italic text-red-500" />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Ngày cấp</label>
+                                                <Field
+                                                    name="issueDate"
+                                                    type="date"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
+                                                <ErrorMessage name="issueDate" component="span" className="text-sm font-light italic text-red-500" />
+                                            </div>
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <label className="text-slate-400 font-semibold text-sm">Ngày hết hạn</label>
+                                                <Field
+                                                    name="expiryDate"
+                                                    type="date"
+                                                    className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                />
+                                                <ErrorMessage name="expiryDate" component="span" className="text-sm font-light italic text-red-500" />
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col items-stretch gap-2">
-                                            <label className="text-slate-400 font-semibold text-sm">Ngày hết hạn</label>
-                                            <Field
-                                                name="expiryDate"
-                                                type="date"
-                                                className="rounded border border-gray-300 px-2 py-1 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                            />
-                                            <ErrorMessage name="expiryDate" component="span" className="text-sm font-light italic text-red-500" />
-                                        </div>
-                                    </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-8">
