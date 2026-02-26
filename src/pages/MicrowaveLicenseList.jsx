@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import {
     PencilIcon,
     TrashIcon,
@@ -9,6 +10,11 @@ import {
     ArrowDownTrayIcon,
     CheckCircleIcon,
 } from "@heroicons/react/24/solid";
+import {
+    FunnelIcon,
+    ArrowPathIcon,
+} from "@heroicons/react/24/outline";
+import Select from "react-select";
 import {
     Card,
     Typography,
@@ -32,6 +38,7 @@ import { format } from "date-fns";
 import useMicrowaveLicenses from "../hooks/useMicrowaveLicenses";
 import useSimpleSites from "../hooks/useSimpleSites";
 import useMicrowaveTypes from "../hooks/useMicrowaveTypes";
+import useMetadata from "../hooks/useMetadata";
 import FormSelect from "../components/FormSelect";
 import StatusBadge from "../components/StatusBadge";
 
@@ -55,6 +62,7 @@ function MicrowaveLicenseList() {
     const axiosInstance = useAxiosPrivate();
     const { simpleSites: siteList } = useSimpleSites();
     const { microwaveTypes } = useMicrowaveTypes();
+    const { provinces } = useMetadata();
     const {
         licenses: items,
         isLoading,
@@ -67,7 +75,12 @@ function MicrowaveLicenseList() {
     const [openEdit, setOpenEdit] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [filters, setFilters] = useState({
+        province: null,
+        mwType: null,
+        status: null,
+        search: "",
+    });
     const { auth } = useAuth();
 
     // Import State
@@ -186,9 +199,30 @@ function MicrowaveLicenseList() {
         }
     };
 
-    const filteredList = items.filter((item) =>
-        item.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredList = useMemo(() => {
+        return items.filter((item) => {
+            const matchProvince = !filters.province ||
+                item.nearSite?.province?.id === filters.province.value ||
+                item.farSite?.province?.id === filters.province.value;
+
+            const matchMwType = !filters.mwType ||
+                item.nearSiteMwModel?.id === filters.mwType.value ||
+                item.farSiteMwModel?.id === filters.mwType.value;
+
+            const isAssigned = !!item.mwLine;
+            const matchStatus = !filters.status ||
+                (filters.status.value === 'assigned' && isAssigned) ||
+                (filters.status.value === 'unassigned' && !isAssigned);
+
+            const searchLower = filters.search.toLowerCase();
+            const matchSearch = !filters.search ||
+                item.licenseNumber?.toLowerCase().includes(searchLower) ||
+                item.nearSite?.siteId?.toLowerCase().includes(searchLower) ||
+                item.farSite?.siteId?.toLowerCase().includes(searchLower);
+
+            return matchProvince && matchMwType && matchStatus && matchSearch;
+        });
+    }, [items, filters]);
 
     const validationSchema = Yup.object().shape({
         licenseNumber: Yup.string().required("Số giấy phép là bắt buộc"),
@@ -203,6 +237,49 @@ function MicrowaveLicenseList() {
         } catch (error) {
             return dateString;
         }
+    };
+
+    const provinceOptions = provinces.map(p => ({ value: p.id, label: p.name }));
+    const mwTypeOptions = microwaveTypes.map(t => ({ value: t.id, label: t.name }));
+    const statusOptions = [
+        { value: 'assigned', label: 'Đã gán' },
+        { value: 'unassigned', label: 'Chưa gán' }
+    ];
+
+    const whiteSelectStyles = {
+        control: (base, state) => ({
+            ...base,
+            minHeight: "40px",
+            borderRadius: "8px",
+            borderColor: "#e2e8f0",
+            boxShadow: "none",
+            "&:hover": { borderColor: "#93c5fd" },
+        }),
+        menu: (base) => ({ ...base, zIndex: 9999 }),
+    };
+
+    const onBtnExport = () => {
+        const dataToExport = filteredList.map(item => ({
+            "Số giấy phép": item.licenseNumber,
+            "Tuyến": `${item.nearSite?.siteId || 'N/A'} - ${item.farSite?.siteId || 'N/A'}`,
+            "Thiết bị A": item.nearSiteMwModel?.name || "N/A",
+            "Thiết bị B": item.farSiteMwModel?.name || "N/A",
+            "Ngày cấp": formatDateLabel(item.issueDate),
+            "Ngày hết hạn": formatDateLabel(item.expiryDate),
+            "Anten A (Cao/K.thước)": `${item.nearSiteAntennaHeight || '-'}m / ${item.nearSiteAntennaSize || '-'}m`,
+            "Anten B (Cao/K.thước)": `${item.farSiteAntennaHeight || '-'}m / ${item.farSiteAntennaSize || '-'}m`,
+            "Tốc độ A (Mbps)": item.nearSiteTransmissionSpeed,
+            "Tốc độ B (Mbps)": item.farSiteTransmissionSpeed,
+            "Số cặp tần số": item.nearSiteFrequencies?.length || 0,
+            "Tần số A": item.nearSiteFrequencies?.join(', ') || "N/A",
+            "Tần số B": item.farSiteFrequencies?.join(', ') || "N/A",
+            "Trạng thái": item.mwLine ? "Đã gán" : "Chưa gán",
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "MicrowaveLicenses");
+        XLSX.writeFile(wb, "DanhSachGiayPhepViba.xlsx");
     };
 
     return (
@@ -231,18 +308,81 @@ function MicrowaveLicenseList() {
                             >
                                 <ArrowUpTrayIcon className="h-4 w-4" /> Import
                             </CustomButton>
+                            <CustomButton
+                                className="flex items-center gap-2 bg-green-600"
+                                size="sm"
+                                onClick={onBtnExport}
+                            >
+                                <ArrowDownTrayIcon className="h-4 w-4" /> Xuất Excel
+                            </CustomButton>
                         </>
                     )}
                 </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl shadow-sm mb-6 border border-gray-200">
-                <Input
-                    label="Tìm kiếm theo số giấy phép"
-                    icon={<MagnifyingGlassIcon className="h-5 w-5" />}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
+                <div className="flex items-center gap-2 mb-4 text-blue-gray-700">
+                    <FunnelIcon className="h-5 w-5" />
+                    <span className="font-bold text-sm uppercase tracking-wider">Bộ lọc tìm kiếm</span>
+                    {(filters.search || filters.province || filters.mwType || filters.status) && (
+                        <button
+                            onClick={() => setFilters({ province: null, mwType: null, status: null, search: "" })}
+                            className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors font-medium"
+                        >
+                            <ArrowPathIcon className="h-3 w-3" /> Xóa bộ lọc
+                        </button>
+                    )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tỉnh</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả tỉnh"
+                            className="text-sm"
+                            options={provinceOptions}
+                            value={filters.province}
+                            onChange={(val) => setFilters(prev => ({ ...prev, province: val }))}
+                            styles={whiteSelectStyles}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Loại thiết bị</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả loại"
+                            className="text-sm"
+                            options={mwTypeOptions}
+                            value={filters.mwType}
+                            onChange={(val) => setFilters(prev => ({ ...prev, mwType: val }))}
+                            styles={whiteSelectStyles}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Trạng thái</span>
+                        <Select
+                            isClearable
+                            placeholder="Tất cả trạng thái"
+                            className="text-sm"
+                            options={statusOptions}
+                            value={filters.status}
+                            onChange={(val) => setFilters(prev => ({ ...prev, status: val }))}
+                            styles={whiteSelectStyles}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-bold text-blue-gray-400 uppercase ml-1">Tìm kiếm nhanh</span>
+                        <Input
+                            icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+                            placeholder="Số GP, Site ID..."
+                            className="!border-t-blue-gray-200 focus:!border-blue-500 rounded-lg text-sm"
+                            labelProps={{ className: "before:content-none after:content-none" }}
+                            value={filters.search}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            containerProps={{ className: "min-w-0" }}
+                        />
+                    </div>
+                </div>
             </div>
 
             <Card className="w-full overflow-hidden border border-gray-200 shadow-sm rounded-xl">
@@ -419,6 +559,7 @@ function MicrowaveLicenseList() {
                     </tbody>
                 </table>
             </Card>
+
 
             {/* Create Modal */}
             <Dialog
