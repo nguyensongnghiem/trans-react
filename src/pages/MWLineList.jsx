@@ -64,7 +64,7 @@ const MWLineSchema = Yup.object().shape({
 });
 
 const flattenMWLine = (values) => {
-  const { nearSite, farSite, microwaveType, ...rest } = values;
+  const { nearSite, farSite, microwaveType, license, ...rest } = values;
   return {
     ...rest,
     nearSiteId: nearSite?.id,
@@ -257,7 +257,6 @@ function MWLineList() {
       "Loại thiết bị": mw.microwaveType?.name,
       Hãng: mw.microwaveType?.vendor?.name,
       "Giấy phép": mw.license?.licenseNumber || "N/A",
-      "Băng tần": mw.license?.frequencyBand || "N/A",
       "Trạng thái": mw.status,
     }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -588,10 +587,6 @@ function MWLineList() {
                     <div className="text-xs">
                       <p className="font-bold text-blue-600">
                         {mw.license.licenseNumber}
-                      </p>
-                      <p className="text-gray-500">
-                        {mw.license.frequencyBand} -{" "}
-                        {mw.license.frequencyQuantity} tần số
                       </p>
                     </div>
                   ) : (
