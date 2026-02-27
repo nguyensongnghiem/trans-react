@@ -1179,144 +1179,141 @@ function MWLineList() {
           </IconButton>
         </div>
 
-        <DialogBody className="overflow-y-auto p-6 space-y-6 flex-1">
-          {/* Step 1: Template */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center justify-between">
-            <div className="flex-1 pr-4">
-              <Typography
-                variant="small"
-                color="blue"
-                className="font-bold uppercase mb-1"
-              >
-                Tải tệp mẫu
+        <DialogBody className="p-6">
+          {!importResults ? (
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-10 bg-gray-50/50">
+              <CloudArrowUpIcon className="h-16 w-16 text-blue-gray-200 mb-4" />
+              <Typography variant="h6" color="blue-gray" className="mb-1">
+                Kéo thả file hoặc click để chọn
               </Typography>
-              <Typography
-                variant="small"
-                color="blue-gray"
-                className="text-[11px] leading-relaxed"
-              >
-                Sử dụng tệp mẫu có sẵn.{" "}
-
-                <span className="text-blue-700 italic">
-                  Thông tin về Số giấy phép
-                </span>{" "}
-                có thể bỏ trống nếu chưa có thông tin.
+              <Typography variant="small" className="text-gray-500 mb-6">
+                Chỉ chấp nhận file .xlsx hoặc .xls
               </Typography>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileChange}
+                className="hidden"
+                id="excel-upload"
+              />
+              <div className="flex gap-3">
+                <label
+                  htmlFor="excel-upload"
+                  className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                >
+                  Chọn file
+                </label>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <DocumentIcon className="h-4 w-4" />
+                  Tải file mẫu
+                </button>
+              </div>
+              {importFile && (
+                <div className="mt-6 flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
+                  <DocumentIcon className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">{importFile.name}</span>
+                  <button onClick={() => { setImportFile(null); setImportErrors(null); }} className="ml-2 text-blue-400 hover:text-blue-600">
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
-            <CustomButton
-              size="sm"
-              variant="outlined"
-              color="blue"
-              className="flex items-center gap-2 bg-white shrink-0 shadow-sm"
-              onClick={handleDownloadTemplate}
-            >
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              <span>Tải tệp mẫu</span>
-            </CustomButton>
-          </div>
-
-          {/* Step 2: File Selection */}
-          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-            <Typography
-              variant="small"
-              color="blue-gray"
-              className="font-bold uppercase mb-3 text-[11px] tracking-wider"
-            >
-              Bước 2: Chọn tệp Excel từ máy tính
-            </Typography>
-
-            {!importFile ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-blue-50/30 hover:border-blue-300 transition-all p-8 relative group">
-                <div className="flex flex-col items-center justify-center gap-3">
-                  <div className="p-3 bg-white rounded-full shadow-sm border border-gray-200 group-hover:scale-110 transition-transform">
-                    <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-semibold text-blue-600">
-                      Nhấn để tải lên
-                    </span>{" "}
-                    hoặc kéo thả file vào đây
-                    <br />
-                    <span className="text-xs text-gray-400 mt-1 block tracking-tight">
-                      Hỗ trợ các định dạng tiêu chuẩn .xlsx, .xls
-                    </span>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={handleFileChange}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl animate-fadeIn">
-                <div className="flex items-center gap-4 overflow-hidden">
-                  <div className="p-2.5 bg-white rounded-lg border border-blue-100 shadow-sm flex-shrink-0">
-                    <DocumentIcon className="h-7 w-7 text-blue-600" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <Typography
-                      variant="small"
-                      color="blue-gray"
-                      className="font-bold truncate max-w-[300px]"
-                      title={importFile.name}
-                    >
-                      {importFile.name}
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between bg-green-50 border border-green-100 p-4 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <CheckCircleIcon className="h-8 w-8 text-green-500" />
+                  <div>
+                    <Typography variant="h6" color="green" className="leading-none mb-1">
+                      Kiểm tra dữ liệu thành công
                     </Typography>
-                    <Typography
-                      variant="small"
-                      className="text-blue-gray-400 text-[10px] font-medium uppercase mt-0.5"
-                    >
-                      Excel Spreadsheet • {(importFile.size / 1024).toFixed(2)}{" "}
-                      KB
+                    <Typography className="text-xs text-green-700 font-medium">
+                      Tìm thấy {importResults.rows.length} dòng dữ liệu hợp lệ và sẵn sàng để lưu.
                     </Typography>
                   </div>
                 </div>
-                <IconButton
-                  variant="text"
-                  color="red"
-                  size="sm"
-                  className="rounded-full hover:bg-red-50 flex-shrink-0"
+                <button
                   onClick={() => {
-                    setImportFile(null);
                     setImportResults(null);
-                    setImportErrors(null);
+                    setImportFile(null);
                   }}
+                  className="text-xs font-bold text-green-700 hover:underline"
                 >
-                  <TrashIcon className="h-5 w-5" />
-                </IconButton>
+                  Thay đổi file
+                </button>
               </div>
-            )}
-          </div>
 
-          {/* Verification Result */}
-          {importResults && (
-            <div className="p-5 bg-green-50 border border-green-100 rounded-xl flex items-start gap-4 animate-fadeIn shadow-sm">
-              <div className="bg-green-100 p-2 rounded-full flex-shrink-0">
-                <CheckCircleIcon className="h-6 w-6 text-green-700" />
-              </div>
-              <div className="flex-1">
-                <Typography
-                  variant="small"
-                  color="green"
-                  className="font-bold mb-0.5"
-                >
-                  Kiểm tra dữ liệu thành công!
-                </Typography>
-                <Typography variant="small" className="text-gray-700 text-xs">
-                  Sẵn sàng import{" "}
-                  <span className="font-bold text-green-800 text-sm mx-0.5">
-                    {importResults.total}
-                  </span>{" "}
-                  tuyến viba vào hệ thống. Nhấn "Lưu vào hệ thống" để hoàn tất.
-                </Typography>
+              {/* Preview Table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="p-2 font-bold text-blue-gray-700">Site A</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Site B</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Mã tài sản</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Loại TB</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Giấy phép</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {importResults.rows.slice(0, 10).map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="p-2">{row.nearSite}</td>
+                        <td className="p-2">{row.farSite}</td>
+                        <td className="p-2">{row.assetCode}</td>
+                        <td className="p-2">{row.microwaveTypeName}</td>
+                        <td className="p-2">{row.licenseNumber}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {importResults.rows.length > 10 && (
+                  <div className="p-2 bg-gray-50 text-center text-[10px] text-gray-500 italic">
+                    Và {importResults.rows.length - 10} dòng khác...
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Errors */}
+          {/* Error Display */}
           {importErrors && Object.keys(importErrors).length > 0 && (
+            <div className="mt-4 bg-red-50 border border-red-100 rounded-xl p-4">
+              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
+                <div className="bg-red-100 p-1.5 rounded-full flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-4 w-4 text-red-700" />
+                </div>
+                <Typography
+                  variant="h6"
+                  color="red"
+                >
+                  Lỗi dữ liệu ({Object.keys(importErrors).length} dòng bị lỗi)
+                </Typography>
+              </div>
+              <div className="max-h-[30vh] overflow-y-auto bg-white rounded-lg border border-red-100">
+                {Object.entries(importErrors).map(([rowNum, errorGroup]) => (
+                  <div key={rowNum} className="p-3 border-b border-red-50 last:border-none">
+                    <Typography className="text-xs font-bold text-gray-800 mb-1">
+                      Dòng {rowNum}:
+                    </Typography>
+                    <div className="flex flex-wrap gap-2">
+                      {errorGroup.errors.map((err, i) => (
+                        <div key={i} className="bg-red-50 text-[10px] px-2 py-0.5 rounded border border-red-100 text-red-700">
+                          <span className="font-bold">{err.columnName || err.column}:</span> {err.message}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Old Error Display (Removed) */}
+          {/* {importErrors && Object.keys(importErrors).length > 0 && (
             <div className="border border-red-200 rounded-xl overflow-hidden bg-white shadow-sm animate-fadeIn">
               <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-3">
                 <div className="bg-red-100 p-1.5 rounded-full flex-shrink-0">
@@ -1359,114 +1356,16 @@ function MWLineList() {
                 </ul>
               </div>
             </div>
-          )}
-
-          {/* Preview Table (if available in importResults.rows) */}
-          {importResults &&
-            importResults.rows &&
-            importResults.rows.length > 0 && (
-              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-fadeIn bg-white">
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                  <Typography
-                    variant="small"
-                    className="font-bold text-gray-700 uppercase tracking-wider text-[11px]"
-                  >
-                    Xem trước dữ liệu (Tối đa 10 dòng)
-                  </Typography>
-                  <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-200">
-                    TỔNG {importResults.total} DÒNG
-                  </span>
-                </div>
-                <div className="overflow-x-auto max-h-64">
-                  <table className="w-full text-xs text-left">
-                    <thead className="text-[10px] text-gray-500 uppercase bg-gray-100 sticky top-0 z-10 border-b">
-                      <tr>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Site A
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Site B
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Mã tài sản
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Serial A
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Tx A
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Serial B
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Tx B
-                        </th>
-                        <th className="px-4 py-3 font-bold border-r border-gray-200 last:border-0">
-                          Loại TB
-                        </th>
-                        <th className="px-4 py-3 font-bold">Giấy phép</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {importResults.rows.slice(0, 10).map((row, idx) => (
-                        <tr
-                          key={idx}
-                          className="bg-white hover:bg-blue-50/30 transition-colors"
-                        >
-                          <td className="px-4 py-2.5 font-bold text-blue-700 border-r border-gray-50">
-                            {row.nearSite}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-900 border-r border-gray-50">
-                            {row.farSite}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.assetCode}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.nearSiteSerial}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.nearSiteTx}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.farSiteSerial}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.farSiteTx}
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-gray-600 border-r border-gray-50">
-                            {row.microwaveTypeName}
-                          </td>
-                          <td className="px-4 py-2.5 text-gray-600">
-                            {row.licenseNumber || "-"}
-                          </td>
-                        </tr>
-                      ))}
-                      {importResults.rows.length > 10 && (
-                        <tr className="bg-gray-50/50">
-                          <td
-                            colSpan={5}
-                            className="px-4 py-4 text-center text-gray-400 italic text-[11px] font-medium"
-                          >
-                            ... và {importResults.rows.length - 10} dòng khác
-                            không được hiển thị trong bản xem trước ...
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+          )} */}
         </DialogBody>
 
-        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg shadow-inner">
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
           <CustomButton
             variant="text"
             color="blue-gray"
             onClick={handleOpenImport}
             size="sm"
+            disabled={isChecking || isSaving}
           >
             Hủy bỏ
           </CustomButton>
@@ -1476,6 +1375,7 @@ function MWLineList() {
               onClick={handleCheckImport}
               disabled={!importFile || isChecking}
               size="sm"
+              loading={isChecking}
             >
               {isChecking ? (
                 <ArrowPathIcon className="h-4 w-4 animate-spin" />
@@ -1490,13 +1390,14 @@ function MWLineList() {
               onClick={handleSaveImport}
               disabled={isSaving}
               size="sm"
+              loading={isSaving}
             >
               {isSaving ? (
                 <ArrowPathIcon className="h-4 w-4 animate-spin" />
               ) : (
                 <CheckCircleIcon className="h-4 w-4" />
               )}
-              <span>{isSaving ? "Đang lưu..." : "Lưu vào hệ thống"}</span>
+              <span>Lưu dữ liệu vào hệ thống</span>
             </CustomButton>
           )}
         </DialogFooter>
