@@ -35,6 +35,7 @@ import {
   Tooltip,
   Input,
   IconButton as MTIconButton,
+  Spinner,
 } from "@material-tailwind/react";
 import { CustomMenuList } from "./CustomList";
 import { toast } from "react-toastify";
@@ -98,6 +99,7 @@ function HiredFoList() {
   const [excelRows, setExcelRows] = useState([]);
 
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   // Filter and pagination states
   const [filters, setFilters] = useState({
@@ -338,6 +340,7 @@ function HiredFoList() {
       setExcelErrors({});
       setExcelRows([]);
       setSaving(false);
+      setChecking(false);
     }
   };
   // Hàm Check file excel
@@ -347,6 +350,7 @@ function HiredFoList() {
       return;
     }
 
+    setChecking(true);
     try {
       const form = new FormData();
       form.append("file", excelFile);
@@ -363,8 +367,9 @@ function HiredFoList() {
         setExcelRows([]);
         setExcelChecked(true);
         setExcelSuccess(false);
-        return;
       }
+    } finally {
+      setChecking(false);
     }
   };
   // Hàm Lưu file excel
@@ -395,6 +400,30 @@ function HiredFoList() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Xử lý kéo thả file
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const f = files[0];
+      if (f.name.endsWith(".xlsx") || f.name.endsWith(".xls")) {
+        setExcelFile(f);
+        setExcelChecked(false);
+        setExcelSuccess(false);
+        setExcelErrors({});
+        setExcelRows([]);
+      } else {
+        toast.warning("Vui lòng chọn file Excel (.xlsx, .xls)");
+      }
     }
   };
 
@@ -671,7 +700,18 @@ function HiredFoList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginatedHiredFos.map((item, index) => (
+              {isHiredFosLoading ? (
+                <tr>
+                  <td colSpan={13} className="p-10">
+                    <div className="flex justify-center items-center gap-3">
+                      <Spinner className="h-8 w-8" color="blue" />
+                      <Typography color="blue-gray" className="font-medium">
+                        Đang tải dữ liệu...
+                      </Typography>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedHiredFos.map((item, index) => (
                 <tr
                   key={item.id}
                   className="hover:bg-gray-50/80 transition-colors"
@@ -1033,38 +1073,43 @@ function HiredFoList() {
           )}
         </Formik>
       </Dialog>
-      <Dialog open={importOpen} handler={handleOpenImport} size="lg" className="flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 bg-gray-50 rounded-t-lg">
+      <Dialog
+        open={importOpen}
+        handler={handleOpenImport}
+        className="overflow-hidden rounded-lg bg-white shadow-xl"
+        size="lg"
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
           <div>
-            <Typography variant="h4" color="blue-gray" className="font-bold">
-              Import Dữ liệu Hợp đồng & Tuyến cáp
+            <Typography variant="h5" color="blue-gray" className="font-semibold text-gray-900">
+              Import Tuyến cáp thuê từ Excel
             </Typography>
-            <Typography variant="small" color="gray" className="font-normal mt-1">
-              Tải lên file Excel để cập nhật dữ liệu hàng loạt
+            <Typography className="text-xs font-normal text-gray-500 mt-0.5">
+              Tải lên file Excel mẫu để cập nhật dữ liệu hợp đồng và tuyến cáp hàng loạt
             </Typography>
           </div>
-          <IconButton variant="text" color="blue-gray" onClick={handleOpenImport}>
+          <IconButton size="sm" variant="text" color="blue-gray" onClick={handleOpenImport}>
             <XMarkIcon className="h-5 w-5" />
           </IconButton>
         </div>
 
-        <DialogBody className="overflow-y-auto p-4 flex-1">
-          {/* File Selection Area */}
-          <div className="mb-6 p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 text-center hover:bg-gray-50 transition-colors relative">
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="p-3 bg-blue-50 rounded-full">
-                <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
-              </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-semibold text-blue-600">Nhấn để tải lên</span> hoặc kéo thả file vào đây
-                <br />
-                <span className="text-xs text-gray-400">Hỗ trợ định dạng .xlsx, .xls</span>
-              </div>
-
+        <DialogBody className="p-6">
+          {!excelSuccess ? (
+            <div
+              className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-10 bg-gray-50/50 hover:bg-blue-50/30 hover:border-blue-300 transition-colors cursor-pointer"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <CloudArrowUpIcon className="h-16 w-16 text-blue-gray-200 mb-4" />
+              <Typography variant="h6" color="blue-gray" className="mb-1">
+                Kéo thả file hoặc click để chọn
+              </Typography>
+              <Typography variant="small" className="text-gray-500 mb-6">
+                Chỉ chấp nhận file .xlsx hoặc .xls
+              </Typography>
               <input
                 type="file"
                 accept=".xlsx, .xls"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) {
@@ -1076,156 +1121,151 @@ function HiredFoList() {
                   }
                   e.target.value = null;
                 }}
+                className="hidden"
+                id="excel-upload"
               />
-            </div>
-          </div>
-
-          {excelFile && (
-            <div className="mb-6 flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg border border-blue-100">
-                  <DocumentIcon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <Typography variant="small" color="blue-gray" className="font-bold">
-                    {excelFile.name}
-                  </Typography>
-                  <Typography variant="small" className="text-blue-gray-500 text-xs">
-                    {(excelFile.size / 1024).toFixed(2)} KB
-                  </Typography>
-                </div>
+              <div className="flex gap-3">
+                <label
+                  htmlFor="excel-upload"
+                  className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                >
+                  Chọn file
+                </label>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <DocumentIcon className="h-4 w-4" />
+                  Tải file mẫu
+                </button>
               </div>
-              <IconButton variant="text" color="red" size="sm" onClick={() => {
-                setExcelFile(null);
-                setExcelChecked(false);
-                setExcelSuccess(false);
-                setExcelRows([]);
-              }}>
-                <TrashIcon className="h-4 w-4" />
-              </IconButton>
+              {excelFile && (
+                <div className="mt-6 flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
+                  <DocumentIcon className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">{excelFile.name} ({(excelFile.size / 1024).toFixed(2)} KB)</span>
+                  <button onClick={() => setExcelFile(null)} className="ml-2 text-blue-400 hover:text-blue-600">
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between bg-green-50 border border-green-100 p-4 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <CheckCircleIcon className="h-8 w-8 text-green-500" />
+                  <div>
+                    <Typography variant="h6" color="green" className="leading-none mb-1">
+                      Kiểm tra dữ liệu thành công
+                    </Typography>
+                    <Typography className="text-xs text-green-700 font-medium">
+                      Tìm thấy {excelRows.length} dòng dữ liệu hợp lệ và sẵn sàng để lưu.
+                    </Typography>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setExcelSuccess(false);
+                    setExcelRows([]);
+                  }}
+                  className="text-xs font-bold text-green-700 hover:underline"
+                >
+                  Thay đổi file
+                </button>
+              </div>
 
-          <div className="flex justify-between items-center mb-4">
-            <Typography variant="small" className="text-gray-500">
-              Chưa có file mẫu? <span className="text-blue-600 cursor-pointer hover:underline font-medium" onClick={handleDownloadTemplate}>Tải về tại đây</span>
-            </Typography>
-          </div>
-
-          {/* Status Messages */}
-          {excelChecked && excelSuccess && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5" />
-              <div>
-                <Typography variant="small" color="green" className="font-bold">
-                  Kiểm tra dữ liệu thành công!
-                </Typography>
-                <Typography variant="small" className="text-green-700">
-                  Đã tìm thấy <b>{excelRows.length}</b> dòng dữ liệu hợp lệ. Nhấn "Lưu vào hệ thống" để tiến hành import.
-                </Typography>
+              {/* Preview Table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="p-2 font-bold text-blue-gray-700">Hợp đồng</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Trạm đầu</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Trạm cuối</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Dung lượng</th>
+                      <th className="p-2 font-bold text-blue-gray-700">Đơn giá</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {excelRows.slice(0, 10).map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="p-2 font-medium text-blue-600">{row.contractNumber}</td>
+                        <td className="p-2">{row.nearSite}</td>
+                        <td className="p-2">{row.farSite}</td>
+                        <td className="p-2">{row.coreQuantity}</td>
+                        <td className="p-2">{VND.format(row.cost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {excelRows.length > 10 && (
+                  <div className="p-2 bg-gray-50 text-center text-[10px] text-gray-500 italic">
+                    Và {excelRows.length - 10} dòng khác...
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* Error Display */}
           {excelChecked && !excelSuccess && Object.keys(excelErrors).length > 0 && (
-            <div className="mb-4 border border-red-200 rounded-lg overflow-hidden bg-white shadow-sm">
-              <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2 text-red-700 font-medium">
+            <div className="mt-4 bg-red-50 border border-red-100 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3 text-red-700">
                 <ExclamationTriangleIcon className="h-5 w-5" />
-                <span>Phát hiện lỗi trong file ({Object.keys(excelErrors).length} dòng)</span>
+                <Typography variant="h6" color="red">
+                  Lỗi dữ liệu ({Object.keys(excelErrors).length} dòng bị lỗi)
+                </Typography>
               </div>
-              <div className="max-h-60 overflow-y-auto p-0">
-                <ul className="divide-y divide-gray-100">
-                  {Object.entries(excelErrors).map(([row, rowError]) => (
-                    <li key={row} className="p-3 hover:bg-gray-50">
-                      <div className="flex gap-2 text-sm">
-                        <span className="font-bold text-gray-700 whitespace-nowrap">Dòng {row}:</span>
-                        <ul className="list-disc list-inside text-red-600 flex-1">
-                          {rowError.errors?.map((err, idx) => (
-                            <li key={idx}>
-                              <span className="font-medium text-gray-800">{err.column}:</span> {err.message}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* Preview Table */}
-          {excelSuccess && excelRows.length > 0 && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 font-bold text-gray-700 text-xs uppercase tracking-wider">
-                Xem trước dữ liệu ({excelRows.length} dòng)
-              </div>
-              <div className="overflow-x-auto max-h-60">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 py-3 border-b font-medium">Hợp đồng</th>
-                      <th className="px-4 py-3 border-b font-medium">Trạm đầu</th>
-                      <th className="px-4 py-3 border-b font-medium">Trạm cuối</th>
-                      <th className="px-4 py-3 border-b font-medium">Dung lượng cáp</th>
-                      <th className="px-4 py-3 border-b font-medium">Số core thuê</th>
-                      <th className="px-4 py-3 border-b font-medium">Số core sử dụng</th>
-                      <th className="px-4 py-3 border-b font-medium">Đơn giá</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {excelRows.slice(0, 10).map((row, idx) => (
-                      <tr key={idx} className="bg-white hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium text-blue-600">{row.contractNumber}</td>
-                        <td className="px-4 py-2">{row.nearSite}</td>
-                        <td className="px-4 py-2">{row.farSite}</td>
-                        <td className="px-4 py-2">{row.coreQuantity}</td>
-                        <td className="px-4 py-2">{row.hiredCoreQuantity}</td>
-                        <td className="px-4 py-2">{row.usedCoreQuantity}</td>
-                        <td className="px-4 py-2">{VND.format(row.cost)}</td>
-                      </tr>
-                    ))}
-                    {excelRows.length > 10 && (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-3 text-center text-gray-500 italic bg-gray-50">
-                          ... và {excelRows.length - 10} dòng khác ...
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="max-h-[30vh] overflow-y-auto bg-white rounded-lg border border-red-100">
+                {Object.entries(excelErrors).map(([rowNum, errorGroup]) => (
+                  <div key={rowNum} className="p-3 border-b border-red-50 last:border-none">
+                    <Typography className="text-xs font-bold text-gray-800 mb-1">
+                      Dòng {rowNum}:
+                    </Typography>
+                    <div className="flex flex-wrap gap-2">
+                      {errorGroup.errors.map((err, i) => (
+                        <div key={i} className="bg-red-50 text-[10px] px-2 py-0.5 rounded border border-red-100 text-red-700">
+                          <span className="font-bold">{err.column}:</span> {err.message}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </DialogBody>
 
-        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg">
-          <Button variant="text" color="blue-gray" onClick={handleOpenImport} className="normal-case">
+        <DialogFooter className="border-t border-gray-100 bg-gray-50 px-4 py-3 gap-2">
+          <CustomButton variant="text" color="blue-gray" onClick={handleOpenImport} size="sm" disabled={saving}>
             Hủy bỏ
-          </Button>
+          </CustomButton>
           {!excelSuccess ? (
             <CustomButton
-              color="blue"
+              className="bg-[#0d47a1] hover:bg-[#0a3a82]"
+              size="sm"
               onClick={handleCheckExcelMulti}
-              disabled={!excelFile}
-              className="flex items-center gap-2"
+              loading={checking}
+              disabled={!excelFile || checking}
             >
-              <MagnifyingGlassIcon className="h-4 w-4" /> Kiểm tra dữ liệu
+              Kiểm tra dữ liệu
             </CustomButton>
           ) : (
             <CustomButton
-              color="green"
+              className="bg-[#1d6f42] hover:bg-[#155d36]"
+              size="sm"
               onClick={handleSaveExcelMulti}
-              disabled={saving}
-              className="flex items-center gap-2"
+              loading={saving}
             >
-              {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <ArrowDownTrayIcon className="h-4 w-4" />}
-              {saving ? "Đang lưu..." : "Lưu vào hệ thống"}
+              <div className="flex items-center gap-2">
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                <span>Lưu vào hệ thống</span>
+              </div>
             </CustomButton>
           )}
         </DialogFooter>
       </Dialog>
+
 
       {/* Modal Sửa thông tin */}
       <Dialog
