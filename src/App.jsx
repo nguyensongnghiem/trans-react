@@ -14,29 +14,17 @@ import SideBar2 from "./components/SideBar2.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { useAuth } from "./contexts/authContext.jsx";
-
 function App() {
-  const { user } = useAuth();
-  const { sidebarOpen, toggleSidebar } = useSidebar();
-
   return (
     <>
-      <div className="flex flex-col h-screen">
-        <Header toggleSidebar={toggleSidebar}></Header>
-        <div className="flex flex-1 overflow-y-hidden">
-          <nav
-            className={`flex overflow-y-auto ${
-              sidebarOpen ? "sm:min-w-64" : "sm:w-0"
-            } transition-all duration-300`}
-          >
-            <SideBar2 sidebarOpen={sidebarOpen} />
-          </nav>
-          <main className="flex-1 overflow-y-auto">
+      <div className="flex h-screen bg-gray-50">
+        <SideBar2 />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6">
             <Outlet />
           </main>
         </div>
-        {/* <footer className="bg-gray-100 p-2">Footer</footer> */}
       </div>
       <ToastContainer className="custom-z-index" />
     </>

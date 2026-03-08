@@ -1,208 +1,195 @@
-import {
-  Button,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-} from "@material-tailwind/react";
-import React, { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/authContext";
 import { jwtDecode } from "jwt-decode";
+import BreadcrumbsWithIcon from "./BreadCrumbs";
+import ConfirmationModal from "./ConfirmationModal";
+import Button from "./Button";
 import {
-  Avatar,
-  Menu,
-  MenuHandler,
-  MenuItem,
-  MenuList,
-  Typography,
-} from "@material-tailwind/react";
+  UserCircleIcon,
+  Cog6ToothIcon,
+  ArrowLeftOnRectangleIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 
-const Header = ({ toggleSidebar }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const { auth, setToken, logout, isAuthenticated } = useAuth();
-
+const Header = () => {
+  const { auth, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const [openLogout, setOpenLogout] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const menuRef = useRef(null);
+
   const token = auth?.accessToken;
-  const handleOpenLogout = () => setOpenLogout(!openLogout);
   let username;
   let roles;
+  let isAdmin = false;
+
   if (token) {
-    const decoded = jwtDecode(token);
-    username = decoded.sub;
-    roles = decoded.roles;  
+    try {
+      const decoded = jwtDecode(token);
+      username = decoded.sub;
+      roles = decoded.roles || decoded.authorities || [];
+      if (Array.isArray(roles)) {
+        isAdmin = roles.includes("ROLE_ADMIN");
+      }
+    } catch (error) {
+      console.error("Invalid token:", error);
+    }
   }
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLogin = () => {
     navigate("/login");
   };
 
-  const handleLogout = () => {
-    handleOpenLogout();
-    logout();
+  const handleLogoutClick = () => {
+    setIsMenuOpen(false);
+    setShowLogoutModal(true);
   };
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+    navigate("/login"); // Redirect to login after logout
   };
 
   return (
-    <header className="flex w-full items-center gap-x-4 bg-gray-200 px-4 py-1">
-      <button onClick={toggleSidebar} className="p-2 rounded-md hover:bg-gray-300">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </button>
-      <img src="/images/mobifone.png" alt="logo" className="mr-auto h-8" />
-      <div className="">
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="rounded-xl border border-gray-300 px-2 py-0.5 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-200"
-        />
-      </div>
-      <div className="">
-        {isAuthenticated ? (
-          <Menu>
-            <MenuHandler>
-              <div className="flex cursor-pointer items-center justify-center gap-2 px-2 hover:text-blue-600">
-                <Avatar
-                  variant="circular"
-                  alt="user_avatar"
-                  className="cursor-pointer shadow-sm h-8 w-8"
-                  src="/images/avatar-default.png"
+    <>
+      <header className="flex h-16 w-full items-center justify-between gap-x-4 border-b border-gray-200 bg-white px-6 shadow-sm">
+        {/* Breadcrumbs on the left */}
+        <div>
+          <BreadcrumbsWithIcon />
+        </div>
+
+        {/* User menu on the right */}
+        <div className="flex items-center">
+          {isAuthenticated && username ? (
+            <div className="relative" ref={menuRef}>
+              {/* Menu Trigger */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className={`group flex items-center gap-3 rounded-full border border-gray-200 bg-white p-1 pr-4 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+                  isMenuOpen ? "ring-2 ring-blue-100 border-blue-300" : ""
+                }`}
+              >
+                <div className="relative h-9 w-9 overflow-hidden rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200 group-hover:ring-blue-400 transition-all">
+                  <img
+                    src="/images/avatar-default.png"
+                    alt="user avatar"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                
+                <div className="hidden text-left md:block">
+                  <p className="text-sm font-bold text-gray-700 group-hover:text-blue-700 transition-colors">
+                    {username}
+                  </p>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 group-hover:text-blue-500/70 transition-colors">
+                    {isAdmin ? "Administrator" : "User"}
+                  </p>
+                </div>
+                <ChevronDownIcon
+                  className={`h-4 w-4 text-gray-400 transition-transform duration-300 group-hover:text-blue-500 ${
+                    isMenuOpen ? "rotate-180" : ""
+                  }`}
                 />
-                <Typography variant="h6">{username}</Typography>
+              </button>
+
+              {/* Dropdown Menu */}
+              <div
+                className={`absolute right-0 z-50 mt-3 w-72 origin-top-right transform rounded-2xl bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] ring-1 ring-gray-100 transition-all duration-200 ease-out ${
+                  isMenuOpen
+                    ? "scale-100 opacity-100 translate-y-0"
+                    : "scale-95 opacity-0 -translate-y-2 pointer-events-none"
+                }`}
+              >
+                  {/* Dropdown Header - Dark Blue Theme matching Sidebar */}
+                  <div className="relative overflow-hidden rounded-t-2xl bg-[#111c44] p-6 text-white">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
+                    <div className="relative flex items-center gap-4">
+                      <img
+                        src="/images/avatar-default.png"
+                        alt="user avatar"
+                        className="h-12 w-12 rounded-full border-2 border-white/20 object-cover shadow-lg"
+                      />
+                      <div>
+                        <p className="text-base font-bold text-white">
+                          {username}
+                        </p>
+                        <p className="text-xs text-blue-200/80 truncate max-w-[140px]">
+                          {auth?.email || (isAdmin ? "Administrator" : "User")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dropdown Body */}
+                  <div className="p-2">
+                    <a
+                      href="#"
+                      className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 transition-all hover:bg-blue-50 hover:text-blue-600 hover:pl-5"
+                    >
+                      <UserCircleIcon className="h-5 w-5 text-gray-400 transition-colors group-hover:text-blue-500" />
+                      <span>Thông tin cá nhân</span>
+                    </a>
+                    <a
+                      href="#"
+                      className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 transition-all hover:bg-blue-50 hover:text-blue-600 hover:pl-5"
+                    >
+                      <Cog6ToothIcon className="h-5 w-5 text-gray-400 transition-colors group-hover:text-blue-500" />
+                      <span>Cài đặt</span>
+                    </a>
+                  </div>
+
+                  <div className="border-t border-gray-100 p-2">
+                    <button
+                      onClick={handleLogoutClick}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-all hover:bg-red-50 hover:pl-5"
+                    >
+                      <ArrowLeftOnRectangleIcon className="h-5 w-5" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
               </div>
-            </MenuHandler>
-            <MenuList>
-              <MenuItem className="flex items-center gap-2">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M16 8C16 10.1217 15.1571 12.1566 13.6569 13.6569C12.1566 15.1571 10.1217 16 8 16C5.87827 16 3.84344 15.1571 2.34315 13.6569C0.842855 12.1566 0 10.1217 0 8C0 5.87827 0.842855 3.84344 2.34315 2.34315C3.84344 0.842855 5.87827 0 8 0C10.1217 0 12.1566 0.842855 13.6569 2.34315C15.1571 3.84344 16 5.87827 16 8ZM10 5C10 5.53043 9.78929 6.03914 9.41421 6.41421C9.03914 6.78929 8.53043 7 8 7C7.46957 7 6.96086 6.78929 6.58579 6.41421C6.21071 6.03914 6 5.53043 6 5C6 4.46957 6.21071 3.96086 6.58579 3.58579C6.96086 3.21071 7.46957 3 8 3C8.53043 3 9.03914 3.21071 9.41421 3.58579C9.78929 3.96086 10 4.46957 10 5ZM8 9C7.0426 8.99981 6.10528 9.27449 5.29942 9.7914C4.49356 10.3083 3.85304 11.0457 3.454 11.916C4.01668 12.5706 4.71427 13.0958 5.49894 13.4555C6.28362 13.8152 7.13681 14.0009 8 14C8.86319 14.0009 9.71638 13.8152 10.5011 13.4555C11.2857 13.0958 11.9833 12.5706 12.546 11.916C12.147 11.0457 11.5064 10.3083 10.7006 9.7914C9.89472 9.27449 8.9574 8.99981 8 9Z"
-                    fill="#90A4AE"
-                  />
-                </svg>
-
-                <Typography variant="small" className="font-medium">
-                  Thông tin cá nhân
-                </Typography>
-              </MenuItem>
-              <MenuItem className="flex items-center gap-2">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M9.48999 1.17C9.10999 -0.39 6.88999 -0.39 6.50999 1.17C6.45326 1.40442 6.34198 1.62213 6.18522 1.80541C6.02845 1.9887 5.83063 2.13238 5.60784 2.22477C5.38505 2.31716 5.1436 2.35564 4.90313 2.33709C4.66266 2.31854 4.42997 2.24347 4.22399 2.118C2.85199 1.282 1.28199 2.852 2.11799 4.224C2.65799 5.11 2.17899 6.266 1.17099 6.511C-0.390006 6.89 -0.390006 9.111 1.17099 9.489C1.40547 9.54581 1.62322 9.65719 1.80651 9.81407C1.98979 9.97096 2.13343 10.1689 2.22573 10.3918C2.31803 10.6147 2.35639 10.8563 2.33766 11.0968C2.31894 11.3373 2.24367 11.5701 2.11799 11.776C1.28199 13.148 2.85199 14.718 4.22399 13.882C4.42993 13.7563 4.66265 13.6811 4.90318 13.6623C5.14371 13.6436 5.38527 13.682 5.60817 13.7743C5.83108 13.8666 6.02904 14.0102 6.18592 14.1935C6.34281 14.3768 6.45419 14.5945 6.51099 14.829C6.88999 16.39 9.11099 16.39 9.48899 14.829C9.54599 14.5946 9.65748 14.377 9.8144 14.1939C9.97132 14.0107 10.1692 13.8672 10.3921 13.7749C10.6149 13.6826 10.8564 13.6442 11.0969 13.6628C11.3373 13.6815 11.57 13.7565 11.776 13.882C13.148 14.718 14.718 13.148 13.882 11.776C13.7565 11.57 13.6815 11.3373 13.6628 11.0969C13.6442 10.8564 13.6826 10.6149 13.7749 10.3921C13.8672 10.1692 14.0107 9.97133 14.1939 9.81441C14.377 9.65749 14.5946 9.546 14.829 9.489C16.39 9.11 16.39 6.889 14.829 6.511C14.5945 6.45419 14.3768 6.34281 14.1935 6.18593C14.0102 6.02904 13.8666 5.83109 13.7743 5.60818C13.682 5.38527 13.6436 5.14372 13.6623 4.90318C13.681 4.66265 13.7563 4.42994 13.882 4.224C14.718 2.852 13.148 1.282 11.776 2.118C11.5701 2.24368 11.3373 2.31895 11.0968 2.33767C10.8563 2.35639 10.6147 2.31804 10.3918 2.22574C10.1689 2.13344 9.97095 1.9898 9.81407 1.80651C9.65718 1.62323 9.5458 1.40548 9.48899 1.171L9.48999 1.17ZM7.99999 11C8.79564 11 9.55871 10.6839 10.1213 10.1213C10.6839 9.55871 11 8.79565 11 8C11 7.20435 10.6839 6.44129 10.1213 5.87868C9.55871 5.31607 8.79564 5 7.99999 5C7.20434 5 6.44128 5.31607 5.87867 5.87868C5.31606 6.44129 4.99999 7.20435 4.99999 8C4.99999 8.79565 5.31606 9.55871 5.87867 10.1213C6.44128 10.6839 7.20434 11 7.99999 11Z"
-                    fill="#90A4AE"
-                  />
-                </svg>
-
-                <Typography variant="small" className="font-medium">
-                  Thay đổi thông tin
-                </Typography>
-              </MenuItem>
-
-              <MenuItem className="flex items-center gap-2">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M16 8C16 10.1217 15.1571 12.1566 13.6569 13.6569C12.1566 15.1571 10.1217 16 8 16C5.87827 16 3.84344 15.1571 2.34315 13.6569C0.842855 12.1566 0 10.1217 0 8C0 5.87827 0.842855 3.84344 2.34315 2.34315C3.84344 0.842855 5.87827 0 8 0C10.1217 0 12.1566 0.842855 13.6569 2.34315C15.1571 3.84344 16 5.87827 16 8ZM14 8C14 8.993 13.759 9.929 13.332 10.754L11.808 9.229C12.0362 8.52269 12.0632 7.76679 11.886 7.046L13.448 5.484C13.802 6.249 14 7.1 14 8ZM8.835 11.913L10.415 13.493C9.654 13.8281 8.83149 14.0007 8 14C7.13118 14.0011 6.27257 13.8127 5.484 13.448L7.046 11.886C7.63267 12.0298 8.24426 12.039 8.835 11.913ZM4.158 9.117C3.96121 8.4394 3.94707 7.72182 4.117 7.037L4.037 7.117L2.507 5.584C2.1718 6.34531 1.99913 7.16817 2 8C2 8.954 2.223 9.856 2.619 10.657L4.159 9.117H4.158ZM5.246 2.667C6.09722 2.22702 7.04179 1.99825 8 2C8.954 2 9.856 2.223 10.657 2.619L9.117 4.159C8.34926 3.93538 7.53214 3.94687 6.771 4.192L5.246 2.668V2.667ZM10 8C10 8.53043 9.78929 9.03914 9.41421 9.41421C9.03914 9.78929 8.53043 10 8 10C7.46957 10 6.96086 9.78929 6.58579 9.41421C6.21071 9.03914 6 8.53043 6 8C6 7.46957 6.21071 6.96086 6.58579 6.58579C6.96086 6.21071 7.46957 6 8 6C8.53043 6 9.03914 6.21071 9.41421 6.58579C9.78929 6.96086 10 7.46957 10 8Z"
-                    fill="#90A4AE"
-                  />
-                </svg>
-                <Typography variant="small" className="font-medium">
-                  Help
-                </Typography>
-              </MenuItem>
-              <hr className="my-2 border-blue-gray-50" />
-              <MenuItem className="flex items-center gap-2">
-                <svg
-                  width="16"
-                  height="14"
-                  viewBox="0 0 16 14"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M1 0C0.734784 0 0.48043 0.105357 0.292893 0.292893C0.105357 0.48043 0 0.734784 0 1V13C0 13.2652 0.105357 13.5196 0.292893 13.7071C0.48043 13.8946 0.734784 14 1 14C1.26522 14 1.51957 13.8946 1.70711 13.7071C1.89464 13.5196 2 13.2652 2 13V1C2 0.734784 1.89464 0.48043 1.70711 0.292893C1.51957 0.105357 1.26522 0 1 0ZM11.293 9.293C11.1108 9.4816 11.01 9.7342 11.0123 9.9964C11.0146 10.2586 11.1198 10.5094 11.3052 10.6948C11.4906 10.8802 11.7414 10.9854 12.0036 10.9877C12.2658 10.99 12.5184 10.8892 12.707 10.707L15.707 7.707C15.8945 7.51947 15.9998 7.26516 15.9998 7C15.9998 6.73484 15.8945 6.48053 15.707 6.293L12.707 3.293C12.6148 3.19749 12.5044 3.12131 12.3824 3.0689C12.2604 3.01649 12.1292 2.9889 11.9964 2.98775C11.8636 2.9866 11.7319 3.0119 11.609 3.06218C11.4861 3.11246 11.3745 3.18671 11.2806 3.2806C11.1867 3.3745 11.1125 3.48615 11.0622 3.60905C11.0119 3.73194 10.9866 3.86362 10.9877 3.9964C10.9889 4.12918 11.0165 4.2604 11.0689 4.3824C11.1213 4.50441 11.1975 4.61475 11.293 4.707L12.586 6H5C4.73478 6 4.48043 6.10536 4.29289 6.29289C4.10536 6.48043 4 6.73478 4 7C4 7.26522 4.10536 7.51957 4.29289 7.70711C4.48043 7.89464 4.73478 8 5 8H12.586L11.293 9.293Z"
-                    fill="#90A4AE"
-                  />
-                </svg>
-
-                <Typography
-                  variant="small"
-                  className="font-medium"
-                  onClick={handleOpenLogout}
-                >
-                  Đăng xuất
-                </Typography>
-              </MenuItem>
-            </MenuList>
-          </Menu>
-        ) : (
-          <Button color="blue" onClick={handleLogin} variant="text" size="sm">
-            ĐĂNG NHẬP
-          </Button>
-        )}
-        <Dialog open={openLogout} handler={handleOpenLogout} size="sm">
-          <DialogHeader>Đăng xuất</DialogHeader>
-          <DialogBody>Bạn xác nhận muốn đăng xuất khỏi hệ thống</DialogBody>
-          <DialogFooter>
+            </div>
+          ) : (
             <Button
-              variant="text"
-              color="red"
-              onClick={handleOpenLogout}
-              className="mr-1"
+              onClick={handleLogin}
+              variant="ghost-primary"
+              icon={ArrowRightOnRectangleIcon}
             >
-              <span>Hủy</span>
+              Đăng nhập
             </Button>
-            <Button variant="gradient" color="red" onClick={handleLogout}>
-              <span>Đăng xuất</span>
-            </Button>
-          </DialogFooter>
-        </Dialog>
-      </div>
-    </header>
+          )}
+        </div>
+      </header>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+        title="Xác nhận đăng xuất"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống? Phiên làm việc hiện tại sẽ kết thúc."
+        confirmText="Đăng xuất"
+        cancelText="Hủy bỏ"
+        variant="danger"
+      />
+    </>
   );
 };
 
